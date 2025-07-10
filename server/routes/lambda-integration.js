@@ -1,5 +1,5 @@
 import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
-import { createApiResponse, createApiError } from "@shared/api.js";
+import { createApiResponse, createApiError } from "../../shared/api.js";
 
 // Initialize Lambda client
 const lambdaClient = new LambdaClient({

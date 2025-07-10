@@ -5,9 +5,9 @@ import path from "path";
 export default defineConfig({
   build: {
     lib: {
-      entry: path.resolve(process.cwd(), "server/node-build.js"),
+      entry: path.resolve(process.cwd(), "server/node-build.js"), // Ensure this file exists
       name: "server",
-      fileName: "production",
+      fileName: "index", // Output file will be dist/server/index.mjs
       formats: ["es"],
     },
     outDir: "dist/server",
@@ -29,23 +29,20 @@ export default defineConfig({
         "buffer",
         "querystring",
         "child_process",
-        // External dependencies that should not be bundled
+        // External dependencies
         "express",
         "cors",
         "mysql2",
         "mysql2/promise",
-        "@aws-sdk/client-lambda",
-        "@aws-sdk/client-rds",
-        "@aws-sdk/client-ses",
         "serverless-http",
       ],
       output: {
         format: "es",
-        entryFileNames: "[name].mjs",
+        entryFileNames: "[name].mjs", // Output file name pattern
       },
     },
     minify: false, // Keep readable for debugging
-    sourcemap: true,
+    sourcemap: true, // Enable source maps for debugging
   },
   resolve: {
     alias: {

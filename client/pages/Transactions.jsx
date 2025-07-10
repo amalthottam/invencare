@@ -1028,8 +1028,7 @@ export default function Transactions() {
                         <option value="">Select destination store</option>
                         {stores
                           .filter(
-                            // (s) => s.id !== "all" && s.id !== formData.storeId,
-                            (s) => 1==1,
+                            (s) => s.id !== "all" && s.id !== formData.storeId,
                           )
                           .map((store) => (
                             <option key={store.id} value={store.id}>

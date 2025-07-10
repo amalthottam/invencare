@@ -18,16 +18,14 @@ export function createServer() {
   // Demo route
   app.get("/api/demo", handleDemo);
 
-  // Start server
+  return app;
+}
+
+// Only start the server if run directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  const app = createServer();
   const PORT = process.env.PORT || 3000;
   app.listen(PORT, "0.0.0.0", () => {
     console.log(`InvenCare server running on port ${PORT}`);
   });
-
-  return app;
-}
-
-// ✅ Call createServer() only if run directly (not when imported as a module)
-if (import.meta.url === `file://${process.argv[1]}`) {
-  createServer();
 }

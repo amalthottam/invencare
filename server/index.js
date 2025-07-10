@@ -471,3 +471,11 @@ export function createServer() {
 // WHERE p.status = 'active'
 // GROUP BY s.id, p.category
 // ORDER BY store_name, inventory_value DESC;
+
+
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, '0.0.0.0', () => {
+  console.log(`InvenCare server running on port ${PORT}`);
+});
+

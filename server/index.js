@@ -1,6 +1,13 @@
 import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo.js";
+import {
+  handleInventoryAnalytics,
+  handleTransactionAnalytics,
+  handleAutoReorder,
+  handleTransactionProcessor,
+  handleLambdaHealthCheck,
+} from "./routes/lambda-integration.js";
 
 // AWS Lambda Integration
 // import serverless from 'serverless-http';
@@ -167,6 +174,32 @@ export function createServer() {
   // });
 
   app.get("/api/demo", handleDemo);
+
+  // Lambda-powered API routes
+  app.get("/api/analytics/inventory", handleInventoryAnalytics);
+  app.get("/api/analytics/transactions", handleTransactionAnalytics);
+  app.post("/api/reorder/auto", handleAutoReorder);
+  app.post("/api/transactions/process", handleTransactionProcessor);
+  app.get("/api/lambda/health", handleLambdaHealthCheck);
+
+  // Real-time analytics endpoint
+  app.get("/api/analytics/realtime", async (req, res) => {
+    try {
+      const modifiedReq = {
+        ...req,
+        query: { ...req.query, action: "realTimeMetrics" },
+      };
+      await handleTransactionAnalytics(modifiedReq, res);
+    } catch (error) {
+      console.error("Real-time analytics error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Real-time analytics failed",
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
 
   // AWS Lambda Error handling middleware
   // app.use((error, req, res, next) => {
@@ -471,6 +504,3 @@ export function createServer() {
 // WHERE p.status = 'active'
 // GROUP BY s.id, p.category
 // ORDER BY store_name, inventory_value DESC;
-
-
-

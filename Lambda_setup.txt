@@ -1,0 +1,1719 @@
+# AWS Lambda Setup Guide for Inventory Management System
+
+## Table of Contents
+1. Prerequisites & AWS Services Setup
+2. Lambda Function Code (4 Functions)
+3. Backend Integration Code
+4. Environment Variables Configuration
+5. Testing & Deployment
+6. Troubleshooting
+
+---
+
+## 1. Prerequisites & AWS Services Setup
+
+### Required AWS Services:
+- AWS Lambda
+- Amazon RDS (MySQL 8.0+)
+- AWS IAM (for roles and permissions)
+- AWS VPC (for RDS security)
+- AWS Secrets Manager (optional, for secure credential storage)
+
+### Step 1: Create IAM Role for Lambda Functions
+
+Create IAM role with the following policies:
+
+1. **Basic Lambda Execution Role:**
+
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents"
+            ],
+            "Resource": "arn:aws:logs:*:*:*"
+        }
+    ]
+}
+```
+
+2. **RDS Connection Policy:**
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "rds-db:connect"
+            ],
+            "Resource": "arn:aws:rds-db:REGION:ACCOUNT:dbuser:DATABASE-NAME/*"
+        }
+    ]
+}
+```
+
+3. **VPC Access Policy (if RDS is in VPC):**
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:CreateNetworkInterface",
+                "ec2:DescribeNetworkInterfaces",
+                "ec2:DeleteNetworkInterface"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+### Step 2: Create RDS MySQL Database
+
+1. Launch RDS MySQL 8.0+ instance
+2. Configure security group to allow Lambda access (port 3306)
+3. Note down the endpoint, username, password, and database name
+4. Execute the database schema from the server/index.js comments
+
+---
+
+## 2. Lambda Function Code
+
+### Lambda Function 1: Inventory Analytics Processor
+**Function Name:** `invencare-inventory-analytics`
+
+```javascript
+// File: lambda-inventory-analytics.js
+import mysql from 'mysql2/promise';
+
+export const handler = async (event, context) => {
+    console.log('Inventory Analytics Event:', JSON.stringify(event, null, 2));
+    
+    const {
+        action,
+        storeId,
+        storeIds = [],
+        dateRange = '30days',
+        categoryFilter,
+        userRole,
+        userStoreAccess = [],
+        includeStoreBreakdown = false
+    } = event;
+
+    // Database connection configuration
+    const dbConfig = {
+        host: process.env.RDS_HOSTNAME,
+        user: process.env.RDS_USERNAME,
+        password: process.env.RDS_PASSWORD,
+        database: process.env.RDS_DB_NAME,
+        port: parseInt(process.env.RDS_PORT) || 3306,
+        ssl: { rejectUnauthorized: false },
+        acquireTimeout: 30000,
+        timeout: 30000
+    };
+
+    let connection;
+
+    try {
+        // Create database connection
+        connection = await mysql.createConnection(dbConfig);
+        
+        let result = {};
+
+        // Build store access filter based on user permissions
+        let storeFilter = '';
+        let storeParams = [];
+        
+        if (userRole !== 'admin' && userStoreAccess.length > 0) {
+            storeFilter = `AND p.store_id IN (${userStoreAccess.map(() => '?').join(',')})`;
+            storeParams = userStoreAccess;
+        } else if (storeId && storeId !== 'all') {
+            storeFilter = 'AND p.store_id = ?';
+            storeParams = [storeId];
+        } else if (storeIds.length > 0) {
+            storeFilter = `AND p.store_id IN (${storeIds.map(() => '?').join(',')})`;
+            storeParams = storeIds;
+        }
+
+        const dateFilterDays = dateRange === '7days' ? 7 : (dateRange === '90days' ? 90 : 30);
+
+        switch (action) {
+            case 'generateInventoryReport':
+                // Get comprehensive inventory analytics
+                const [inventoryData] = await connection.execute(`
+                    SELECT 
+                        p.category,
+                        p.store_id,
+                        s.name as store_name,
+                        COUNT(*) as product_count,
+                        SUM(p.quantity) as total_quantity,
+                        SUM(p.price * p.quantity) as total_value,
+                        AVG(p.price) as avg_price,
+                        COUNT(CASE WHEN p.quantity <= p.minimum_stock THEN 1 END) as low_stock_count,
+                        COUNT(CASE WHEN p.quantity = 0 THEN 1 END) as out_of_stock_count
+                    FROM products p
+                    JOIN stores s ON p.store_id = s.id
+                    WHERE p.status = 'active' ${storeFilter}
+                    ${categoryFilter ? 'AND p.category = ?' : ''}
+                    GROUP BY ${includeStoreBreakdown ? 'p.category, p.store_id' : 'p.category'}
+                    ORDER BY total_value DESC
+                `, [
+                    ...storeParams,
+                    ...(categoryFilter ? [categoryFilter] : [])
+                ]);
+
+                result.inventoryReport = inventoryData;
+                break;
+
+            case 'lowStockAlert':
+                // Get products with low stock levels
+                const [lowStockData] = await connection.execute(`
+                    SELECT 
+                        p.*,
+                        s.name as store_name,
+                        sup.name as supplier_name,
+                        sup.email as supplier_email,
+                        sup.phone as supplier_phone
+                    FROM products p
+                    JOIN stores s ON p.store_id = s.id
+                    LEFT JOIN suppliers sup ON p.supplier_id = sup.id
+                    WHERE p.quantity <= p.minimum_stock 
+                    AND p.status = 'active' ${storeFilter}
+                    ${categoryFilter ? 'AND p.category = ?' : ''}
+                    ORDER BY (p.quantity / NULLIF(p.minimum_stock, 0)) ASC, p.quantity ASC
+                `, [
+                    ...storeParams,
+                    ...(categoryFilter ? [categoryFilter] : [])
+                ]);
+
+                result.lowStockItems = lowStockData;
+                break;
+
+            case 'salesAnalysis':
+                // Get sales performance analytics
+                const [salesData] = await connection.execute(`
+                    SELECT 
+                        p.category,
+                        p.store_id,
+                        s.name as store_name,
+                        COUNT(it.id) as sales_count,
+                        SUM(it.quantity) as total_quantity_sold,
+                        SUM(it.total_amount) as total_revenue,
+                        AVG(it.total_amount) as avg_sale_value,
+                        MAX(it.created_at) as last_sale_date
+                    FROM products p
+                    JOIN stores s ON p.store_id = s.id
+                    LEFT JOIN inventory_transactions it ON p.id = it.product_id 
+                        AND it.transaction_type = 'sale'
+                        AND it.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)
+                    WHERE p.status = 'active' ${storeFilter}
+                    ${categoryFilter ? 'AND p.category = ?' : ''}
+                    GROUP BY ${includeStoreBreakdown ? 'p.category, p.store_id' : 'p.category'}
+                    ORDER BY total_revenue DESC
+                `, [
+                    dateFilterDays,
+                    ...storeParams,
+                    ...(categoryFilter ? [categoryFilter] : [])
+                ]);
+
+                result.salesAnalysis = salesData;
+                break;
+
+            case 'crossStoreComparison':
+                // Compare inventory performance across stores
+                const [comparisonData] = await connection.execute(`
+                    SELECT 
+                        s.id as store_id,
+                        s.name as store_name,
+                        COUNT(p.id) as total_products,
+                        SUM(p.quantity) as total_inventory,
+                        SUM(p.price * p.quantity) as inventory_value,
+                        COUNT(CASE WHEN p.quantity <= p.minimum_stock THEN 1 END) as low_stock_items,
+                        (SELECT COUNT(*) FROM inventory_transactions it2 
+                         WHERE it2.store_id = s.id 
+                         AND it2.transaction_type = 'sale'
+                         AND it2.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)) as sales_transactions,
+                        (SELECT COALESCE(SUM(it3.total_amount), 0) FROM inventory_transactions it3 
+                         WHERE it3.store_id = s.id 
+                         AND it3.transaction_type = 'sale'
+                         AND it3.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)) as sales_revenue
+                    FROM stores s
+                    LEFT JOIN products p ON s.id = p.store_id AND p.status = 'active'
+                    WHERE s.status = 'active' ${storeFilter.replace('p.store_id', 's.id')}
+                    GROUP BY s.id, s.name
+                    ORDER BY inventory_value DESC
+                `, [
+                    dateFilterDays,
+                    dateFilterDays,
+                    ...storeParams
+                ]);
+
+                result.storeComparison = comparisonData;
+                break;
+
+            default:
+                throw new Error(`Unknown action: ${action}`);
+        }
+
+        // Add metadata to response
+        result.metadata = {
+            action,
+            storeId: storeId || 'all',
+            dateRange,
+            categoryFilter,
+            timestamp: new Date().toISOString(),
+            userRole,
+            processingTime: Date.now() - context.getRemainingTimeInMillis()
+        };
+
+        return {
+            statusCode: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify(result)
+        };
+
+    } catch (error) {
+        console.error('Inventory Analytics Error:', error);
+        
+        return {
+            statusCode: 500,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                error: 'Internal server error',
+                message: error.message,
+                timestamp: new Date().toISOString()
+            })
+        };
+    } finally {
+        if (connection) {
+            try {
+                await connection.end();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
+    }
+};
+```
+
+### Lambda Function 2: Transaction Analytics Processor
+**Function Name:** `invencare-transaction-analytics`
+
+```javascript
+// File: lambda-transaction-analytics.js
+import mysql from 'mysql2/promise';
+
+export const handler = async (event, context) => {
+    console.log('Transaction Analytics Event:', JSON.stringify(event, null, 2));
+    
+    const {
+        action,
+        storeId,
+        storeIds = [],
+        transactionTypes = ['sale', 'restock', 'adjustment', 'transfer'],
+        dateRange = 'month',
+        startDate,
+        endDate,
+        categoryFilter,
+        userRole,
+        userStoreAccess = [],
+        aggregationLevel = 'daily',
+        includeAuditTrail = false,
+        includeStoreBreakdown = false
+    } = event;
+
+    // Database connection configuration
+    const dbConfig = {
+        host: process.env.RDS_HOSTNAME,
+        user: process.env.RDS_USERNAME,
+        password: process.env.RDS_PASSWORD,
+        database: process.env.RDS_DB_NAME,
+        port: parseInt(process.env.RDS_PORT) || 3306,
+        ssl: { rejectUnauthorized: false },
+        acquireTimeout: 30000,
+        timeout: 30000
+    };
+
+    let connection;
+
+    try {
+        connection = await mysql.createConnection(dbConfig);
+        
+        let result = {};
+
+        // Build filters
+        let storeFilter = '';
+        let storeParams = [];
+        
+        if (userRole !== 'admin' && userStoreAccess.length > 0) {
+            storeFilter = `AND it.store_id IN (${userStoreAccess.map(() => '?').join(',')})`;
+            storeParams = userStoreAccess;
+        } else if (storeId && storeId !== 'all') {
+            storeFilter = 'AND it.store_id = ?';
+            storeParams = [storeId];
+        } else if (storeIds.length > 0) {
+            storeFilter = `AND it.store_id IN (${storeIds.map(() => '?').join(',')})`;
+            storeParams = storeIds;
+        }
+
+        // Build date filter
+        let dateFilter = '';
+        let dateParams = [];
+        
+        if (startDate && endDate) {
+            dateFilter = 'AND it.created_at BETWEEN ? AND ?';
+            dateParams = [startDate, endDate];
+        } else {
+            const days = {
+                'today': 1,
+                'week': 7,
+                'month': 30,
+                'quarter': 90,
+                'year': 365
+            }[dateRange] || 30;
+            
+            dateFilter = 'AND it.created_at >= DATE_SUB(NOW(), INTERVAL ? DAY)';
+            dateParams = [days];
+        }
+
+        // Build transaction type filter
+        const typeFilter = `AND it.transaction_type IN (${transactionTypes.map(() => '?').join(',')})`;
+        
+        // Build category filter
+        const categoryFilterSql = categoryFilter ? 'AND it.category = ?' : '';
+        const categoryParams = categoryFilter ? [categoryFilter] : [];
+
+        switch (action) {
+            case 'generateTransactionReport':
+                const [transactionData] = await connection.execute(`
+                    SELECT 
+                        it.transaction_type,
+                        ${includeStoreBreakdown ? 'it.store_id, s.name as store_name,' : ''}
+                        COUNT(*) as transaction_count,
+                        SUM(it.total_amount) as total_value,
+                        AVG(it.total_amount) as avg_transaction_value,
+                        SUM(CASE WHEN it.transaction_type = 'sale' THEN it.total_amount ELSE 0 END) as total_sales,
+                        COUNT(CASE WHEN it.transaction_type = 'transfer' THEN 1 END) as transfer_count,
+                        MIN(it.created_at) as earliest_transaction,
+                        MAX(it.created_at) as latest_transaction
+                    FROM inventory_transactions it
+                    JOIN stores s ON it.store_id = s.id
+                    WHERE 1=1 ${storeFilter} ${dateFilter} ${typeFilter} ${categoryFilterSql}
+                    GROUP BY it.transaction_type${includeStoreBreakdown ? ', it.store_id' : ''}
+                    ORDER BY total_value DESC
+                `, [
+                    ...storeParams,
+                    ...dateParams,
+                    ...transactionTypes,
+                    ...categoryParams
+                ]);
+
+                result.transactionAnalytics = transactionData;
+                break;
+
+            case 'salesAnalysis':
+                const aggregationFormat = {
+                    'hourly': '%Y-%m-%d %H:00:00',
+                    'daily': '%Y-%m-%d',
+                    'weekly': '%Y-%u',
+                    'monthly': '%Y-%m'
+                }[aggregationLevel] || '%Y-%m-%d';
+
+                const [salesTrends] = await connection.execute(`
+                    SELECT 
+                        DATE_FORMAT(it.created_at, ?) as period,
+                        ${includeStoreBreakdown ? 'it.store_id, s.name as store_name,' : ''}
+                        COUNT(*) as sales_count,
+                        SUM(it.total_amount) as period_sales,
+                        AVG(it.total_amount) as avg_sale_value,
+                        SUM(it.quantity) as total_quantity_sold
+                    FROM inventory_transactions it
+                    JOIN stores s ON it.store_id = s.id
+                    WHERE it.transaction_type = 'sale' ${storeFilter} ${dateFilter} ${categoryFilterSql}
+                    GROUP BY period${includeStoreBreakdown ? ', it.store_id' : ''}
+                    ORDER BY period DESC, period_sales DESC
+                    LIMIT 100
+                `, [
+                    aggregationFormat,
+                    ...storeParams,
+                    ...dateParams,
+                    ...categoryParams
+                ]);
+
+                result.salesTrends = salesTrends;
+                break;
+
+            case 'transferAnalysis':
+                const [transferData] = await connection.execute(`
+                    SELECT 
+                        it.store_id as from_store,
+                        sf.name as from_store_name,
+                        it.transfer_to_store_id as to_store,
+                        st.name as to_store_name,
+                        COUNT(*) as transfer_count,
+                        SUM(it.total_amount) as total_transfer_value,
+                        AVG(it.quantity) as avg_quantity_transferred,
+                        SUM(it.quantity) as total_quantity_transferred
+                    FROM inventory_transactions it
+                    JOIN stores sf ON it.store_id = sf.id
+                    JOIN stores st ON it.transfer_to_store_id = st.id
+                    WHERE it.transaction_type = 'transfer' ${dateFilter} ${categoryFilterSql}
+                    ${userRole !== 'admin' && userStoreAccess.length > 0 ? 
+                        `AND (it.store_id IN (${userStoreAccess.map(() => '?').join(',')}) 
+                         OR it.transfer_to_store_id IN (${userStoreAccess.map(() => '?').join(',')}))` : ''}
+                    GROUP BY it.store_id, it.transfer_to_store_id
+                    ORDER BY transfer_count DESC
+                `, [
+                    ...dateParams,
+                    ...categoryParams,
+                    ...(userRole !== 'admin' && userStoreAccess.length > 0 ? [...userStoreAccess, ...userStoreAccess] : [])
+                ]);
+
+                result.transferAnalytics = transferData;
+                break;
+
+            case 'auditReport':
+                if (includeAuditTrail) {
+                    const [auditData] = await connection.execute(`
+                        SELECT 
+                            tal.id as audit_id,
+                            tal.transaction_id,
+                            tal.action,
+                            tal.performed_by,
+                            tal.reason,
+                            tal.created_at as audit_timestamp,
+                            it.transaction_type,
+                            it.store_id,
+                            s.name as store_name,
+                            it.product_name,
+                            it.total_amount,
+                            it.reference_number
+                        FROM transaction_audit_log tal
+                        JOIN inventory_transactions it ON tal.transaction_id = it.id
+                        JOIN stores s ON it.store_id = s.id
+                        WHERE 1=1 ${storeFilter.replace('it.store_id', 'it.store_id')} ${dateFilter.replace('it.created_at', 'tal.created_at')}
+                        ORDER BY tal.created_at DESC
+                        LIMIT 500
+                    `, [
+                        ...storeParams,
+                        ...dateParams
+                    ]);
+
+                    result.auditTrail = auditData;
+                }
+                break;
+
+            case 'realTimeMetrics':
+                // Get real-time dashboard metrics
+                const [realtimeData] = await connection.execute(`
+                    SELECT 
+                        COUNT(CASE WHEN it.transaction_type = 'sale' AND it.created_at >= DATE_SUB(NOW(), INTERVAL 1 HOUR) THEN 1 END) as sales_last_hour,
+                        COUNT(CASE WHEN it.transaction_type = 'sale' AND DATE(it.created_at) = CURDATE() THEN 1 END) as sales_today,
+                        COALESCE(SUM(CASE WHEN it.transaction_type = 'sale' AND DATE(it.created_at) = CURDATE() THEN it.total_amount END), 0) as revenue_today,
+                        COUNT(CASE WHEN it.transaction_type = 'transfer' AND it.created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 END) as transfers_24h,
+                        COUNT(CASE WHEN it.transaction_type = 'adjustment' AND it.created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR) THEN 1 END) as adjustments_24h
+                    FROM inventory_transactions it
+                    WHERE 1=1 ${storeFilter}
+                `, storeParams);
+
+                result.realTimeMetrics = realtimeData[0];
+                break;
+
+            default:
+                throw new Error(`Unknown action: ${action}`);
+        }
+
+        // Add summary metrics if requested
+        if (action === 'generateTransactionReport') {
+            const [summaryMetrics] = await connection.execute(`
+                SELECT 
+                    COUNT(*) as total_transactions,
+                    COALESCE(SUM(CASE WHEN it.transaction_type = 'sale' THEN it.total_amount END), 0) as total_sales_value,
+                    COUNT(CASE WHEN it.transaction_type = 'restock' THEN 1 END) as total_restocks,
+                    COUNT(CASE WHEN it.transaction_type = 'transfer' THEN 1 END) as total_transfers,
+                    COUNT(CASE WHEN it.transaction_type = 'adjustment' THEN 1 END) as total_adjustments,
+                    COALESCE(AVG(CASE WHEN it.transaction_type = 'sale' THEN it.total_amount END), 0) as avg_transaction_value
+                FROM inventory_transactions it
+                WHERE 1=1 ${storeFilter} ${dateFilter} ${typeFilter} ${categoryFilterSql}
+            `, [
+                ...storeParams,
+                ...dateParams,
+                ...transactionTypes,
+                ...categoryParams
+            ]);
+
+            result.summaryMetrics = summaryMetrics[0];
+        }
+
+        // Add metadata
+        result.metadata = {
+            action,
+            storeId: storeId || 'all',
+            dateRange,
+            transactionTypes,
+            aggregationLevel,
+            categoryFilter,
+            timestamp: new Date().toISOString(),
+            userRole,
+            includeAuditTrail,
+            processingTime: Date.now() - context.getRemainingTimeInMillis()
+        };
+
+        return {
+            statusCode: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify(result)
+        };
+
+    } catch (error) {
+        console.error('Transaction Analytics Error:', error);
+        
+        return {
+            statusCode: 500,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                error: 'Internal server error',
+                message: error.message,
+                timestamp: new Date().toISOString()
+            })
+        };
+    } finally {
+        if (connection) {
+            try {
+                await connection.end();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
+    }
+};
+```
+
+### Lambda Function 3: Auto Reorder System
+**Function Name:** `invencare-auto-reorder`
+
+```javascript
+// File: lambda-auto-reorder.js
+import mysql from 'mysql2/promise';
+
+export const handler = async (event, context) => {
+    console.log('Auto Reorder Event:', JSON.stringify(event, null, 2));
+    
+    const {
+        storeId,
+        forceReorder = false,
+        productIds = [],
+        supplierId,
+        minimumStockMultiplier = 1.0,
+        maxReorderValue = 10000
+    } = event;
+
+    const dbConfig = {
+        host: process.env.RDS_HOSTNAME,
+        user: process.env.RDS_USERNAME,
+        password: process.env.RDS_PASSWORD,
+        database: process.env.RDS_DB_NAME,
+        port: parseInt(process.env.RDS_PORT) || 3306,
+        ssl: { rejectUnauthorized: false },
+        acquireTimeout: 30000,
+        timeout: 30000
+    };
+
+    let connection;
+
+    try {
+        connection = await mysql.createConnection(dbConfig);
+        
+        // Build filters for products that need reordering
+        let productFilter = '';
+        let productParams = [];
+        
+        if (productIds.length > 0) {
+            productFilter = `AND p.id IN (${productIds.map(() => '?').join(',')})`;
+            productParams = productIds;
+        }
+        
+        if (storeId) {
+            productFilter += ' AND p.store_id = ?';
+            productParams.push(storeId);
+        }
+        
+        if (supplierId) {
+            productFilter += ' AND p.supplier_id = ?';
+            productParams.push(supplierId);
+        }
+
+        // Find products that need reordering
+        const reorderCondition = forceReorder ? 
+            'p.quantity < p.maximum_stock' : 
+            `p.quantity <= (p.minimum_stock * ${minimumStockMultiplier})`;
+
+        const [lowStockProducts] = await connection.execute(`
+            SELECT 
+                p.*,
+                s.name as store_name,
+                sup.name as supplier_name,
+                sup.contact_person,
+                sup.email as supplier_email,
+                sup.phone as supplier_phone,
+                sup.address as supplier_address,
+                -- Calculate sales velocity (units sold per day in last 30 days)
+                COALESCE(
+                    (SELECT ABS(SUM(it.quantity)) / 30
+                     FROM inventory_transactions it 
+                     WHERE it.product_id = p.id 
+                     AND it.store_id = p.store_id
+                     AND it.transaction_type = 'sale'
+                     AND it.created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)), 0
+                ) as sales_velocity_per_day,
+                -- Last restock date
+                (SELECT MAX(it.created_at)
+                 FROM inventory_transactions it 
+                 WHERE it.product_id = p.id 
+                 AND it.store_id = p.store_id
+                 AND it.transaction_type = 'restock') as last_restock_date
+            FROM products p
+            JOIN stores s ON p.store_id = s.id
+            LEFT JOIN suppliers sup ON p.supplier_id = sup.id
+            WHERE ${reorderCondition}
+            AND p.status = 'active'
+            AND s.status = 'active'
+            ${productFilter}
+            ORDER BY (p.quantity / NULLIF(p.minimum_stock, 0)) ASC, p.quantity ASC
+        `, productParams);
+
+        const reorderRequests = [];
+        let totalEstimatedCost = 0;
+
+        // Process each product that needs reordering
+        for (const product of lowStockProducts) {
+            // Calculate optimal reorder quantity
+            let reorderQuantity;
+            
+            if (product.sales_velocity_per_day > 0) {
+                // Smart reordering based on sales velocity
+                const daysOfStock = product.quantity / product.sales_velocity_per_day;
+                const targetDaysOfStock = 30; // Maintain 30 days of stock
+                const shortfall = Math.max(0, (targetDaysOfStock - daysOfStock) * product.sales_velocity_per_day);
+                reorderQuantity = Math.min(product.maximum_stock - product.quantity, Math.ceil(shortfall));
+            } else {
+                // Fallback to simple min/max reordering
+                reorderQuantity = product.maximum_stock - product.quantity;
+            }
+
+            // Ensure minimum reorder quantity
+            reorderQuantity = Math.max(reorderQuantity, product.minimum_stock);
+            
+            // Calculate estimated cost
+            const estimatedCost = product.price * reorderQuantity * 0.8; // Assume 80% of retail price as wholesale
+            
+            // Skip if exceeds maximum reorder value
+            if (estimatedCost > maxReorderValue) {
+                console.log(`Skipping ${product.name} - estimated cost ${estimatedCost} exceeds max ${maxReorderValue}`);
+                continue;
+            }
+
+            const reorderRequest = {
+                productId: product.id,
+                productName: product.name,
+                sku: product.sku,
+                storeId: product.store_id,
+                storeName: product.store_name,
+                currentStock: product.quantity,
+                minimumStock: product.minimum_stock,
+                maximumStock: product.maximum_stock,
+                reorderQuantity,
+                estimatedCost,
+                salesVelocityPerDay: product.sales_velocity_per_day,
+                daysUntilStockout: product.sales_velocity_per_day > 0 ? 
+                    Math.floor(product.quantity / product.sales_velocity_per_day) : null,
+                supplierId: product.supplier_id,
+                supplierName: product.supplier_name,
+                supplierEmail: product.supplier_email,
+                supplierPhone: product.supplier_phone,
+                lastRestockDate: product.last_restock_date,
+                priority: product.quantity === 0 ? 'CRITICAL' : 
+                         (product.quantity <= product.minimum_stock * 0.5 ? 'HIGH' : 'MEDIUM'),
+                recommendedOrderDate: new Date().toISOString(),
+                expectedDeliveryDate: new Date(Date.now() + (7 * 24 * 60 * 60 * 1000)).toISOString() // 7 days from now
+            };
+
+            reorderRequests.push(reorderRequest);
+            totalEstimatedCost += estimatedCost;
+
+            // Log reorder request in database
+            try {
+                await connection.execute(`
+                    INSERT INTO reorder_requests 
+                    (product_id, store_id, requested_quantity, estimated_cost, supplier_id, 
+                     priority, sales_velocity, days_until_stockout, status, notes, created_at)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, NOW())
+                `, [
+                    product.id,
+                    product.store_id,
+                    reorderQuantity,
+                    estimatedCost,
+                    product.supplier_id,
+                    reorderRequest.priority,
+                    product.sales_velocity_per_day,
+                    reorderRequest.daysUntilStockout,
+                    `Auto-generated reorder request. Current stock: ${product.quantity}, Sales velocity: ${product.sales_velocity_per_day}/day`
+                ]);
+            } catch (insertError) {
+                console.error('Error inserting reorder request:', insertError);
+                // Continue processing other products
+            }
+        }
+
+        // Group reorder requests by supplier for efficient ordering
+        const supplierGroups = reorderRequests.reduce((groups, request) => {
+            const supplierId = request.supplierId || 'no-supplier';
+            if (!groups[supplierId]) {
+                groups[supplierId] = {
+                    supplierId: request.supplierId,
+                    supplierName: request.supplierName,
+                    supplierEmail: request.supplierEmail,
+                    supplierPhone: request.supplierPhone,
+                    products: [],
+                    totalCost: 0,
+                    totalItems: 0
+                };
+            }
+            groups[supplierId].products.push(request);
+            groups[supplierId].totalCost += request.estimatedCost;
+            groups[supplierId].totalItems += request.reorderQuantity;
+            return groups;
+        }, {});
+
+        const result = {
+            reorderRequestsGenerated: reorderRequests.length,
+            totalProductsAnalyzed: lowStockProducts.length,
+            totalEstimatedCost,
+            supplierGroups: Object.values(supplierGroups),
+            reorderRequests,
+            summary: {
+                criticalPriority: reorderRequests.filter(r => r.priority === 'CRITICAL').length,
+                highPriority: reorderRequests.filter(r => r.priority === 'HIGH').length,
+                mediumPriority: reorderRequests.filter(r => r.priority === 'MEDIUM').length,
+                averageEstimatedCost: reorderRequests.length > 0 ? 
+                    totalEstimatedCost / reorderRequests.length : 0
+            },
+            nextRunRecommended: new Date(Date.now() + (24 * 60 * 60 * 1000)).toISOString(), // 24 hours from now
+            metadata: {
+                storeId: storeId || 'all',
+                forceReorder,
+                minimumStockMultiplier,
+                maxReorderValue,
+                timestamp: new Date().toISOString()
+            }
+        };
+
+        return {
+            statusCode: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify(result)
+        };
+
+    } catch (error) {
+        console.error('Auto Reorder Error:', error);
+        
+        return {
+            statusCode: 500,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                error: 'Internal server error',
+                message: error.message,
+                timestamp: new Date().toISOString()
+            })
+        };
+    } finally {
+        if (connection) {
+            try {
+                await connection.end();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
+    }
+};
+```
+
+### Lambda Function 4: Transaction Processor
+**Function Name:** `invencare-transaction-processor`
+
+```javascript
+// File: lambda-transaction-processor.js
+import mysql from 'mysql2/promise';
+
+export const handler = async (event, context) => {
+    console.log('Transaction Processor Event:', JSON.stringify(event, null, 2));
+    
+    const {
+        transaction,
+        userId,
+        userRole,
+        userName,
+        ipAddress,
+        sessionId,
+        requireApproval = false
+    } = event;
+
+    const dbConfig = {
+        host: process.env.RDS_HOSTNAME,
+        user: process.env.RDS_USERNAME,
+        password: process.env.RDS_PASSWORD,
+        database: process.env.RDS_DB_NAME,
+        port: parseInt(process.env.RDS_PORT) || 3306,
+        ssl: { rejectUnauthorized: false },
+        acquireTimeout: 30000,
+        timeout: 30000
+    };
+
+    let connection;
+
+    try {
+        connection = await mysql.createConnection(dbConfig);
+        
+        // Start database transaction
+        await connection.beginTransaction();
+
+        // Validate transaction data
+        if (!transaction || !transaction.productId || !transaction.storeId || !transaction.type) {
+            throw new Error('Invalid transaction data: missing required fields');
+        }
+
+        const {
+            productId,
+            storeId,
+            type,
+            quantity,
+            unitPrice,
+            totalAmount,
+            transferToStoreId,
+            transferToStoreName,
+            notes,
+            category,
+            productName,
+            referenceNumber
+        } = transaction;
+
+        // Validate transaction type
+        const validTypes = ['sale', 'restock', 'adjustment', 'transfer'];
+        if (!validTypes.includes(type.toLowerCase())) {
+            throw new Error(`Invalid transaction type: ${type}`);
+        }
+
+        // Validate user has access to the store
+        if (userRole !== 'admin') {
+            const [storeAccess] = await connection.execute(`
+                SELECT COUNT(*) as access_count
+                FROM user_store_access usa
+                WHERE usa.user_id = ? 
+                AND usa.store_id = ? 
+                AND usa.status = 'active'
+                AND (usa.expires_at IS NULL OR usa.expires_at > NOW())
+            `, [userId, storeId]);
+
+            if (storeAccess[0].access_count === 0) {
+                throw new Error('User does not have access to this store');
+            }
+        }
+
+        // Get current product information
+        const [productInfo] = await connection.execute(`
+            SELECT p.*, s.name as store_name
+            FROM products p
+            JOIN stores s ON p.store_id = s.id
+            WHERE p.id = ? AND p.store_id = ? AND p.status = 'active'
+        `, [productId, storeId]);
+
+        if (productInfo.length === 0) {
+            throw new Error('Product not found or inactive');
+        }
+
+        const product = productInfo[0];
+
+        // Validate stock levels for outbound transactions
+        if (['sale', 'adjustment'].includes(type.toLowerCase()) && quantity > 0) {
+            if (product.quantity < Math.abs(quantity)) {
+                throw new Error(`Insufficient stock. Available: ${product.quantity}, Requested: ${Math.abs(quantity)}`);
+            }
+        }
+
+        // For transfers, validate destination store
+        if (type.toLowerCase() === 'transfer') {
+            if (!transferToStoreId) {
+                throw new Error('Transfer destination store is required');
+            }
+
+            const [destStore] = await connection.execute(`
+                SELECT name FROM stores WHERE id = ? AND status = 'active'
+            `, [transferToStoreId]);
+
+            if (destStore.length === 0) {
+                throw new Error('Invalid transfer destination store');
+            }
+
+            // Check if destination has the same product
+            const [destProduct] = await connection.execute(`
+                SELECT id FROM products WHERE sku = ? AND store_id = ? AND status = 'active'
+            `, [product.sku, transferToStoreId]);
+
+            if (destProduct.length === 0) {
+                // Create product in destination store if it doesn't exist
+                await connection.execute(`
+                    INSERT INTO products (
+                        name, description, price, quantity, category, sku, barcode,
+                        minimum_stock, maximum_stock, supplier_id, store_id,
+                        location_in_store, status
+                    ) VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?, ?, 'active')
+                `, [
+                    product.name, product.description, product.price, product.category,
+                    product.sku, product.barcode, product.minimum_stock, product.maximum_stock,
+                    product.supplier_id, transferToStoreId, product.location_in_store
+                ]);
+            }
+        }
+
+        // Generate reference number if not provided
+        const finalReferenceNumber = referenceNumber || 
+            `${type.toUpperCase().substring(0, 3)}-${new Date().getFullYear()}-${Date.now()}`;
+
+        // Insert transaction record
+        const [transactionResult] = await connection.execute(`
+            INSERT INTO inventory_transactions (
+                product_id, store_id, transaction_type, quantity, unit_price,
+                total_amount, reference_number, notes, user_id, user_name,
+                transfer_to_store_id, transfer_to_store_name, category, product_name,
+                audit_trail
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `, [
+            productId,
+            storeId,
+            type.toLowerCase(),
+            quantity,
+            unitPrice,
+            totalAmount,
+            finalReferenceNumber,
+            notes,
+            userId,
+            userName,
+            transferToStoreId,
+            transferToStoreName,
+            category || product.category,
+            productName || product.name,
+            JSON.stringify({
+                ipAddress,
+                sessionId,
+                userAgent: event.userAgent,
+                timestamp: new Date().toISOString(),
+                requireApproval,
+                originalQuantity: product.quantity
+            })
+        ]);
+
+        const transactionId = transactionResult.insertId;
+
+        // Update product inventory based on transaction type
+        let inventoryUpdates = [];
+        
+        switch (type.toLowerCase()) {
+            case 'sale':
+                // Reduce inventory
+                await connection.execute(`
+                    UPDATE products 
+                    SET quantity = quantity - ?, updated_at = NOW()
+                    WHERE id = ? AND store_id = ?
+                `, [Math.abs(quantity), productId, storeId]);
+                
+                inventoryUpdates.push({
+                    productId,
+                    storeId,
+                    action: 'decreased',
+                    amount: Math.abs(quantity)
+                });
+                break;
+
+            case 'restock':
+                // Increase inventory
+                await connection.execute(`
+                    UPDATE products 
+                    SET quantity = quantity + ?, updated_at = NOW()
+                    WHERE id = ? AND store_id = ?
+                `, [Math.abs(quantity), productId, storeId]);
+                
+                inventoryUpdates.push({
+                    productId,
+                    storeId,
+                    action: 'increased',
+                    amount: Math.abs(quantity)
+                });
+                break;
+
+            case 'adjustment':
+                // Adjust inventory (can be positive or negative)
+                await connection.execute(`
+                    UPDATE products 
+                    SET quantity = quantity + ?, updated_at = NOW()
+                    WHERE id = ? AND store_id = ?
+                `, [quantity, productId, storeId]);
+                
+                inventoryUpdates.push({
+                    productId,
+                    storeId,
+                    action: quantity > 0 ? 'increased' : 'decreased',
+                    amount: Math.abs(quantity)
+                });
+                break;
+
+            case 'transfer':
+                // Decrease from source store
+                await connection.execute(`
+                    UPDATE products 
+                    SET quantity = quantity - ?, updated_at = NOW()
+                    WHERE id = ? AND store_id = ?
+                `, [Math.abs(quantity), productId, storeId]);
+
+                // Increase in destination store
+                await connection.execute(`
+                    UPDATE products 
+                    SET quantity = quantity + ?, updated_at = NOW()
+                    WHERE sku = ? AND store_id = ?
+                `, [Math.abs(quantity), product.sku, transferToStoreId]);
+                
+                inventoryUpdates.push(
+                    {
+                        productId,
+                        storeId,
+                        action: 'decreased',
+                        amount: Math.abs(quantity)
+                    },
+                    {
+                        productSku: product.sku,
+                        storeId: transferToStoreId,
+                        action: 'increased',
+                        amount: Math.abs(quantity)
+                    }
+                );
+                break;
+        }
+
+        // Log audit trail
+        await connection.execute(`
+            INSERT INTO transaction_audit_log (
+                transaction_id, action, performed_by, new_values, 
+                ip_address, user_agent, created_at
+            ) VALUES (?, 'created', ?, ?, ?, ?, NOW())
+        `, [
+            transactionId,
+            userId,
+            JSON.stringify({
+                transaction,
+                inventoryUpdates,
+                userRole,
+                requireApproval
+            }),
+            ipAddress || '0.0.0.0',
+            event.userAgent || 'Lambda Function'
+        ]);
+
+        // Check for low stock alerts after inventory update
+        const [lowStockCheck] = await connection.execute(`
+            SELECT p.*, s.name as store_name
+            FROM products p
+            JOIN stores s ON p.store_id = s.id
+            WHERE p.id = ? 
+            AND p.store_id = ? 
+            AND p.quantity <= p.minimum_stock
+        `, [productId, storeId]);
+
+        const alerts = [];
+        if (lowStockCheck.length > 0) {
+            const lowStockProduct = lowStockCheck[0];
+            alerts.push({
+                type: 'LOW_STOCK',
+                message: `${lowStockProduct.name} in ${lowStockProduct.store_name} is now at ${lowStockProduct.quantity} units (minimum: ${lowStockProduct.minimum_stock})`,
+                productId: lowStockProduct.id,
+                storeId: lowStockProduct.store_id,
+                currentStock: lowStockProduct.quantity,
+                minimumStock: lowStockProduct.minimum_stock
+            });
+        }
+
+        // Commit transaction
+        await connection.commit();
+
+        const result = {
+            success: true,
+            transactionId,
+            referenceNumber: finalReferenceNumber,
+            message: 'Transaction processed successfully',
+            inventoryUpdates,
+            alerts,
+            metadata: {
+                processedAt: new Date().toISOString(),
+                processedBy: userId,
+                userRole,
+                requireApproval,
+                processingTime: Date.now() - context.getRemainingTimeInMillis()
+            }
+        };
+
+        return {
+            statusCode: 200,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify(result)
+        };
+
+    } catch (error) {
+        // Rollback transaction on error
+        if (connection) {
+            try {
+                await connection.rollback();
+            } catch (rollbackError) {
+                console.error('Rollback error:', rollbackError);
+            }
+        }
+
+        console.error('Transaction Processor Error:', error);
+        
+        return {
+            statusCode: 500,
+            headers: {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            },
+            body: JSON.stringify({
+                success: false,
+                error: 'Transaction processing failed',
+                message: error.message,
+                timestamp: new Date().toISOString()
+            })
+        };
+    } finally {
+        if (connection) {
+            try {
+                await connection.end();
+            } catch (closeError) {
+                console.error('Error closing connection:', closeError);
+            }
+        }
+    }
+};
+```
+
+---
+
+## 3. Backend Integration Code
+
+Add this code to your `server/routes/` directory:
+
+### Create `server/routes/lambda-integration.js`:
+
+```javascript
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
+import { createApiResponse, createApiError } from '@shared/api.js';
+
+// Initialize Lambda client
+const lambdaClient = new LambdaClient({
+    region: process.env.AWS_REGION || 'us-east-1',
+    credentials: {
+        accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+        secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+    }
+});
+
+// Helper function to invoke Lambda
+const invokeLambda = async (functionName, payload) => {
+    try {
+        const command = new InvokeCommand({
+            FunctionName: functionName,
+            InvocationType: 'RequestResponse',
+            Payload: JSON.stringify(payload)
+        });
+
+        const response = await lambdaClient.send(command);
+        const responsePayload = JSON.parse(new TextDecoder().decode(response.Payload));
+        
+        if (responsePayload.statusCode !== 200) {
+            throw new Error(JSON.parse(responsePayload.body).message || 'Lambda function error');
+        }
+        
+        return JSON.parse(responsePayload.body);
+    } catch (error) {
+        console.error(`Lambda invocation error (${functionName}):`, error);
+        throw error;
+    }
+};
+
+// Inventory Analytics Handler
+export const handleInventoryAnalytics = async (req, res) => {
+    try {
+        const {
+            action = 'generateInventoryReport',
+            storeId,
+            storeIds,
+            dateRange = '30days',
+            categoryFilter,
+            includeStoreBreakdown = false
+        } = req.query;
+
+        const userRole = req.headers['x-user-role'] || 'employee';
+        const userStoreAccess = req.headers['x-user-store-access'] 
+            ? req.headers['x-user-store-access'].split(',') 
+            : [];
+
+        const payload = {
+            action,
+            storeId,
+            storeIds: storeIds ? storeIds.split(',') : [],
+            dateRange,
+            categoryFilter,
+            userRole,
+            userStoreAccess,
+            includeStoreBreakdown: includeStoreBreakdown === 'true'
+        };
+
+        const result = await invokeLambda(
+            process.env.LAMBDA_INVENTORY_ANALYTICS_FUNCTION || 'invencare-inventory-analytics',
+            payload
+        );
+
+        res.status(200).json(createApiResponse(result, 'Inventory analytics processed successfully'));
+
+    } catch (error) {
+        console.error('Inventory analytics error:', error);
+        res.status(500).json(createApiError(error));
+    }
+};
+
+// Transaction Analytics Handler
+export const handleTransactionAnalytics = async (req, res) => {
+    try {
+        const {
+            action = 'generateTransactionReport',
+            storeId,
+            storeIds,
+            transactionTypes = 'sale,restock,adjustment,transfer',
+            dateRange = 'month',
+            startDate,
+            endDate,
+            categoryFilter,
+            aggregationLevel = 'daily',
+            includeAuditTrail = false,
+            includeStoreBreakdown = false
+        } = req.query;
+
+        const userRole = req.headers['x-user-role'] || 'employee';
+        const userStoreAccess = req.headers['x-user-store-access'] 
+            ? req.headers['x-user-store-access'].split(',') 
+            : [];
+
+        const payload = {
+            action,
+            storeId,
+            storeIds: storeIds ? storeIds.split(',') : [],
+            transactionTypes: transactionTypes.split(','),
+            dateRange,
+            startDate,
+            endDate,
+            categoryFilter,
+            userRole,
+            userStoreAccess,
+            aggregationLevel,
+            includeAuditTrail: includeAuditTrail === 'true',
+            includeStoreBreakdown: includeStoreBreakdown === 'true'
+        };
+
+        const result = await invokeLambda(
+            process.env.LAMBDA_TRANSACTION_ANALYTICS_FUNCTION || 'invencare-transaction-analytics',
+            payload
+        );
+
+        res.status(200).json(createApiResponse(result, 'Transaction analytics processed successfully'));
+
+    } catch (error) {
+        console.error('Transaction analytics error:', error);
+        res.status(500).json(createApiError(error));
+    }
+};
+
+// Auto Reorder Handler
+export const handleAutoReorder = async (req, res) => {
+    try {
+        const {
+            storeId,
+            forceReorder = false,
+            productIds,
+            supplierId,
+            minimumStockMultiplier = 1.0,
+            maxReorderValue = 10000
+        } = req.body;
+
+        const payload = {
+            storeId,
+            forceReorder,
+            productIds: productIds || [],
+            supplierId,
+            minimumStockMultiplier: parseFloat(minimumStockMultiplier),
+            maxReorderValue: parseFloat(maxReorderValue)
+        };
+
+        const result = await invokeLambda(
+            process.env.LAMBDA_AUTO_REORDER_FUNCTION || 'invencare-auto-reorder',
+            payload
+        );
+
+        res.status(200).json(createApiResponse(result, 'Auto reorder analysis completed'));
+
+    } catch (error) {
+        console.error('Auto reorder error:', error);
+        res.status(500).json(createApiError(error));
+    }
+};
+
+// Transaction Processor Handler
+export const handleTransactionProcessor = async (req, res) => {
+    try {
+        const transaction = req.body.transaction;
+        const userId = req.headers['x-user-id'] || req.body.userId;
+        const userRole = req.headers['x-user-role'] || req.body.userRole;
+        const userName = req.headers['x-user-name'] || req.body.userName;
+        const ipAddress = req.ip || req.connection.remoteAddress;
+        const sessionId = req.headers['x-session-id'] || req.body.sessionId;
+
+        if (!transaction || !userId) {
+            return res.status(400).json(createApiError(new Error('Transaction data and user ID are required')));
+        }
+
+        const payload = {
+            transaction,
+            userId,
+            userRole,
+            userName,
+            ipAddress,
+            sessionId,
+            userAgent: req.headers['user-agent']
+        };
+
+        const result = await invokeLambda(
+            process.env.LAMBDA_TRANSACTION_PROCESSOR_FUNCTION || 'invencare-transaction-processor',
+            payload
+        );
+
+        res.status(200).json(createApiResponse(result, 'Transaction processed successfully'));
+
+    } catch (error) {
+        console.error('Transaction processor error:', error);
+        res.status(500).json(createApiError(error));
+    }
+};
+
+// Health Check for Lambda Functions
+export const handleLambdaHealthCheck = async (req, res) => {
+    try {
+        const functions = [
+            'invencare-inventory-analytics',
+            'invencare-transaction-analytics',
+            'invencare-auto-reorder',
+            'invencare-transaction-processor'
+        ];
+
+        const healthChecks = await Promise.allSettled(
+            functions.map(async (functionName) => {
+                try {
+                    const result = await invokeLambda(functionName, { action: 'healthcheck' });
+                    return { functionName, status: 'healthy', result };
+                } catch (error) {
+                    return { functionName, status: 'unhealthy', error: error.message };
+                }
+            })
+        );
+
+        const healthStatus = {
+            overall: healthChecks.every(check => check.value?.status === 'healthy') ? 'healthy' : 'degraded',
+            functions: healthChecks.map(check => check.value),
+            timestamp: new Date().toISOString()
+        };
+
+        res.status(200).json(createApiResponse(healthStatus, 'Lambda health check completed'));
+
+    } catch (error) {
+        console.error('Lambda health check error:', error);
+        res.status(500).json(createApiError(error));
+    }
+};
+```
+
+### Update `server/index.js` to include Lambda routes:
+
+Add these imports at the top:
+```javascript
+import { 
+    handleInventoryAnalytics, 
+    handleTransactionAnalytics, 
+    handleAutoReorder, 
+    handleTransactionProcessor,
+    handleLambdaHealthCheck
+} from "./routes/lambda-integration.js";
+```
+
+Add these routes inside the `createServer()` function:
+```javascript
+// Lambda-powered API routes
+app.get("/api/analytics/inventory", handleInventoryAnalytics);
+app.get("/api/analytics/transactions", handleTransactionAnalytics);
+app.post("/api/reorder/auto", handleAutoReorder);
+app.post("/api/transactions/process", handleTransactionProcessor);
+app.get("/api/lambda/health", handleLambdaHealthCheck);
+
+// Real-time analytics endpoint
+app.get("/api/analytics/realtime", async (req, res) => {
+    try {
+        const result = await handleTransactionAnalytics({
+            ...req,
+            query: { ...req.query, action: 'realTimeMetrics' }
+        }, res);
+    } catch (error) {
+        res.status(500).json(createApiError(error));
+    }
+});
+```
+
+---
+
+## 4. Environment Variables Configuration
+
+### For Lambda Functions:
+Set these environment variables in each Lambda function configuration:
+
+```bash
+RDS_HOSTNAME=your-rds-endpoint.region.rds.amazonaws.com
+RDS_USERNAME=admin
+RDS_PASSWORD=your-secure-password
+RDS_DB_NAME=invencare
+RDS_PORT=3306
+AWS_REGION=us-east-1
+NODE_ENV=production
+```
+
+### For Backend Application:
+Add these to your `.env` file:
+
+```bash
+# AWS Configuration
+AWS_REGION=us-east-1
+AWS_ACCESS_KEY_ID=your-access-key-id
+AWS_SECRET_ACCESS_KEY=your-secret-access-key
+
+# Lambda Function Names
+LAMBDA_INVENTORY_ANALYTICS_FUNCTION=invencare-inventory-analytics
+LAMBDA_TRANSACTION_ANALYTICS_FUNCTION=invencare-transaction-analytics
+LAMBDA_AUTO_REORDER_FUNCTION=invencare-auto-reorder
+LAMBDA_TRANSACTION_PROCESSOR_FUNCTION=invencare-transaction-processor
+
+# RDS Configuration (same as Lambda)
+RDS_HOSTNAME=your-rds-endpoint.region.rds.amazonaws.com
+RDS_USERNAME=admin
+RDS_PASSWORD=your-secure-password
+RDS_DB_NAME=invencare
+RDS_PORT=3306
+```
+
+---
+
+## 5. Testing & Deployment
+
+### Step 1: Deploy Lambda Functions
+
+1. **Package each Lambda function:**
+```bash
+# For each function directory
+npm install mysql2
+zip -r function-name.zip index.js node_modules/
+```
+
+2. **Upload to AWS Lambda:**
+   - Use AWS CLI, AWS Console, or AWS SAM for deployment
+   - Set the runtime to Node.js 18.x or later
+   - Set timeout to 30 seconds (or appropriate for your needs)
+   - Assign the IAM role created earlier
+
+3. **Configure VPC (if RDS is in VPC):**
+   - Add Lambda functions to the same VPC as RDS
+   - Ensure security groups allow communication
+
+### Step 2: Test Lambda Functions
+
+Test each function with sample payloads:
+
+```bash
+# Test Inventory Analytics
+aws lambda invoke \
+  --function-name invencare-inventory-analytics \
+  --payload '{"action":"generateInventoryReport","dateRange":"30days"}' \
+  response.json
+
+# Test Transaction Analytics
+aws lambda invoke \
+  --function-name invencare-transaction-analytics \
+  --payload '{"action":"generateTransactionReport","dateRange":"month"}' \
+  response.json
+
+# Test Auto Reorder
+aws lambda invoke \
+  --function-name invencare-auto-reorder \
+  --payload '{"forceReorder":false}' \
+  response.json
+
+# Test Transaction Processor
+aws lambda invoke \
+  --function-name invencare-transaction-processor \
+  --payload '{"transaction":{"productId":1,"storeId":"store_001","type":"sale","quantity":1,"unitPrice":5.99,"totalAmount":5.99},"userId":"test-user","userRole":"employee","userName":"Test User"}' \
+  response.json
+```
+
+### Step 3: Test Backend Integration
+
+1. **Install required dependencies:**
+```bash
+npm install @aws-sdk/client-lambda
+```
+
+2. **Test API endpoints:**
+```bash
+# Test inventory analytics
+curl "http://localhost:8080/api/analytics/inventory?action=generateInventoryReport"
+
+# Test transaction analytics
+curl "http://localhost:8080/api/analytics/transactions?action=salesAnalysis"
+
+# Test auto reorder
+curl -X POST "http://localhost:8080/api/reorder/auto" \
+  -H "Content-Type: application/json" \
+  -d '{"storeId":"store_001","forceReorder":false}'
+
+# Test transaction processing
+curl -X POST "http://localhost:8080/api/transactions/process" \
+  -H "Content-Type: application/json" \
+  -H "x-user-id: test-user" \
+  -H "x-user-role: employee" \
+  -d '{"transaction":{"productId":1,"storeId":"store_001","type":"sale","quantity":1,"unitPrice":5.99,"totalAmount":5.99},"userId":"test-user","userRole":"employee","userName":"Test User"}'
+
+# Test Lambda health check
+curl "http://localhost:8080/api/lambda/health"
+```
+
+---
+
+## 6. Troubleshooting
+
+### Common Issues:
+
+1. **Lambda Timeout Errors:**
+   - Increase function timeout (max 15 minutes)
+   - Optimize database queries
+   - Use connection pooling
+
+2. **RDS Connection Issues:**
+   - Check VPC configuration
+   - Verify security group rules
+   - Ensure Lambda has RDS access permissions
+
+3. **Permission Errors:**
+   - Verify IAM role has necessary policies
+   - Check Lambda execution role
+   - Ensure RDS resource-based policies
+
+4. **Database Connection Pool Exhaustion:**
+   - Implement connection pooling in Lambda
+   - Use RDS Proxy for better connection management
+   - Monitor concurrent executions
+
+### Performance Optimization:
+
+1. **Database Optimization:**
+   - Add appropriate indexes on frequently queried columns
+   - Use read replicas for analytics queries
+   - Implement query result caching
+
+2. **Lambda Optimization:**
+   - Use provisioned concurrency for consistent performance
+   - Optimize memory allocation based on function requirements
+   - Implement connection reuse across invocations
+
+3. **Monitoring:**
+   - Set up CloudWatch alarms for Lambda errors and duration
+   - Monitor RDS performance metrics
+   - Implement application-level logging
+
+### Security Best Practices:
+
+1. **Use AWS Secrets Manager** for database credentials
+2. **Enable VPC Flow Logs** for network monitoring
+3. **Implement proper error handling** to avoid exposing sensitive information
+4. **Use least privilege principle** for IAM roles
+5. **Enable AWS CloudTrail** for audit logging
+
+---
+
+## 7. Additional Database Schema
+
+Add this table for reorder requests tracking:
+
+```sql
+CREATE TABLE reorder_requests (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    product_id INT NOT NULL,
+    store_id VARCHAR(50) NOT NULL,
+    requested_quantity INT NOT NULL,
+    estimated_cost DECIMAL(10, 2) NOT NULL,
+    supplier_id INT,
+    priority ENUM('LOW', 'MEDIUM', 'HIGH', 'CRITICAL') DEFAULT 'MEDIUM',
+    sales_velocity DECIMAL(8, 2) DEFAULT 0.00,
+    days_until_stockout INT,
+    status ENUM('pending', 'approved', 'ordered', 'received', 'cancelled') DEFAULT 'pending',
+    notes TEXT,
+    approved_by VARCHAR(255),
+    approved_at TIMESTAMP NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+    FOREIGN KEY (store_id) REFERENCES stores(id) ON DELETE CASCADE,
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL,
+    INDEX idx_product_store (product_id, store_id),
+    INDEX idx_status (status),
+    INDEX idx_priority (priority),
+    INDEX idx_created_at (created_at)
+);
+```
+
+This comprehensive setup provides a robust, scalable Lambda-based analytics and transaction processing system for your inventory management application.

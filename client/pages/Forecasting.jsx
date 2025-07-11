@@ -319,9 +319,9 @@ export default function Forecasting() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {dashboardData.modelPerformance.map((model) => (
+                    {dashboardData.modelPerformance.map((model, index) => (
                       <div
-                        key={model.model_name}
+                        key={`${model.model_name}-${model.model_type}-${index}`}
                         className="flex items-center justify-between p-4 border rounded-lg"
                       >
                         <div className="flex-1">

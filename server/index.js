@@ -38,18 +38,18 @@ const pool = mysql.createPool({
 });
 //
 // RDS Health Check Function
-// const checkRDSConnection = async () => {
-//   try {
-//     const connection = await pool.getConnection();
-//     await connection.ping();
-//     connection.release();
-//     console.log('RDS connection successful');
-//     return true;
-//   } catch (error) {
-//     console.error('RDS connection failed:', error);
-//     return false;
-//   }
-// };
+const checkRDSConnection = async () => {
+  try {
+    const connection = await pool.getConnection();
+    await connection.ping();
+    connection.release();
+    console.log("RDS connection successful");
+    return true;
+  } catch (error) {
+    console.error("RDS connection failed:", error);
+    return false;
+  }
+};
 
 export function createServer() {
   const app = express();

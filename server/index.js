@@ -100,7 +100,8 @@ export function createServer() {
           p.id,
           p.name as productName,
           p.sku as productId,
-          p.category,
+          COALESCE(c.name, p.category) as category,
+          p.category_id,
           p.quantity as stock,
           p.price,
           s.name as storeName,
@@ -115,10 +116,13 @@ export function createServer() {
           sup.name as supplier,
           DATE_FORMAT(p.updated_at, '%Y-%m-%d') as lastUpdated,
           p.barcode,
-          p.location_in_store as location
+          p.location_in_store as location,
+          p.description,
+          p.maximum_stock as maximumStock
         FROM products p
         JOIN stores s ON p.store_id = s.id
         LEFT JOIN suppliers sup ON p.supplier_id = sup.id
+        LEFT JOIN categories c ON p.category_id = c.id
         WHERE p.status = 'active'
         ORDER BY p.updated_at DESC`,
       );

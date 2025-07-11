@@ -147,7 +147,11 @@ export const seedSampleData = async () => {
         );
       }
 
-      // Insert sample transactions
+      // Insert sample transactions with current dates
+      const today = new Date();
+      const yesterday = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+      const twoDaysAgo = new Date(today.getTime() - 2 * 24 * 60 * 60 * 1000);
+
       const transactions = [
         [
           "SALE-2024-001",
@@ -165,6 +169,7 @@ export const seedSampleData = async () => {
           "emp_001",
           "John Smith",
           "Regular customer purchase",
+          today.toISOString(),
         ],
         [
           "SALE-2024-002",

@@ -1,1127 +1,1310 @@
-# AWS SageMaker Setup Guide for AI Demand Forecasting
+# AWS SageMaker Setup for Product Analytics
 
-This guide provides comprehensive instructions for setting up AWS SageMaker for AI-powered demand forecasting in the inventory management system.
+This document provides comprehensive setup instructions and code for implementing machine learning models using Amazon SageMaker for demand forecasting and product analytics.
 
 ## Overview
 
-AWS SageMaker will power the AI forecasting features including:
+The SageMaker integration includes:
 
-- Demand prediction models (LSTM, ARIMA, Prophet)
-- Inventory optimization recommendations
-- Market trend analysis
-- Customer behavior analytics
+1. **LSTM Deep Learning Model** - For time series demand forecasting
+2. **ARIMA Seasonal Model** - For trend analysis and seasonal patterns
+3. **Prophet Forecasting Model** - For business time series with holiday effects
+4. **Product Classification Model** - For ABC analysis and inventory optimization
+5. **Real-time Inference Endpoints** - For live predictions
 
-## Prerequisites
+## 1. LSTM Demand Forecasting Model
 
-- AWS CLI installed and configured
-- AWS account with SageMaker permissions
-- Python 3.8+ for local development
-- Jupyter notebooks (optional for model development)
-
-## Part 1: SageMaker Setup
-
-### 1. Create SageMaker Execution Role
-
-```bash
-# Create trust policy for SageMaker
-cat > sagemaker-trust-policy.json << EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Principal": {
-        "Service": "sagemaker.amazonaws.com"
-      },
-      "Action": "sts:AssumeRole"
-    }
-  ]
-}
-EOF
-
-# Create SageMaker execution role
-aws iam create-role \
-  --role-name InvenCareSageMakerRole \
-  --assume-role-policy-document file://sagemaker-trust-policy.json
-
-# Attach SageMaker execution policy
-aws iam attach-role-policy \
-  --role-name InvenCareSageMakerRole \
-  --policy-arn arn:aws:iam::aws:policy/AmazonSageMakerFullAccess
-
-# Create custom policy for S3 and RDS access
-cat > sagemaker-custom-policy.json << EOF
-{
-  "Version": "2012-10-17",
-  "Statement": [
-    {
-      "Effect": "Allow",
-      "Action": [
-        "s3:GetObject",
-        "s3:PutObject",
-        "s3:DeleteObject",
-        "s3:ListBucket"
-      ],
-      "Resource": [
-        "arn:aws:s3:::invencare-sagemaker-*",
-        "arn:aws:s3:::invencare-sagemaker-*/*"
-      ]
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "rds:DescribeDBInstances",
-        "rds-data:ExecuteStatement",
-        "rds-data:BatchExecuteStatement"
-      ],
-      "Resource": "*"
-    },
-    {
-      "Effect": "Allow",
-      "Action": [
-        "lambda:InvokeFunction"
-      ],
-      "Resource": "arn:aws:lambda:*:*:function:invencare-*"
-    }
-  ]
-}
-EOF
-
-aws iam create-policy \
-  --policy-name InvenCareSageMakerCustomPolicy \
-  --policy-document file://sagemaker-custom-policy.json
-
-aws iam attach-role-policy \
-  --role-name InvenCareSageMakerRole \
-  --policy-arn arn:aws:iam::YOUR_ACCOUNT_ID:policy/InvenCareSageMakerCustomPolicy
-```
-
-### 2. Create S3 Bucket for SageMaker
-
-```bash
-# Create S3 bucket for SageMaker artifacts
-aws s3 mb s3://invencare-sagemaker-artifacts-$(date +%s)
-
-# Enable versioning
-aws s3api put-bucket-versioning \
-  --bucket invencare-sagemaker-artifacts-$(date +%s) \
-  --versioning-configuration Status=Enabled
-
-# Create folder structure
-aws s3api put-object \
-  --bucket invencare-sagemaker-artifacts-$(date +%s) \
-  --key data/raw/
-
-aws s3api put-object \
-  --bucket invencare-sagemaker-artifacts-$(date +%s) \
-  --key data/processed/
-
-aws s3api put-object \
-  --bucket invencare-sagemaker-artifacts-$(date +%s) \
-  --key models/
-
-aws s3api put-object \
-  --bucket invencare-sagemaker-artifacts-$(date +%s) \
-  --key endpoints/
-```
-
-## Part 2: Demand Forecasting Models
-
-### 1. LSTM Model for Demand Forecasting
-
-Create `lstm_demand_forecaster.py`:
+### Training Script
 
 ```python
-import numpy as np
-import pandas as pd
-import boto3
+# lstm_demand_forecasting.py
+import argparse
+import os
 import json
-import joblib
-from sklearn.preprocessing import MinMaxScaler
-from sklearn.metrics import mean_absolute_error, mean_squared_error
+import pandas as pd
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import LSTM, Dense, Dropout
 from tensorflow.keras.optimizers import Adam
+from sklearn.preprocessing import MinMaxScaler
+from sklearn.metrics import mean_absolute_error, mean_squared_error
+import joblib
+
+def create_sequences(data, seq_length):
+    """Create sequences for LSTM training"""
+    X, y = [], []
+    for i in range(seq_length, len(data)):
+        X.append(data[i-seq_length:i])
+        y.append(data[i])
+    return np.array(X), np.array(y)
+
+def build_lstm_model(seq_length, n_features=1):
+    """Build LSTM model architecture"""
+    model = Sequential([
+        LSTM(50, return_sequences=True, input_shape=(seq_length, n_features)),
+        Dropout(0.2),
+        LSTM(50, return_sequences=True),
+        Dropout(0.2),
+        LSTM(50),
+        Dropout(0.2),
+        Dense(25),
+        Dense(1)
+    ])
+
+    model.compile(optimizer=Adam(learning_rate=0.001),
+                  loss='mean_squared_error',
+                  metrics=['mae'])
+    return model
+
+def prepare_data(data_path, seq_length=30):
+    """Prepare training data from transaction records"""
+
+    # Load transaction data
+    df = pd.read_csv(data_path)
+
+    # Aggregate daily sales by product and store
+    daily_sales = df.groupby(['product_id', 'store_id', pd.Grouper(key='created_at', freq='D')])['quantity'].sum().reset_index()
+
+    # Prepare sequences for each product-store combination
+    all_sequences_X = []
+    all_sequences_y = []
+    product_store_mapping = []
+
+    for (product_id, store_id), group in daily_sales.groupby(['product_id', 'store_id']):
+        if len(group) < seq_length + 10:  # Need minimum data
+            continue
+
+        # Fill missing dates with 0
+        group = group.set_index('created_at').resample('D')['quantity'].sum().fillna(0)
+
+        # Normalize data
+        scaler = MinMaxScaler()
+        scaled_data = scaler.fit_transform(group.values.reshape(-1, 1))
+
+        # Create sequences
+        X, y = create_sequences(scaled_data.flatten(), seq_length)
+
+        if len(X) > 0:
+            all_sequences_X.append(X)
+            all_sequences_y.append(y)
+            product_store_mapping.extend([(product_id, store_id)] * len(X))
+
+    return (np.vstack(all_sequences_X),
+            np.hstack(all_sequences_y),
+            product_store_mapping)
+
+def train_model(args):
+    """Main training function"""
+
+    # Load and prepare data
+    X, y, mapping = prepare_data(args.data_path, args.seq_length)
+
+    # Split data
+    train_size = int(0.8 * len(X))
+    X_train, X_test = X[:train_size], X[train_size:]
+    y_train, y_test = y[:train_size], y[train_size:]
+
+    # Reshape for LSTM
+    X_train = X_train.reshape((X_train.shape[0], X_train.shape[1], 1))
+    X_test = X_test.reshape((X_test.shape[0], X_test.shape[1], 1))
+
+    # Build and train model
+    model = build_lstm_model(args.seq_length)
+
+    # Callbacks
+    early_stopping = tf.keras.callbacks.EarlyStopping(
+        monitor='val_loss', patience=10, restore_best_weights=True
+    )
+
+    reduce_lr = tf.keras.callbacks.ReduceLROnPlateau(
+        monitor='val_loss', factor=0.2, patience=5, min_lr=0.0001
+    )
+
+    # Train model
+    history = model.fit(
+        X_train, y_train,
+        epochs=args.epochs,
+        batch_size=args.batch_size,
+        validation_data=(X_test, y_test),
+        callbacks=[early_stopping, reduce_lr],
+        verbose=1
+    )
+
+    # Evaluate model
+    train_predictions = model.predict(X_train)
+    test_predictions = model.predict(X_test)
+
+    train_mae = mean_absolute_error(y_train, train_predictions)
+    test_mae = mean_absolute_error(y_test, test_predictions)
+    train_rmse = np.sqrt(mean_squared_error(y_train, train_predictions))
+    test_rmse = np.sqrt(mean_squared_error(y_test, test_predictions))
+
+    # Save model
+    model.save(os.path.join(args.model_dir, 'lstm_demand_model.h5'))
+
+    # Save scaler and metadata
+    metadata = {
+        'seq_length': args.seq_length,
+        'train_mae': float(train_mae),
+        'test_mae': float(test_mae),
+        'train_rmse': float(train_rmse),
+        'test_rmse': float(test_rmse),
+        'model_type': 'lstm_demand_forecasting',
+        'version': '1.0'
+    }
+
+    with open(os.path.join(args.model_dir, 'model_metadata.json'), 'w') as f:
+        json.dump(metadata, f)
+
+    print(f"Model training completed!")
+    print(f"Train MAE: {train_mae:.4f}, Test MAE: {test_mae:.4f}")
+    print(f"Train RMSE: {train_rmse:.4f}, Test RMSE: {test_rmse:.4f}")
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data-path', type=str, default='/opt/ml/input/data/training/transactions.csv')
+    parser.add_argument('--model-dir', type=str, default='/opt/ml/model')
+    parser.add_argument('--seq-length', type=int, default=30)
+    parser.add_argument('--epochs', type=int, default=100)
+    parser.add_argument('--batch-size', type=int, default=32)
+
+    args = parser.parse_args()
+    train_model(args)
+```
+
+### Inference Script
+
+```python
+# lstm_inference.py
+import json
+import numpy as np
+import tensorflow as tf
+from sklearn.preprocessing import MinMaxScaler
 import os
-import tarfile
-from datetime import datetime, timedelta
 
-class LSTMDemandForecaster:
-    def __init__(self):
+class LSTMDemandPredictor:
+    """LSTM model for demand prediction"""
+
+    def __init__(self, model_dir):
+        self.model_dir = model_dir
         self.model = None
-        self.scaler = MinMaxScaler()
-        self.sequence_length = 30  # Use 30 days of history
-        self.is_fitted = False
+        self.metadata = None
+        self.load_model()
 
-    def prepare_data(self, data, target_column='demand'):
-        """Prepare time series data for LSTM"""
-        # Sort by date
-        data = data.sort_values('date')
+    def load_model(self):
+        """Load trained model and metadata"""
+        model_path = os.path.join(self.model_dir, 'lstm_demand_model.h5')
+        metadata_path = os.path.join(self.model_dir, 'model_metadata.json')
 
-        # Create features from date
-        data['year'] = pd.to_datetime(data['date']).dt.year
-        data['month'] = pd.to_datetime(data['date']).dt.month
-        data['day'] = pd.to_datetime(data['date']).dt.day
-        data['dayofweek'] = pd.to_datetime(data['date']).dt.dayofweek
-        data['quarter'] = pd.to_datetime(data['date']).dt.quarter
+        self.model = tf.keras.models.load_model(model_path)
 
-        # Scale the features
-        feature_columns = [target_column, 'year', 'month', 'day', 'dayofweek', 'quarter']
-        scaled_data = self.scaler.fit_transform(data[feature_columns])
+        with open(metadata_path, 'r') as f:
+            self.metadata = json.load(f)
 
-        return scaled_data
+    def predict(self, historical_data, forecast_days=30):
+        """Generate demand forecast"""
 
-    def create_sequences(self, data, target_index=0):
-        """Create sequences for LSTM training"""
-        X, y = [], []
+        # Prepare input data
+        scaler = MinMaxScaler()
+        scaled_data = scaler.fit_transform(np.array(historical_data).reshape(-1, 1))
 
-        for i in range(self.sequence_length, len(data)):
-            X.append(data[i-self.sequence_length:i])
-            y.append(data[i, target_index])  # Target is the demand column
+        seq_length = self.metadata['seq_length']
 
-        return np.array(X), np.array(y)
+        # Take last sequence
+        if len(scaled_data) < seq_length:
+            # Pad with zeros if insufficient data
+            padded_data = np.zeros(seq_length)
+            padded_data[-len(scaled_data):] = scaled_data.flatten()
+            last_sequence = padded_data
+        else:
+            last_sequence = scaled_data[-seq_length:].flatten()
 
-    def build_model(self, input_shape):
-        """Build LSTM model architecture"""
-        model = Sequential([
-            LSTM(50, return_sequences=True, input_shape=input_shape),
-            Dropout(0.2),
-            LSTM(50, return_sequences=True),
-            Dropout(0.2),
-            LSTM(50),
-            Dropout(0.2),
-            Dense(25),
-            Dense(1)
-        ])
-
-        model.compile(
-            optimizer=Adam(learning_rate=0.001),
-            loss='mse',
-            metrics=['mae']
-        )
-
-        return model
-
-    def train(self, data, epochs=50, batch_size=32, validation_split=0.2):
-        """Train the LSTM model"""
-        # Prepare data
-        scaled_data = self.prepare_data(data)
-        X, y = self.create_sequences(scaled_data)
-
-        # Build model
-        self.model = self.build_model((X.shape[1], X.shape[2]))
-
-        # Train model
-        history = self.model.fit(
-            X, y,
-            epochs=epochs,
-            batch_size=batch_size,
-            validation_split=validation_split,
-            verbose=1,
-            shuffle=False
-        )
-
-        self.is_fitted = True
-        return history
-
-    def predict(self, data, days_ahead=7):
-        """Make predictions for future demand"""
-        if not self.is_fitted:
-            raise ValueError("Model must be trained before making predictions")
-
-        # Prepare the most recent data
-        scaled_data = self.prepare_data(data)
-
-        # Get the last sequence
-        last_sequence = scaled_data[-self.sequence_length:]
-
+        # Generate predictions
         predictions = []
         current_sequence = last_sequence.copy()
 
-        for _ in range(days_ahead):
-            # Reshape for prediction
-            pred_input = current_sequence.reshape(1, self.sequence_length, -1)
+        for _ in range(forecast_days):
+            # Reshape for model input
+            model_input = current_sequence.reshape(1, seq_length, 1)
 
-            # Make prediction
-            pred = self.model.predict(pred_input, verbose=0)
-            predictions.append(pred[0, 0])
+            # Predict next value
+            next_pred = self.model.predict(model_input)[0][0]
+            predictions.append(next_pred)
 
             # Update sequence for next prediction
-            # Create new row with prediction and estimated features
-            next_row = current_sequence[-1].copy()
-            next_row[0] = pred[0, 0]  # Update demand prediction
-
-            # Update sequence
-            current_sequence = np.vstack([current_sequence[1:], next_row])
+            current_sequence = np.append(current_sequence[1:], next_pred)
 
         # Inverse transform predictions
-        pred_array = np.array(predictions).reshape(-1, 1)
-        dummy_features = np.zeros((len(predictions), scaled_data.shape[1] - 1))
-        pred_with_features = np.hstack([pred_array, dummy_features])
+        predictions_array = np.array(predictions).reshape(-1, 1)
+        actual_predictions = scaler.inverse_transform(predictions_array).flatten()
 
-        inverse_predictions = self.scaler.inverse_transform(pred_with_features)[:, 0]
+        # Ensure non-negative predictions
+        actual_predictions = np.maximum(actual_predictions, 0)
 
-        return inverse_predictions
-
-    def calculate_confidence_intervals(self, predictions, confidence_level=0.95):
-        """Calculate confidence intervals for predictions"""
-        # Simple confidence interval based on historical variance
-        std = np.std(predictions)
-        margin = 1.96 * std  # 95% confidence interval
-
-        lower_bound = predictions - margin
-        upper_bound = predictions + margin
-
-        return lower_bound, upper_bound
+        return {
+            'predictions': actual_predictions.tolist(),
+            'confidence_lower': (actual_predictions * 0.8).tolist(),
+            'confidence_upper': (actual_predictions * 1.2).tolist(),
+            'model_accuracy': self.metadata.get('test_mae', 0.0),
+            'forecast_horizon': forecast_days
+        }
 
 def model_fn(model_dir):
-    """Load model for SageMaker inference"""
-    model = LSTMDemandForecaster()
-    model.model = tf.keras.models.load_model(os.path.join(model_dir, 'lstm_model'))
-    model.scaler = joblib.load(os.path.join(model_dir, 'scaler.pkl'))
-    model.is_fitted = True
-    return model
+    """SageMaker model loading function"""
+    return LSTMDemandPredictor(model_dir)
 
 def input_fn(request_body, request_content_type):
-    """Parse input data for SageMaker inference"""
+    """Parse input data"""
     if request_content_type == 'application/json':
         input_data = json.loads(request_body)
-        return pd.DataFrame(input_data['data'])
+        return input_data
     else:
         raise ValueError(f"Unsupported content type: {request_content_type}")
 
 def predict_fn(input_data, model):
-    """Make predictions using the loaded model"""
-    days_ahead = input_data.get('days_ahead', 7)
+    """Generate predictions"""
+    historical_data = input_data.get('historical_data', [])
+    forecast_days = input_data.get('forecast_days', 30)
 
-    # Make predictions
-    predictions = model.predict(input_data, days_ahead=days_ahead)
-
-    # Calculate confidence intervals
-    lower_bound, upper_bound = model.calculate_confidence_intervals(predictions)
-
-    # Generate future dates
-    last_date = pd.to_datetime(input_data['date'].max())
-    future_dates = [last_date + timedelta(days=i+1) for i in range(days_ahead)]
-
-    results = []
-    for i, date in enumerate(future_dates):
-        results.append({
-            'date': date.isoformat(),
-            'predicted_demand': float(predictions[i]),
-            'confidence_lower': float(lower_bound[i]),
-            'confidence_upper': float(upper_bound[i]),
-            'model_name': 'LSTM_Demand_Forecaster_v2',
-            'model_accuracy': 0.89  # This should be calculated from validation
-        })
-
-    return results
+    return model.predict(historical_data, forecast_days)
 
 def output_fn(prediction, content_type):
-    """Format output for SageMaker inference"""
+    """Format output"""
     if content_type == 'application/json':
         return json.dumps(prediction)
     else:
         raise ValueError(f"Unsupported content type: {content_type}")
-
-# Training script for SageMaker
-if __name__ == '__main__':
-    import argparse
-    import pymysql
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--model-dir', type=str, default=os.environ.get('SM_MODEL_DIR'))
-    parser.add_argument('--train', type=str, default=os.environ.get('SM_CHANNEL_TRAINING'))
-    parser.add_argument('--epochs', type=int, default=50)
-    parser.add_argument('--batch-size', type=int, default=32)
-
-    args = parser.parse_args()
-
-    # Load training data from RDS or S3
-    # This is a simplified example - in practice, you'd load from your data source
-
-    # Create and train model
-    model = LSTMDemandForecaster()
-
-    # Sample training data structure
-    # In practice, this would come from your RDS database
-    sample_data = pd.DataFrame({
-        'date': pd.date_range('2023-01-01', periods=365, freq='D'),
-        'demand': np.random.randint(10, 100, 365) +
-                 10 * np.sin(np.arange(365) * 2 * np.pi / 30) +  # Monthly pattern
-                 5 * np.sin(np.arange(365) * 2 * np.pi / 7)     # Weekly pattern
-    })
-
-    # Train the model
-    history = model.train(sample_data, epochs=args.epochs, batch_size=args.batch_size)
-
-    # Save model and scaler
-    model.model.save(os.path.join(args.model_dir, 'lstm_model'))
-    joblib.dump(model.scaler, os.path.join(args.model_dir, 'scaler.pkl'))
-
-    print("Model training completed and saved!")
 ```
 
-### 2. ARIMA Model for Seasonal Forecasting
+## 2. ARIMA Seasonal Model
 
-Create `arima_forecaster.py`:
+### Training Script
 
 ```python
-import numpy as np
-import pandas as pd
+# arima_seasonal_model.py
+import argparse
+import os
 import json
-import joblib
+import pandas as pd
+import numpy as np
 from statsmodels.tsa.arima.model import ARIMA
 from statsmodels.tsa.seasonal import seasonal_decompose
+from statsmodels.graphics.tsaplots import plot_acf, plot_pacf
 from statsmodels.tsa.stattools import adfuller
+import pickle
 import warnings
 warnings.filterwarnings('ignore')
 
-class ARIMAForecaster:
-    def __init__(self, order=(1, 1, 1), seasonal_order=(1, 1, 1, 12)):
-        self.order = order
-        self.seasonal_order = seasonal_order
+class ARIMASeasonalForecaster:
+    """ARIMA model with seasonal decomposition"""
+
+    def __init__(self):
         self.model = None
-        self.is_fitted = False
+        self.seasonal_components = None
+        self.order = (1, 1, 1)  # Default ARIMA order
+        self.seasonal_order = (1, 1, 1, 7)  # Weekly seasonality
 
-    def check_stationarity(self, timeseries):
-        """Check if time series is stationary"""
-        result = adfuller(timeseries.dropna())
-        return result[1] <= 0.05  # p-value threshold
-
-    def difference_series(self, series, periods=1):
-        """Apply differencing to make series stationary"""
-        return series.diff(periods=periods).dropna()
-
-    def auto_arima_order(self, series, max_p=3, max_d=2, max_q=3):
-        """Automatically determine best ARIMA order"""
+    def find_optimal_order(self, data, max_p=3, max_d=2, max_q=3):
+        """Find optimal ARIMA order using AIC"""
         best_aic = float('inf')
-        best_order = None
+        best_order = (1, 1, 1)
 
         for p in range(max_p + 1):
             for d in range(max_d + 1):
                 for q in range(max_q + 1):
                     try:
-                        model = ARIMA(series, order=(p, d, q))
+                        model = ARIMA(data, order=(p, d, q))
                         fitted_model = model.fit()
-
                         if fitted_model.aic < best_aic:
                             best_aic = fitted_model.aic
                             best_order = (p, d, q)
                     except:
                         continue
 
-        return best_order or (1, 1, 1)
+        return best_order
 
-    def train(self, data, target_column='demand', auto_order=True):
+    def decompose_series(self, data, period=7):
+        """Perform seasonal decomposition"""
+        if len(data) < 2 * period:
+            return None
+
+        try:
+            decomposition = seasonal_decompose(
+                data, model='additive', period=period, extrapolate_trend='freq'
+            )
+            return {
+                'trend': decomposition.trend.dropna(),
+                'seasonal': decomposition.seasonal.dropna(),
+                'residual': decomposition.resid.dropna()
+            }
+        except:
+            return None
+
+    def fit(self, data):
         """Train ARIMA model"""
-        # Prepare time series
-        ts = data.set_index('date')[target_column]
-        ts.index = pd.to_datetime(ts.index)
-        ts = ts.asfreq('D')  # Daily frequency
 
-        # Determine optimal order if auto_order is True
-        if auto_order:
-            self.order = self.auto_arima_order(ts)
+        # Ensure data is pandas Series
+        if isinstance(data, list):
+            data = pd.Series(data)
+
+        # Remove any NaN values
+        data = data.dropna()
+
+        if len(data) < 30:  # Need minimum data
+            raise ValueError("Insufficient data for ARIMA modeling")
+
+        # Seasonal decomposition
+        self.seasonal_components = self.decompose_series(data)
+
+        # Find optimal order
+        self.order = self.find_optimal_order(data)
 
         # Fit ARIMA model
-        self.model = ARIMA(ts, order=self.order)
-        self.fitted_model = self.model.fit()
-        self.is_fitted = True
+        try:
+            self.model = ARIMA(data, order=self.order)
+            self.fitted_model = self.model.fit()
+        except Exception as e:
+            # Fallback to simple ARIMA(1,1,1)
+            self.order = (1, 1, 1)
+            self.model = ARIMA(data, order=self.order)
+            self.fitted_model = self.model.fit()
 
-        return self.fitted_model
+    def forecast(self, steps=30):
+        """Generate forecasts"""
+        if self.fitted_model is None:
+            raise ValueError("Model must be fitted before forecasting")
 
-    def predict(self, steps=7, confidence_level=0.95):
-        """Make predictions"""
-        if not self.is_fitted:
-            raise ValueError("Model must be trained before making predictions")
+        # Generate forecasts
+        forecast_result = self.fitted_model.forecast(steps=steps)
+        conf_int = self.fitted_model.get_forecast(steps=steps).conf_int()
 
-        # Make forecast
-        forecast = self.fitted_model.forecast(steps=steps)
-        conf_int = self.fitted_model.get_forecast(steps=steps).conf_int(alpha=1-confidence_level)
+        # Apply seasonal pattern if available
+        if self.seasonal_components is not None:
+            seasonal_pattern = self.seasonal_components['seasonal']
+            seasonal_length = len(seasonal_pattern)
 
-        return forecast, conf_int
+            # Repeat seasonal pattern for forecast period
+            seasonal_forecast = []
+            for i in range(steps):
+                seasonal_index = i % seasonal_length
+                seasonal_forecast.append(seasonal_pattern.iloc[seasonal_index])
 
-    def get_model_metrics(self):
-        """Get model performance metrics"""
-        if not self.is_fitted:
-            return {}
+            # Add seasonal component to forecast
+            forecast_result = forecast_result + np.array(seasonal_forecast)
+            conf_int.iloc[:, 0] = conf_int.iloc[:, 0] + np.array(seasonal_forecast)
+            conf_int.iloc[:, 1] = conf_int.iloc[:, 1] + np.array(seasonal_forecast)
+
+        # Ensure non-negative forecasts
+        forecast_result = np.maximum(forecast_result, 0)
+        conf_int.iloc[:, 0] = np.maximum(conf_int.iloc[:, 0], 0)
 
         return {
-            'aic': self.fitted_model.aic,
-            'bic': self.fitted_model.bic,
-            'order': self.order,
-            'seasonal_order': self.seasonal_order
+            'forecast': forecast_result.tolist(),
+            'lower_confidence': conf_int.iloc[:, 0].tolist(),
+            'upper_confidence': conf_int.iloc[:, 1].tolist(),
+            'model_order': self.order,
+            'aic': self.fitted_model.aic
         }
 
-def model_fn(model_dir):
-    """Load model for SageMaker inference"""
-    model = joblib.load(os.path.join(model_dir, 'arima_model.pkl'))
-    return model
+def prepare_training_data(data_path):
+    """Prepare data for ARIMA training"""
+    df = pd.read_csv(data_path)
 
-def input_fn(request_body, request_content_type):
-    """Parse input data"""
-    if request_content_type == 'application/json':
-        input_data = json.loads(request_body)
-        return input_data
-    else:
-        raise ValueError(f"Unsupported content type: {request_content_type}")
+    # Aggregate daily sales
+    df['created_at'] = pd.to_datetime(df['created_at'])
+    daily_sales = df.groupby([
+        'product_id', 'store_id', pd.Grouper(key='created_at', freq='D')
+    ])['quantity'].sum().reset_index()
 
-def predict_fn(input_data, model):
-    """Make predictions"""
-    steps = input_data.get('steps', 7)
-    confidence_level = input_data.get('confidence_level', 0.95)
+    return daily_sales
 
-    # Make predictions
-    forecast, conf_int = model.predict(steps=steps, confidence_level=confidence_level)
+def train_arima_models(args):
+    """Train ARIMA models for each product-store combination"""
 
-    # Generate future dates
-    last_date = pd.to_datetime(input_data.get('last_date', '2024-01-01'))
-    future_dates = [last_date + pd.Timedelta(days=i+1) for i in range(steps)]
+    daily_sales = prepare_training_data(args.data_path)
 
-    results = []
-    for i, date in enumerate(future_dates):
-        results.append({
-            'date': date.isoformat(),
-            'predicted_demand': float(forecast.iloc[i]),
-            'confidence_lower': float(conf_int.iloc[i, 0]),
-            'confidence_upper': float(conf_int.iloc[i, 1]),
-            'model_name': 'ARIMA_Seasonal_v1',
-            'model_accuracy': 0.82
-        })
+    models = {}
+    model_metadata = []
 
-    return results
+    for (product_id, store_id), group in daily_sales.groupby(['product_id', 'store_id']):
+        if len(group) < 50:  # Need sufficient data
+            continue
 
-# Training script
+        print(f"Training ARIMA model for Product {product_id}, Store {store_id}")
+
+        # Prepare time series
+        ts_data = group.set_index('created_at')['quantity']
+        ts_data = ts_data.asfreq('D', fill_value=0)  # Fill missing dates
+
+        try:
+            # Create and train model
+            forecaster = ARIMASeasonalForecaster()
+            forecaster.fit(ts_data)
+
+            # Test forecast
+            test_forecast = forecaster.forecast(steps=7)
+
+            # Save model
+            model_key = f"{product_id}_{store_id}"
+            models[model_key] = forecaster
+
+            model_metadata.append({
+                'product_id': product_id,
+                'store_id': store_id,
+                'model_key': model_key,
+                'arima_order': forecaster.order,
+                'aic': forecaster.fitted_model.aic,
+                'training_data_points': len(ts_data),
+                'has_seasonal_component': forecaster.seasonal_components is not None
+            })
+
+        except Exception as e:
+            print(f"Failed to train model for {product_id}-{store_id}: {str(e)}")
+            continue
+
+    # Save all models
+    models_path = os.path.join(args.model_dir, 'arima_models.pkl')
+    with open(models_path, 'wb') as f:
+        pickle.dump(models, f)
+
+    # Save metadata
+    metadata_path = os.path.join(args.model_dir, 'arima_metadata.json')
+    with open(metadata_path, 'w') as f:
+        json.dump({
+            'models': model_metadata,
+            'model_type': 'arima_seasonal',
+            'version': '1.0',
+            'total_models': len(models)
+        }, f)
+
+    print(f"Training completed. {len(models)} models saved.")
+
 if __name__ == '__main__':
-    import argparse
-
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model-dir', type=str, default=os.environ.get('SM_MODEL_DIR'))
+    parser.add_argument('--data-path', type=str, default='/opt/ml/input/data/training/transactions.csv')
+    parser.add_argument('--model-dir', type=str, default='/opt/ml/model')
+
     args = parser.parse_args()
-
-    # Sample data for training
-    dates = pd.date_range('2023-01-01', periods=365, freq='D')
-    demand = (
-        50 +
-        10 * np.sin(np.arange(365) * 2 * np.pi / 30) +  # Monthly seasonality
-        5 * np.sin(np.arange(365) * 2 * np.pi / 7) +    # Weekly seasonality
-        np.random.normal(0, 5, 365)                     # Random noise
-    )
-
-    data = pd.DataFrame({
-        'date': dates,
-        'demand': demand
-    })
-
-    # Train model
-    model = ARIMAForecaster()
-    model.train(data)
-
-    # Save model
-    joblib.dump(model, os.path.join(args.model_dir, 'arima_model.pkl'))
-
-    print("ARIMA model training completed!")
+    train_arima_models(args)
 ```
 
-### 3. Prophet Model for Trend Analysis
+## 3. Prophet Forecasting Model
 
-Create `prophet_forecaster.py`:
+### Training Script
 
 ```python
+# prophet_forecasting.py
+import argparse
+import os
+import json
 import pandas as pd
 import numpy as np
-import json
-import joblib
 from prophet import Prophet
-from prophet.diagnostics import cross_validation, performance_metrics
-import os
+import pickle
+import warnings
+warnings.filterwarnings('ignore')
 
-class ProphetForecaster:
-    def __init__(self, seasonality_mode='multiplicative', yearly_seasonality=True,
-                 weekly_seasonality=True, daily_seasonality=False):
-        self.model = Prophet(
-            seasonality_mode=seasonality_mode,
-            yearly_seasonality=yearly_seasonality,
-            weekly_seasonality=weekly_seasonality,
-            daily_seasonality=daily_seasonality
-        )
-        self.is_fitted = False
+class ProphetDemandForecaster:
+    """Prophet model for demand forecasting with holidays and events"""
 
-    def prepare_data(self, data, target_column='demand', date_column='date'):
-        """Prepare data for Prophet (requires 'ds' and 'y' columns)"""
-        prophet_data = data[[date_column, target_column]].copy()
-        prophet_data.columns = ['ds', 'y']
-        prophet_data['ds'] = pd.to_datetime(prophet_data['ds'])
-        return prophet_data
+    def __init__(self):
+        self.model = None
+        self.product_id = None
+        self.store_id = None
 
-    def add_custom_seasonalities(self):
-        """Add custom seasonalities for retail business"""
-        # Monthly seasonality
-        self.model.add_seasonality(name='monthly', period=30.5, fourier_order=5)
-
-        # Quarterly seasonality
-        self.model.add_seasonality(name='quarterly', period=91.25, fourier_order=3)
-
-    def add_holidays(self):
-        """Add holiday effects"""
-        # Sample holidays - customize based on your business
+    def create_holidays_df(self):
+        """Create holidays dataframe for Prophet"""
         holidays = pd.DataFrame({
-            'holiday': ['New Year', 'Christmas', 'Thanksgiving', 'Black Friday'],
-            'ds': pd.to_datetime(['2023-01-01', '2023-12-25', '2023-11-23', '2023-11-24']),
-            'lower_window': [-1, -2, -1, 0],
-            'upper_window': [1, 1, 1, 1],
+            'holiday': ['New Year', 'Valentine', 'Easter', 'Mother Day', 'Memorial Day',
+                       'Independence Day', 'Labor Day', 'Halloween', 'Thanksgiving', 'Christmas'],
+            'ds': pd.to_datetime(['2023-01-01', '2023-02-14', '2023-04-09', '2023-05-14', '2023-05-29',
+                                '2023-07-04', '2023-09-04', '2023-10-31', '2023-11-23', '2023-12-25']),
+            'lower_window': [-1, -1, -1, -1, -1, -1, -1, -1, -2, -2],
+            'upper_window': [1, 1, 1, 1, 1, 1, 1, 1, 1, 2]
         })
 
-        # Repeat for multiple years
-        years = [2022, 2023, 2024, 2025]
-        all_holidays = []
+        # Add Black Friday and Cyber Monday
+        holidays = pd.concat([
+            holidays,
+            pd.DataFrame({
+                'holiday': ['Black Friday', 'Cyber Monday'],
+                'ds': pd.to_datetime(['2023-11-24', '2023-11-27']),
+                'lower_window': [-1, 0],
+                'upper_window': [1, 1]
+            })
+        ])
 
-        for year in years:
-            year_holidays = holidays.copy()
-            year_holidays['ds'] = year_holidays['ds'].apply(
-                lambda x: x.replace(year=year)
-            )
-            all_holidays.append(year_holidays)
+        return holidays
 
-        return pd.concat(all_holidays, ignore_index=True)
+    def add_promotional_events(self, df):
+        """Add promotional events as regressors"""
+        # Simulate promotional events (in reality, this would come from your data)
+        df['promotion'] = 0
 
-    def train(self, data, target_column='demand', date_column='date'):
+        # Add some random promotional events
+        promotional_dates = pd.date_range('2023-01-01', '2024-01-01', freq='MS')
+        for date in promotional_dates:
+            if np.random.random() > 0.7:  # 30% chance of promotion
+                promo_start = date + pd.Timedelta(days=np.random.randint(0, 28))
+                promo_end = promo_start + pd.Timedelta(days=np.random.randint(1, 7))
+                df.loc[(df['ds'] >= promo_start) & (df['ds'] <= promo_end), 'promotion'] = 1
+
+        return df
+
+    def fit(self, data, product_id, store_id):
         """Train Prophet model"""
-        # Prepare data
-        prophet_data = self.prepare_data(data, target_column, date_column)
+        self.product_id = product_id
+        self.store_id = store_id
 
-        # Add custom seasonalities and holidays
-        self.add_custom_seasonalities()
-        holidays = self.add_holidays()
-        self.model.holidays = holidays
+        # Prepare data for Prophet
+        prophet_data = data.reset_index()
+        prophet_data.columns = ['ds', 'y']
+
+        # Add promotional events
+        prophet_data = self.add_promotional_events(prophet_data)
+
+        # Create holidays
+        holidays = self.create_holidays_df()
+
+        # Initialize Prophet model
+        self.model = Prophet(
+            holidays=holidays,
+            yearly_seasonality=True,
+            weekly_seasonality=True,
+            daily_seasonality=False,
+            changepoint_prior_scale=0.05,
+            seasonality_prior_scale=10,
+            holidays_prior_scale=10,
+            interval_width=0.8
+        )
+
+        # Add promotional regressor
+        self.model.add_regressor('promotion')
 
         # Fit model
         self.model.fit(prophet_data)
-        self.is_fitted = True
 
-        return self.model
-
-    def predict(self, periods=7, freq='D'):
-        """Make predictions"""
-        if not self.is_fitted:
-            raise ValueError("Model must be trained before making predictions")
+    def forecast(self, periods=30):
+        """Generate forecasts"""
+        if self.model is None:
+            raise ValueError("Model must be fitted before forecasting")
 
         # Create future dataframe
-        future = self.model.make_future_dataframe(periods=periods, freq=freq)
+        future = self.model.make_future_dataframe(periods=periods)
 
-        # Make forecast
+        # Add future promotional events (simplified - assume no future promotions)
+        future['promotion'] = 0
+
+        # Generate forecast
         forecast = self.model.predict(future)
 
-        # Return only future predictions
-        return forecast.tail(periods)
+        # Extract relevant columns
+        forecast_values = forecast['yhat'].tail(periods).values
+        lower_bound = forecast['yhat_lower'].tail(periods).values
+        upper_bound = forecast['yhat_upper'].tail(periods).values
 
-    def cross_validate_model(self, data, initial='365 days', period='30 days', horizon='7 days'):
-        """Perform cross-validation"""
-        prophet_data = self.prepare_data(data)
+        # Ensure non-negative forecasts
+        forecast_values = np.maximum(forecast_values, 0)
+        lower_bound = np.maximum(lower_bound, 0)
 
-        cv_results = cross_validation(
-            self.model,
-            initial=initial,
-            period=period,
-            horizon=horizon
-        )
-
-        metrics = performance_metrics(cv_results)
-        return cv_results, metrics
-
-    def get_model_metrics(self):
-        """Get model performance metrics"""
-        if not self.is_fitted:
-            return {}
-
-        # This would typically include validation metrics
         return {
-            'model_name': 'Prophet_Trend_v1',
-            'seasonality_mode': self.model.seasonality_mode,
-            'has_yearly_seasonality': self.model.yearly_seasonality,
-            'has_weekly_seasonality': self.model.weekly_seasonality
+            'forecast': forecast_values.tolist(),
+            'lower_confidence': lower_bound.tolist(),
+            'upper_confidence': upper_bound.tolist(),
+            'trend': forecast['trend'].tail(periods).values.tolist(),
+            'seasonal': forecast['seasonal'].tail(periods).values.tolist(),
+            'holidays': forecast['holidays'].tail(periods).values.tolist()
         }
 
-def model_fn(model_dir):
-    """Load model for SageMaker inference"""
-    model = joblib.load(os.path.join(model_dir, 'prophet_model.pkl'))
-    return model
+def prepare_prophet_data(data_path):
+    """Prepare data for Prophet training"""
+    df = pd.read_csv(data_path)
 
-def input_fn(request_body, request_content_type):
-    """Parse input data"""
-    if request_content_type == 'application/json':
-        input_data = json.loads(request_body)
-        return input_data
-    else:
-        raise ValueError(f"Unsupported content type: {request_content_type}")
+    # Aggregate daily sales
+    df['created_at'] = pd.to_datetime(df['created_at'])
+    daily_sales = df.groupby([
+        'product_id', 'store_id', pd.Grouper(key='created_at', freq='D')
+    ])['quantity'].sum().reset_index()
 
-def predict_fn(input_data, model):
-    """Make predictions"""
-    periods = input_data.get('periods', 7)
-    freq = input_data.get('freq', 'D')
+    return daily_sales
 
-    # Make predictions
-    forecast = model.predict(periods=periods, freq=freq)
+def train_prophet_models(args):
+    """Train Prophet models for each product-store combination"""
 
-    results = []
-    for _, row in forecast.iterrows():
-        results.append({
-            'date': row['ds'].isoformat(),
-            'predicted_demand': float(row['yhat']),
-            'confidence_lower': float(row['yhat_lower']),
-            'confidence_upper': float(row['yhat_upper']),
-            'trend': float(row['trend']),
-            'seasonal': float(row.get('seasonal', 0)),
-            'model_name': 'Prophet_Trend_v1',
-            'model_accuracy': 0.75
-        })
+    daily_sales = prepare_prophet_data(args.data_path)
 
-    return results
+    models = {}
+    model_metadata = []
 
-# Training script
-if __name__ == '__main__':
-    import argparse
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('--model-dir', type=str, default=os.environ.get('SM_MODEL_DIR'))
-    args = parser.parse_args()
-
-    # Sample data
-    dates = pd.date_range('2022-01-01', '2023-12-31', freq='D')
-
-    # Create realistic demand pattern
-    trend = np.linspace(40, 60, len(dates))
-    yearly_season = 10 * np.sin(2 * np.pi * np.arange(len(dates)) / 365.25)
-    weekly_season = 5 * np.sin(2 * np.pi * np.arange(len(dates)) / 7)
-    noise = np.random.normal(0, 3, len(dates))
-
-    demand = trend + yearly_season + weekly_season + noise
-
-    data = pd.DataFrame({
-        'date': dates,
-        'demand': demand
-    })
-
-    # Train model
-    model = ProphetForecaster()
-    model.train(data)
-
-    # Save model
-    joblib.dump(model, os.path.join(args.model_dir, 'prophet_model.pkl'))
-
-    print("Prophet model training completed!")
-```
-
-## Part 3: SageMaker Training Jobs
-
-### 1. Create Training Script
-
-Create `train.py`:
-
-```python
-import argparse
-import os
-import pandas as pd
-import numpy as np
-import boto3
-import pymysql
-from lstm_demand_forecaster import LSTMDemandForecaster
-from arima_forecaster import ARIMAForecaster
-from prophet_forecaster import ProphetForecaster
-
-def get_training_data():
-    """Fetch training data from RDS"""
-    connection = pymysql.connect(
-        host=os.environ.get('RDS_HOSTNAME'),
-        user=os.environ.get('RDS_USERNAME'),
-        password=os.environ.get('RDS_PASSWORD'),
-        database=os.environ.get('RDS_DB_NAME'),
-        port=int(os.environ.get('RDS_PORT', 3306))
-    )
-
-    # Query to get historical transaction data for demand forecasting
-    query = """
-    SELECT
-        DATE(created_at) as date,
-        product_id,
-        store_id,
-        SUM(CASE WHEN transaction_type = 'sale' THEN ABS(quantity) ELSE 0 END) as demand,
-        product_name,
-        category,
-        store_name
-    FROM inventory_transactions
-    WHERE transaction_type IN ('sale', 'restock', 'adjustment')
-        AND created_at >= DATE_SUB(NOW(), INTERVAL 2 YEAR)
-    GROUP BY DATE(created_at), product_id, store_id
-    ORDER BY date, product_id, store_id
-    """
-
-    data = pd.read_sql(query, connection)
-    connection.close()
-
-    return data
-
-def train_models(data, model_dir):
-    """Train all forecasting models"""
-    results = {}
-
-    # Group by product and store for individual model training
-    for (product_id, store_id), group_data in data.groupby(['product_id', 'store_id']):
-        if len(group_data) < 60:  # Need at least 60 days of data
+    for (product_id, store_id), group in daily_sales.groupby(['product_id', 'store_id']):
+        if len(group) < 60:  # Need at least 2 months of data
             continue
 
-        model_key = f"{product_id}_{store_id}"
+        print(f"Training Prophet model for Product {product_id}, Store {store_id}")
+
+        # Prepare time series
+        ts_data = group.set_index('created_at')['quantity']
+        ts_data = ts_data.asfreq('D', fill_value=0)  # Fill missing dates
 
         try:
-            # Train LSTM model
-            lstm_model = LSTMDemandForecaster()
-            lstm_model.train(group_data)
+            # Create and train model
+            forecaster = ProphetDemandForecaster()
+            forecaster.fit(ts_data, product_id, store_id)
 
-            # Train ARIMA model
-            arima_model = ARIMAForecaster()
-            arima_model.train(group_data)
+            # Test forecast
+            test_forecast = forecaster.forecast(periods=7)
 
-            # Train Prophet model
-            prophet_model = ProphetForecaster()
-            prophet_model.train(group_data)
+            # Save model
+            model_key = f"{product_id}_{store_id}"
+            models[model_key] = forecaster
 
-            # Save models
-            lstm_model.model.save(os.path.join(model_dir, f'lstm_{model_key}'))
-            joblib.dump(lstm_model.scaler, os.path.join(model_dir, f'lstm_scaler_{model_key}.pkl'))
-            joblib.dump(arima_model, os.path.join(model_dir, f'arima_{model_key}.pkl'))
-            joblib.dump(prophet_model, os.path.join(model_dir, f'prophet_{model_key}.pkl'))
-
-            results[model_key] = {
+            model_metadata.append({
                 'product_id': product_id,
                 'store_id': store_id,
-                'data_points': len(group_data),
-                'models_trained': ['lstm', 'arima', 'prophet']
-            }
+                'model_key': model_key,
+                'training_data_points': len(ts_data),
+                'has_yearly_seasonality': True,
+                'has_weekly_seasonality': True,
+                'includes_holidays': True
+            })
 
         except Exception as e:
-            print(f"Error training models for {model_key}: {str(e)}")
+            print(f"Failed to train Prophet model for {product_id}-{store_id}: {str(e)}")
             continue
 
-    return results
+    # Save all models
+    models_path = os.path.join(args.model_dir, 'prophet_models.pkl')
+    with open(models_path, 'wb') as f:
+        pickle.dump(models, f)
+
+    # Save metadata
+    metadata_path = os.path.join(args.model_dir, 'prophet_metadata.json')
+    with open(metadata_path, 'w') as f:
+        json.dump({
+            'models': model_metadata,
+            'model_type': 'prophet_forecasting',
+            'version': '1.0',
+            'total_models': len(models)
+        }, f)
+
+    print(f"Prophet training completed. {len(models)} models saved.")
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
-    parser.add_argument('--model-dir', type=str, default=os.environ.get('SM_MODEL_DIR'))
-    parser.add_argument('--model-type', type=str, default='all', choices=['lstm', 'arima', 'prophet', 'all'])
+    parser.add_argument('--data-path', type=str, default='/opt/ml/input/data/training/transactions.csv')
+    parser.add_argument('--model-dir', type=str, default='/opt/ml/model')
 
     args = parser.parse_args()
-
-    # Get training data
-    print("Fetching training data...")
-    data = get_training_data()
-
-    # Train models
-    print("Training models...")
-    results = train_models(data, args.model_dir)
-
-    # Save training results
-    import json
-    with open(os.path.join(args.model_dir, 'training_results.json'), 'w') as f:
-        json.dump(results, f, indent=2)
-
-    print(f"Training completed! Trained models for {len(results)} product-store combinations")
+    train_prophet_models(args)
 ```
 
-### 2. Submit Training Job
+## 4. Product Classification Model (ABC Analysis)
 
-```bash
-# Create training job configuration
-aws sagemaker create-training-job \
-  --training-job-name "invencare-demand-forecasting-$(date +%Y%m%d%H%M%S)" \
-  --algorithm-specification '{
-    "TrainingImage": "763104351884.dkr.ecr.us-east-1.amazonaws.com/tensorflow-training:2.11-cpu-py39",
-    "TrainingInputMode": "File"
-  }' \
-  --role-arn "arn:aws:iam::YOUR_ACCOUNT_ID:role/InvenCareSageMakerRole" \
-  --input-data-config '[
-    {
-      "ChannelName": "training",
-      "DataSource": {
-        "S3DataSource": {
-          "S3DataType": "S3Prefix",
-          "S3Uri": "s3://invencare-sagemaker-artifacts/data/processed/",
-          "S3DataDistributionType": "FullyReplicated"
-        }
-      },
-      "ContentType": "text/csv",
-      "CompressionType": "None"
-    }
-  ]' \
-  --output-data-config '{
-    "S3OutputPath": "s3://invencare-sagemaker-artifacts/models/"
-  }' \
-  --resource-config '{
-    "InstanceType": "ml.m5.large",
-    "InstanceCount": 1,
-    "VolumeSizeInGB": 10
-  }' \
-  --stopping-condition '{
-    "MaxRuntimeInSeconds": 3600
-  }' \
-  --environment '{
-    "RDS_HOSTNAME": "your-rds-endpoint.amazonaws.com",
-    "RDS_USERNAME": "admin",
-    "RDS_PASSWORD": "YourPassword",
-    "RDS_DB_NAME": "invencare",
-    "RDS_PORT": "3306"
-  }'
-```
-
-## Part 4: Model Deployment
-
-### 1. Create Model Endpoint
-
-```bash
-# Create model
-aws sagemaker create-model \
-  --model-name "invencare-forecasting-model" \
-  --primary-container '{
-    "Image": "763104351884.dkr.ecr.us-east-1.amazonaws.com/tensorflow-inference:2.11-cpu",
-    "ModelDataUrl": "s3://invencare-sagemaker-artifacts/models/model.tar.gz",
-    "Environment": {
-      "SAGEMAKER_PROGRAM": "inference.py",
-      "SAGEMAKER_SUBMIT_DIRECTORY": "/opt/ml/code"
-    }
-  }' \
-  --execution-role-arn "arn:aws:iam::YOUR_ACCOUNT_ID:role/InvenCareSageMakerRole"
-
-# Create endpoint configuration
-aws sagemaker create-endpoint-config \
-  --endpoint-config-name "invencare-forecasting-config" \
-  --production-variants '[
-    {
-      "VariantName": "AllTraffic",
-      "ModelName": "invencare-forecasting-model",
-      "InitialInstanceCount": 1,
-      "InstanceType": "ml.t2.medium",
-      "InitialVariantWeight": 1
-    }
-  ]'
-
-# Create endpoint
-aws sagemaker create-endpoint \
-  --endpoint-name "invencare-forecasting-endpoint" \
-  --endpoint-config-name "invencare-forecasting-config"
-```
-
-### 2. Test Endpoint
+### Training Script
 
 ```python
+# product_classification.py
+import argparse
+import os
+import json
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import classification_report, accuracy_score
+import joblib
+
+class ProductClassifier:
+    """ML model for product ABC classification and inventory optimization"""
+
+    def __init__(self):
+        self.model = None
+        self.scaler = StandardScaler()
+        self.label_encoder = LabelEncoder()
+        self.feature_names = None
+
+    def create_features(self, df):
+        """Create features for product classification"""
+
+        # Aggregate product metrics
+        features = df.groupby(['product_id', 'store_id']).agg({
+            'quantity': ['sum', 'mean', 'std', 'count'],
+            'total_amount': ['sum', 'mean', 'std'],
+            'unit_price': ['mean', 'std']
+        }).round(4)
+
+        # Flatten column names
+        features.columns = ['_'.join(col).strip() for col in features.columns]
+
+        # Add additional derived features
+        features['revenue_per_transaction'] = features['total_amount_sum'] / features['quantity_count']
+        features['price_volatility'] = features['unit_price_std'] / features['unit_price_mean']
+        features['demand_volatility'] = features['quantity_std'] / features['quantity_mean']
+        features['total_transactions'] = features['quantity_count']
+
+        # Handle infinite and NaN values
+        features = features.replace([np.inf, -np.inf], 0).fillna(0)
+
+        return features
+
+    def create_abc_labels(self, features):
+        """Create ABC classification labels based on revenue"""
+
+        revenue = features['total_amount_sum']
+
+        # Calculate percentiles for ABC classification
+        a_threshold = revenue.quantile(0.8)  # Top 20% = A
+        b_threshold = revenue.quantile(0.5)  # Next 30% = B, Bottom 50% = C
+
+        labels = []
+        for rev in revenue:
+            if rev >= a_threshold:
+                labels.append('A')
+            elif rev >= b_threshold:
+                labels.append('B')
+            else:
+                labels.append('C')
+
+        return np.array(labels)
+
+    def fit(self, training_data_path):
+        """Train the classification model"""
+
+        # Load transaction data
+        df = pd.read_csv(training_data_path)
+
+        # Create features
+        features = self.create_features(df)
+
+        # Create ABC labels
+        labels = self.create_abc_labels(features)
+
+        # Store feature names
+        self.feature_names = features.columns.tolist()
+
+        # Prepare training data
+        X = features.values
+        y = labels
+
+        # Encode labels
+        y_encoded = self.label_encoder.fit_transform(y)
+
+        # Scale features
+        X_scaled = self.scaler.fit_transform(X)
+
+        # Split data
+        X_train, X_test, y_train, y_test = train_test_split(
+            X_scaled, y_encoded, test_size=0.2, random_state=42, stratify=y_encoded
+        )
+
+        # Train Random Forest model
+        self.model = RandomForestClassifier(
+            n_estimators=100,
+            max_depth=10,
+            min_samples_split=5,
+            min_samples_leaf=2,
+            random_state=42
+        )
+
+        self.model.fit(X_train, y_train)
+
+        # Evaluate model
+        train_accuracy = accuracy_score(y_train, self.model.predict(X_train))
+        test_accuracy = accuracy_score(y_test, self.model.predict(X_test))
+
+        # Feature importance
+        feature_importance = dict(zip(
+            self.feature_names,
+            self.model.feature_importances_
+        ))
+
+        return {
+            'train_accuracy': train_accuracy,
+            'test_accuracy': test_accuracy,
+            'feature_importance': feature_importance,
+            'class_distribution': dict(zip(*np.unique(y, return_counts=True)))
+        }
+
+    def predict(self, product_features):
+        """Predict ABC classification for products"""
+        if self.model is None:
+            raise ValueError("Model must be trained before prediction")
+
+        # Ensure features are in correct order
+        if isinstance(product_features, dict):
+            feature_values = [product_features.get(name, 0) for name in self.feature_names]
+        else:
+            feature_values = product_features
+
+        # Scale features
+        X_scaled = self.scaler.transform([feature_values])
+
+        # Predict
+        prediction = self.model.predict(X_scaled)[0]
+        probabilities = self.model.predict_proba(X_scaled)[0]
+
+        # Decode prediction
+        abc_class = self.label_encoder.inverse_transform([prediction])[0]
+
+        # Create probability dictionary
+        class_probabilities = dict(zip(
+            self.label_encoder.classes_,
+            probabilities
+        ))
+
+        return {
+            'abc_classification': abc_class,
+            'confidence': float(max(probabilities)),
+            'class_probabilities': {k: float(v) for k, v in class_probabilities.items()}
+        }
+
+def train_classification_model(args):
+    """Main training function"""
+
+    # Create classifier
+    classifier = ProductClassifier()
+
+    # Train model
+    print("Training product classification model...")
+    results = classifier.fit(args.data_path)
+
+    print(f"Training completed!")
+    print(f"Train Accuracy: {results['train_accuracy']:.4f}")
+    print(f"Test Accuracy: {results['test_accuracy']:.4f}")
+    print(f"Class Distribution: {results['class_distribution']}")
+
+    # Save model components
+    model_path = os.path.join(args.model_dir, 'product_classifier.pkl')
+    scaler_path = os.path.join(args.model_dir, 'feature_scaler.pkl')
+    encoder_path = os.path.join(args.model_dir, 'label_encoder.pkl')
+
+    joblib.dump(classifier.model, model_path)
+    joblib.dump(classifier.scaler, scaler_path)
+    joblib.dump(classifier.label_encoder, encoder_path)
+
+    # Save metadata
+    metadata = {
+        'model_type': 'product_abc_classification',
+        'version': '1.0',
+        'feature_names': classifier.feature_names,
+        'train_accuracy': results['train_accuracy'],
+        'test_accuracy': results['test_accuracy'],
+        'feature_importance': results['feature_importance'],
+        'class_distribution': results['class_distribution']
+    }
+
+    metadata_path = os.path.join(args.model_dir, 'classification_metadata.json')
+    with open(metadata_path, 'w') as f:
+        json.dump(metadata, f, indent=2)
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--data-path', type=str, default='/opt/ml/input/data/training/transactions.csv')
+    parser.add_argument('--model-dir', type=str, default='/opt/ml/model')
+
+    args = parser.parse_args()
+    train_classification_model(args)
+```
+
+## 5. SageMaker Training Jobs Configuration
+
+### CloudFormation Template
+
+```yaml
+# sagemaker-training-stack.yaml
+AWSTemplateFormatVersion: "2010-09-09"
+Description: "SageMaker Training Infrastructure for Product Analytics"
+
+Parameters:
+  RoleArn:
+    Type: String
+    Description: SageMaker execution role ARN
+
+  S3BucketName:
+    Type: String
+    Description: S3 bucket for training data and models
+
+Resources:
+  # LSTM Training Job
+  LSTMTrainingJob:
+    Type: AWS::SageMaker::TrainingJob
+    Properties:
+      TrainingJobName: !Sub "lstm-demand-forecasting-${AWS::StackName}"
+      RoleArn: !Ref RoleArn
+      AlgorithmSpecification:
+        TrainingInputMode: File
+        TrainingImage: 763104351884.dkr.ecr.us-east-1.amazonaws.com/tensorflow-training:2.8-gpu-py39-cu112-ubuntu20.04-sagemaker
+      InputDataConfig:
+        - ChannelName: training
+          DataSource:
+            S3DataSource:
+              S3DataType: S3Prefix
+              S3Uri: !Sub "s3://${S3BucketName}/training-data/"
+              S3DataDistributionType: FullyReplicated
+          ContentType: text/csv
+          CompressionType: None
+          RecordWrapperType: None
+      OutputDataConfig:
+        S3OutputPath: !Sub "s3://${S3BucketName}/models/lstm/"
+      ResourceConfig:
+        InstanceType: ml.p3.2xlarge
+        InstanceCount: 1
+        VolumeSizeInGB: 30
+      StoppingCondition:
+        MaxRuntimeInSeconds: 86400
+      HyperParameters:
+        epochs: "100"
+        batch-size: "32"
+        seq-length: "30"
+
+  # ARIMA Training Job
+  ARIMATrainingJob:
+    Type: AWS::SageMaker::TrainingJob
+    Properties:
+      TrainingJobName: !Sub "arima-seasonal-${AWS::StackName}"
+      RoleArn: !Ref RoleArn
+      AlgorithmSpecification:
+        TrainingInputMode: File
+        TrainingImage: 683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-scikit-learn:0.23-1-cpu-py3
+      InputDataConfig:
+        - ChannelName: training
+          DataSource:
+            S3DataSource:
+              S3DataType: S3Prefix
+              S3Uri: !Sub "s3://${S3BucketName}/training-data/"
+              S3DataDistributionType: FullyReplicated
+          ContentType: text/csv
+      OutputDataConfig:
+        S3OutputPath: !Sub "s3://${S3BucketName}/models/arima/"
+      ResourceConfig:
+        InstanceType: ml.m5.xlarge
+        InstanceCount: 1
+        VolumeSizeInGB: 20
+      StoppingCondition:
+        MaxRuntimeInSeconds: 3600
+
+  # Prophet Training Job
+  ProphetTrainingJob:
+    Type: AWS::SageMaker::TrainingJob
+    Properties:
+      TrainingJobName: !Sub "prophet-forecasting-${AWS::StackName}"
+      RoleArn: !Ref RoleArn
+      AlgorithmSpecification:
+        TrainingInputMode: File
+        TrainingImage: 683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-scikit-learn:0.23-1-cpu-py3
+      InputDataConfig:
+        - ChannelName: training
+          DataSource:
+            S3DataSource:
+              S3DataType: S3Prefix
+              S3Uri: !Sub "s3://${S3BucketName}/training-data/"
+      OutputDataConfig:
+        S3OutputPath: !Sub "s3://${S3BucketName}/models/prophet/"
+      ResourceConfig:
+        InstanceType: ml.m5.xlarge
+        InstanceCount: 1
+        VolumeSizeInGB: 20
+      StoppingCondition:
+        MaxRuntimeInSeconds: 3600
+
+Outputs:
+  LSTMTrainingJobName:
+    Value: !Ref LSTMTrainingJob
+
+  ARIMATrainingJobName:
+    Value: !Ref ARIMATrainingJob
+
+  ProphetTrainingJobName:
+    Value: !Ref ProphetTrainingJob
+```
+
+## 6. Real-time Inference Endpoints
+
+### Deployment Script
+
+```python
+# deploy_endpoints.py
 import boto3
 import json
+from datetime import datetime
 
-# Initialize SageMaker runtime client
-runtime = boto3.client('sagemaker-runtime', region_name='us-east-1')
+class SageMakerDeployment:
+    """Deploy SageMaker models to real-time endpoints"""
 
-# Prepare test data
-test_data = {
-    "data": [
-        {"date": "2024-01-01", "demand": 45},
-        {"date": "2024-01-02", "demand": 52},
-        {"date": "2024-01-03", "demand": 38},
-        # ... more historical data
-    ],
-    "days_ahead": 7,
-    "model_type": "lstm"
-}
+    def __init__(self, region='us-east-1'):
+        self.sagemaker = boto3.client('sagemaker', region_name=region)
+        self.region = region
 
-# Invoke endpoint
-response = runtime.invoke_endpoint(
-    EndpointName='invencare-forecasting-endpoint',
-    ContentType='application/json',
-    Body=json.dumps(test_data)
-)
+    def create_model(self, model_name, model_data_url, image_uri, role_arn):
+        """Create SageMaker model"""
 
-# Parse response
-result = json.loads(response['Body'].read().decode())
-print(json.dumps(result, indent=2))
+        try:
+            response = self.sagemaker.create_model(
+                ModelName=model_name,
+                PrimaryContainer={
+                    'Image': image_uri,
+                    'ModelDataUrl': model_data_url
+                },
+                ExecutionRoleArn=role_arn
+            )
+            print(f"Model {model_name} created successfully")
+            return response
+        except Exception as e:
+            print(f"Error creating model {model_name}: {str(e)}")
+            return None
+
+    def create_endpoint_config(self, config_name, model_name, instance_type='ml.m5.large'):
+        """Create endpoint configuration"""
+
+        try:
+            response = self.sagemaker.create_endpoint_config(
+                EndpointConfigName=config_name,
+                ProductionVariants=[
+                    {
+                        'VariantName': 'AllTraffic',
+                        'ModelName': model_name,
+                        'InitialInstanceCount': 1,
+                        'InstanceType': instance_type,
+                        'InitialVariantWeight': 1
+                    }
+                ]
+            )
+            print(f"Endpoint config {config_name} created successfully")
+            return response
+        except Exception as e:
+            print(f"Error creating endpoint config {config_name}: {str(e)}")
+            return None
+
+    def create_endpoint(self, endpoint_name, config_name):
+        """Create real-time endpoint"""
+
+        try:
+            response = self.sagemaker.create_endpoint(
+                EndpointName=endpoint_name,
+                EndpointConfigName=config_name
+            )
+            print(f"Endpoint {endpoint_name} creation started")
+            return response
+        except Exception as e:
+            print(f"Error creating endpoint {endpoint_name}: {str(e)}")
+            return None
+
+    def deploy_all_models(self, models_config, role_arn):
+        """Deploy all analytics models"""
+
+        deployed_endpoints = []
+
+        for model_config in models_config:
+            model_name = model_config['model_name']
+            endpoint_name = model_config['endpoint_name']
+
+            # Create model
+            model_response = self.create_model(
+                model_name=model_name,
+                model_data_url=model_config['model_data_url'],
+                image_uri=model_config['image_uri'],
+                role_arn=role_arn
+            )
+
+            if model_response:
+                # Create endpoint config
+                config_name = f"{model_name}-config"
+                config_response = self.create_endpoint_config(
+                    config_name=config_name,
+                    model_name=model_name,
+                    instance_type=model_config.get('instance_type', 'ml.m5.large')
+                )
+
+                if config_response:
+                    # Create endpoint
+                    endpoint_response = self.create_endpoint(
+                        endpoint_name=endpoint_name,
+                        config_name=config_name
+                    )
+
+                    if endpoint_response:
+                        deployed_endpoints.append({
+                            'model_name': model_name,
+                            'endpoint_name': endpoint_name,
+                            'endpoint_arn': endpoint_response['EndpointArn']
+                        })
+
+        return deployed_endpoints
+
+# Deployment configuration
+def get_deployment_config():
+    """Get deployment configuration for all models"""
+
+    timestamp = datetime.now().strftime("%Y%m%d%H%M")
+
+    return [
+        {
+            'model_name': f'lstm-demand-model-{timestamp}',
+            'endpoint_name': f'lstm-demand-forecasting-{timestamp}',
+            'model_data_url': 's3://your-bucket/models/lstm/model.tar.gz',
+            'image_uri': '763104351884.dkr.ecr.us-east-1.amazonaws.com/tensorflow-inference:2.8-cpu',
+            'instance_type': 'ml.m5.large'
+        },
+        {
+            'model_name': f'arima-seasonal-model-{timestamp}',
+            'endpoint_name': f'arima-seasonal-forecasting-{timestamp}',
+            'model_data_url': 's3://your-bucket/models/arima/model.tar.gz',
+            'image_uri': '683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-scikit-learn:0.23-1-cpu-py3',
+            'instance_type': 'ml.t2.medium'
+        },
+        {
+            'model_name': f'prophet-forecasting-model-{timestamp}',
+            'endpoint_name': f'prophet-forecasting-{timestamp}',
+            'model_data_url': 's3://your-bucket/models/prophet/model.tar.gz',
+            'image_uri': '683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-scikit-learn:0.23-1-cpu-py3',
+            'instance_type': 'ml.t2.medium'
+        },
+        {
+            'model_name': f'product-classifier-model-{timestamp}',
+            'endpoint_name': f'product-abc-classification-{timestamp}',
+            'model_data_url': 's3://your-bucket/models/classification/model.tar.gz',
+            'image_uri': '683313688378.dkr.ecr.us-east-1.amazonaws.com/sagemaker-scikit-learn:0.23-1-cpu-py3',
+            'instance_type': 'ml.t2.medium'
+        }
+    ]
+
+if __name__ == '__main__':
+    # Initialize deployment
+    deployer = SageMakerDeployment()
+
+    # Get configuration
+    models_config = get_deployment_config()
+
+    # Replace with your actual execution role ARN
+    role_arn = "arn:aws:iam::YOUR_ACCOUNT:role/SageMakerExecutionRole"
+
+    # Deploy all models
+    deployed_endpoints = deployer.deploy_all_models(models_config, role_arn)
+
+    print("\nDeployment Summary:")
+    for endpoint in deployed_endpoints:
+        print(f"- {endpoint['model_name']}: {endpoint['endpoint_name']}")
 ```
 
-## Part 5: Integration with Lambda
+## 7. Integration with Lambda Functions
 
-### 1. Update Lambda Function for SageMaker Integration
-
-```javascript
-// In your Lambda function
-import AWS from "aws-sdk";
-
-const sagemaker = new AWS.SageMakerRuntime({
-  region: process.env.AWS_REGION || "us-east-1",
-});
-
-export const invokeForecastingModel = async (inputData) => {
-  const params = {
-    EndpointName: "invencare-forecasting-endpoint",
-    ContentType: "application/json",
-    Body: JSON.stringify(inputData),
-  };
-
-  try {
-    const response = await sagemaker.invokeEndpoint(params).promise();
-    const predictions = JSON.parse(response.Body.toString());
-    return predictions;
-  } catch (error) {
-    console.error("SageMaker inference error:", error);
-    throw error;
-  }
-};
-
-// Updated Lambda handler with SageMaker integration
-export const handler = async (event, context) => {
-  try {
-    const {
-      action = "generateDemandForecast",
-      productId,
-      storeId,
-      days = 7,
-      modelType = "lstm",
-    } = event;
-
-    if (action === "generateDemandForecast") {
-      // Get historical data from RDS
-      const historicalData = await getHistoricalDemandData(productId, storeId);
-
-      // Prepare data for SageMaker
-      const inputData = {
-        data: historicalData,
-        days_ahead: days,
-        model_type: modelType,
-      };
-
-      // Get predictions from SageMaker
-      const predictions = await invokeForecastingModel(inputData);
-
-      // Store predictions in database
-      await storePredictions(predictions, productId, storeId, modelType);
-
-      return {
-        statusCode: 200,
-        body: JSON.stringify({
-          success: true,
-          predictions,
-          metadata: {
-            productId,
-            storeId,
-            modelType,
-            daysAhead: days,
-            generatedAt: new Date().toISOString(),
-          },
-        }),
-      };
-    }
-
-    return {
-      statusCode: 400,
-      body: JSON.stringify({
-        success: false,
-        error: `Unknown action: ${action}`,
-      }),
-    };
-  } catch (error) {
-    console.error("Lambda error:", error);
-    return {
-      statusCode: 500,
-      body: JSON.stringify({
-        success: false,
-        error: "Internal server error",
-        message: error.message,
-      }),
-    };
-  }
-};
-```
-
-## Part 6: Monitoring and Optimization
-
-### 1. Set Up CloudWatch Monitoring
-
-```bash
-# Create CloudWatch alarm for endpoint
-aws cloudwatch put-metric-alarm \
-  --alarm-name "SageMaker-Endpoint-Invocations" \
-  --alarm-description "Monitor SageMaker endpoint invocations" \
-  --metric-name Invocations \
-  --namespace AWS/SageMaker \
-  --statistic Sum \
-  --period 300 \
-  --threshold 100 \
-  --comparison-operator GreaterThanThreshold \
-  --dimensions Name=EndpointName,Value=invencare-forecasting-endpoint
-
-# Monitor model accuracy
-aws cloudwatch put-metric-alarm \
-  --alarm-name "SageMaker-Model-Accuracy" \
-  --alarm-description "Monitor model accuracy degradation" \
-  --metric-name ModelAccuracy \
-  --namespace Custom/InvenCare \
-  --statistic Average \
-  --period 3600 \
-  --threshold 0.7 \
-  --comparison-operator LessThanThreshold
-```
-
-### 2. Automated Model Retraining
+### SageMaker Inference Lambda
 
 ```python
-# scheduled_retraining.py
+# sagemaker_inference_lambda.py
+import json
 import boto3
-from datetime import datetime, timedelta
+import os
 
 def lambda_handler(event, context):
-    """Trigger model retraining on schedule"""
+    """Lambda function to invoke SageMaker endpoints"""
 
-    sagemaker = boto3.client('sagemaker')
+    sagemaker_runtime = boto3.client('sagemaker-runtime')
 
-    # Check if retraining is needed based on model performance
-    if should_retrain():
-        # Submit new training job
-        training_job_name = f"invencare-retrain-{datetime.now().strftime('%Y%m%d%H%M%S')}"
+    try:
+        model_type = event.get('model_type')
+        endpoint_name = get_endpoint_name(model_type)
 
-        response = sagemaker.create_training_job(
-            TrainingJobName=training_job_name,
-            AlgorithmSpecification={
-                'TrainingImage': '763104351884.dkr.ecr.us-east-1.amazonaws.com/tensorflow-training:2.11-cpu-py39',
-                'TrainingInputMode': 'File'
-            },
-            RoleArn='arn:aws:iam::YOUR_ACCOUNT_ID:role/InvenCareSageMakerRole',
-            # ... other parameters
+        if not endpoint_name:
+            return {
+                'statusCode': 400,
+                'body': json.dumps({'error': f'Invalid model type: {model_type}'})
+            }
+
+        # Prepare input data
+        input_data = prepare_model_input(event, model_type)
+
+        # Invoke endpoint
+        response = sagemaker_runtime.invoke_endpoint(
+            EndpointName=endpoint_name,
+            ContentType='application/json',
+            Body=json.dumps(input_data)
         )
+
+        # Parse response
+        result = json.loads(response['Body'].read().decode())
 
         return {
             'statusCode': 200,
             'body': json.dumps({
-                'message': 'Retraining job submitted',
-                'training_job_name': training_job_name
+                'model_type': model_type,
+                'endpoint_name': endpoint_name,
+                'prediction': result,
+                'timestamp': context.aws_request_id
             })
         }
 
-    return {
-        'statusCode': 200,
-        'body': json.dumps({'message': 'No retraining needed'})
-    }
+    except Exception as e:
+        return {
+            'statusCode': 500,
+            'body': json.dumps({
+                'error': 'Prediction failed',
+                'message': str(e)
+            })
+        }
 
-def should_retrain():
-    """Check if model performance has degraded"""
-    # Implement logic to check model performance metrics
-    # Return True if retraining is needed
-    return False
+def get_endpoint_name(model_type):
+    """Get endpoint name for model type"""
+    endpoints = {
+        'lstm': os.environ.get('LSTM_ENDPOINT_NAME'),
+        'arima': os.environ.get('ARIMA_ENDPOINT_NAME'),
+        'prophet': os.environ.get('PROPHET_ENDPOINT_NAME'),
+        'classification': os.environ.get('CLASSIFICATION_ENDPOINT_NAME')
+    }
+    return endpoints.get(model_type)
+
+def prepare_model_input(event, model_type):
+    """Prepare input data for specific model types"""
+
+    if model_type == 'lstm':
+        return {
+            'historical_data': event.get('historical_data', []),
+            'forecast_days': event.get('forecast_days', 30)
+        }
+
+    elif model_type == 'arima':
+        return {
+            'time_series': event.get('time_series', []),
+            'forecast_periods': event.get('forecast_periods', 30)
+        }
+
+    elif model_type == 'prophet':
+        return {
+            'historical_data': event.get('historical_data', []),
+            'forecast_periods': event.get('forecast_periods', 30),
+            'include_holidays': event.get('include_holidays', True)
+        }
+
+    elif model_type == 'classification':
+        return {
+            'features': event.get('features', {})
+        }
+
+    else:
+        raise ValueError(f"Unsupported model type: {model_type}")
 ```
 
-## Security and Best Practices
+## Summary
 
-1. **Use IAM roles with minimal permissions**
-2. **Enable VPC for sensitive data**
-3. **Encrypt data at rest and in transit**
-4. **Monitor model performance and data drift**
-5. **Implement proper logging and auditing**
-6. **Use SageMaker Model Monitor for data quality**
-7. **Implement cost optimization strategies**
+This comprehensive SageMaker setup provides:
 
-This completes the AWS SageMaker setup for AI-powered demand forecasting in your inventory management system.
+1. **LSTM Deep Learning Model** for complex time series forecasting
+2. **ARIMA Seasonal Model** for trend and seasonality analysis
+3. **Prophet Model** for business forecasting with holidays
+4. **Product Classification** for ABC analysis
+5. **Real-time Inference Endpoints** for live predictions
+6. **Lambda Integration** for seamless API access
+
+The models can be trained on your transaction data and deployed to provide advanced analytics capabilities for inventory management and demand forecasting.
+
+To deploy this system:
+
+1. Prepare your training data in S3
+2. Run the training jobs using SageMaker
+3. Deploy models to real-time endpoints
+4. Configure Lambda functions with endpoint names
+5. Integrate with your frontend through API calls
+
+This creates a complete ML-powered analytics system for product management.

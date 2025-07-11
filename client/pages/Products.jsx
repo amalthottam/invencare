@@ -322,7 +322,14 @@ export default function Products() {
                             className="border-b hover:bg-slate-50/50"
                           >
                             <td className="p-4 font-medium">
-                              {product.productName}
+                              <button
+                                onClick={() =>
+                                  navigate(`/products/${product.id}`)
+                                }
+                                className="text-blue-600 hover:text-blue-800 hover:underline text-left"
+                              >
+                                {product.productName}
+                              </button>
                             </td>
                             <td className="p-4 font-mono text-sm text-blue-600">
                               {product.productId}

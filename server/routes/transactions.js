@@ -146,33 +146,6 @@ export const getTransactionSummary = async (req, res) => {
       params.push(storeId);
     }
 
-    // Filter by date range
-    if (dateRange !== "all") {
-      const now = new Date();
-      let startDateTime;
-
-      switch (dateRange) {
-        case "today":
-          startDateTime = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate(),
-          );
-          break;
-        case "week":
-          startDateTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case "month":
-          startDateTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-      }
-
-      if (startDateTime) {
-        sql += " AND datetime(created_at) >= datetime(?)";
-        params.push(startDateTime.toISOString());
-      }
-    }
-
     const [rows] = await query(sql, params);
 
     res

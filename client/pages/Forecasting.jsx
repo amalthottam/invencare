@@ -183,7 +183,7 @@ export default function Forecasting() {
           )}
 
           {/* Summary Stats */}
-          {dashboardData && (
+          {dashboardData && dashboardData.summary && (
             <div className="grid gap-4 md:grid-cols-4 mb-8">
               <Card className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-0">
                 <CardContent className="p-6">

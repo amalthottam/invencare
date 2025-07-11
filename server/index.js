@@ -19,7 +19,7 @@ import {
   getDemandPredictions,
   getForecastingDashboard,
 } from "./routes/forecasting.js";
-import { initializeDatabase, seedSampleData } from "./db/sqlite.js";
+import { initializeDatabase, seedSampleData, query } from "./db/sqlite.js";
 import { cleanupDatabase } from "./db/cleanup.js";
 
 // AWS Lambda Integration

@@ -53,9 +53,22 @@ export default function Products() {
       return;
     }
 
-    // Fetch products from API
+    // Fetch products and categories from API
     fetchProducts();
+    fetchCategories();
   }, [navigate]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/categories");
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data.categories || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch categories:", err);
+    }
+  };
 
   const fetchProducts = async () => {
     try {

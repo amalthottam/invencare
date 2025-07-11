@@ -128,8 +128,22 @@ export default function Products() {
     }
   };
 
-  const handleDeleteProduct = (id) => {
-    setAllProducts(allProducts.filter((p) => p.id !== id));
+  const handleDeleteProduct = async (id) => {
+    try {
+      const response = await fetch(`/api/products/${id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Refresh products list
+      await fetchProducts();
+    } catch (err) {
+      console.error("Failed to delete product:", err);
+      setError("Failed to delete product. Please try again.");
+    }
   };
 
   return (

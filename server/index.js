@@ -20,6 +20,7 @@ import {
   getForecastingDashboard,
 } from "./routes/forecasting.js";
 import { initializeDatabase, seedSampleData } from "./db/sqlite.js";
+import { cleanupDatabase } from "./db/cleanup.js";
 
 // AWS Lambda Integration
 // import serverless from 'serverless-http';

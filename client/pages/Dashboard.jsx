@@ -214,8 +214,25 @@ export default function Dashboard() {
       //   setAnalyticsData(responsePayload);
       // }
 
-      // Use mock data based on selected store
-      setAnalyticsData(storeAnalytics[selectedStore]);
+      // Fetch real data from database
+      const response = await fetch("/api/analytics/inventory-db");
+      if (response.ok) {
+        const data = await response.json();
+        setAnalyticsData({
+          totalProducts: data.totalProducts,
+          lowStockItems: data.lowStockItems.length,
+          revenueThisMonth: data.totalValue,
+          inventoryTurnover: 4.2, // This would come from transaction analytics
+          topSellingCategories: [
+            { name: "Beverages", sales: 2150 },
+            { name: "Snacks", sales: 1820 },
+            { name: "Dairy", sales: 1650 },
+          ], // This would come from transaction analytics
+        });
+      } else {
+        // Fallback to mock data if API fails
+        setAnalyticsData(storeAnalytics[selectedStore]);
+      }
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
       // Set fallback data

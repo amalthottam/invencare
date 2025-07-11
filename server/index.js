@@ -837,6 +837,10 @@ export function createServer() {
   app.get("/api/stores", getStores);
   app.get("/api/products", getProducts);
 
+  // Local database forecasting routes
+  app.get("/api/analytics/demand-predictions", getDemandPredictions);
+  app.get("/api/analytics/forecasting-dashboard", getForecastingDashboard);
+
   // Lambda-powered API routes
   app.get("/api/analytics/inventory", handleInventoryAnalytics);
   app.get("/api/analytics/transactions", handleTransactionAnalytics);

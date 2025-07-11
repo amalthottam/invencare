@@ -19,6 +19,16 @@ import {
   getDemandPredictions,
   getForecastingDashboard,
 } from "./routes/forecasting.js";
+import {
+  getProductPerformance,
+  getDemandForecast,
+  getReorderRecommendations,
+  getAnalyticsDashboard,
+  getProductSalesTrends,
+  initializeAnalytics,
+  generateStoreAnalytics,
+} from "./routes/productAnalytics.js";
+import { ProductAnalyticsService } from "./services/productAnalytics.js";
 import { initializeDatabase, seedSampleData, query } from "./db/sqlite.js";
 import { cleanupDatabase } from "./db/cleanup.js";
 

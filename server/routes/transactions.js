@@ -4,16 +4,7 @@ import { createApiResponse, createApiError } from "../../shared/api.js";
 // Get all transactions with filtering
 export const getTransactions = async (req, res) => {
   try {
-    const {
-      storeId,
-      type,
-      dateRange = "all",
-      startDate,
-      endDate,
-      search,
-      limit = 100,
-      offset = 0,
-    } = req.query;
+    const { storeId, type, search, limit = 100, offset = 0 } = req.query;
 
     let sql = `
       SELECT 

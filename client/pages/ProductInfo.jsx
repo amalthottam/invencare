@@ -56,7 +56,22 @@ export default function ProductInfo() {
     }
 
     fetchProduct();
-  }, [id, navigate]);
+    if (isEditMode) {
+      fetchCategories();
+    }
+  }, [id, navigate, isEditMode]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/categories");
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data.categories || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch categories:", err);
+    }
+  };
 
   const fetchProduct = async () => {
     try {

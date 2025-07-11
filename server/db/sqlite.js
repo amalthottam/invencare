@@ -220,7 +220,6 @@ export const seedSampleData = async () => {
           "mgr_001",
           "Lisa Davis",
           "Weekly delivery from Fresh Farm Co",
-          yesterday.toISOString(),
         ],
         [
           "TRF-2024-010",

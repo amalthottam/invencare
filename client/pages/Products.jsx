@@ -25,6 +25,8 @@ import {
   X,
 } from "lucide-react";
 
+
+
 export default function Products() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -58,7 +60,7 @@ export default function Products() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/products");
+      const response = await fetch('/api/products');
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -66,8 +68,8 @@ export default function Products() {
       setAllProducts(data.products || []);
       setError(null);
     } catch (err) {
-      console.error("Failed to fetch products:", err);
-      setError("Failed to load products. Please try again.");
+      console.error('Failed to fetch products:', err);
+      setError('Failed to load products. Please try again.');
       // Fallback to empty array if API fails
       setAllProducts([]);
     } finally {
@@ -95,13 +97,13 @@ export default function Products() {
 
   const categories = [...new Set(allProducts.map((p) => p.category))];
 
-  const handleAddProduct = async (e) => {
+    const handleAddProduct = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch("/api/products", {
-        method: "POST",
+      const response = await fetch('/api/products', {
+        method: 'POST',
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
         body: JSON.stringify(formData),
       });
@@ -123,15 +125,15 @@ export default function Products() {
       });
       setIsAddModalOpen(false);
     } catch (err) {
-      console.error("Failed to add product:", err);
-      setError("Failed to add product. Please try again.");
+      console.error('Failed to add product:', err);
+      setError('Failed to add product. Please try again.');
     }
   };
 
-  const handleDeleteProduct = async (id) => {
+    const handleDeleteProduct = async (id) => {
     try {
       const response = await fetch(`/api/products/${id}`, {
-        method: "DELETE",
+        method: 'DELETE',
       });
 
       if (!response.ok) {
@@ -141,8 +143,8 @@ export default function Products() {
       // Refresh products list
       await fetchProducts();
     } catch (err) {
-      console.error("Failed to delete product:", err);
-      setError("Failed to delete product. Please try again.");
+      console.error('Failed to delete product:', err);
+      setError('Failed to delete product. Please try again.');
     }
   };
 
@@ -179,8 +181,33 @@ export default function Products() {
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid gap-4 md:grid-cols-4 mb-6">
+                    {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600">{error}</p>
+              <Button
+                onClick={fetchProducts}
+                variant="outline"
+                size="sm"
+                className="mt-2"
+              >
+                Retry
+              </Button>
+            </div>
+          )}
+
+          {/* Loading State */}
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading products...</p>
+              </div>
+            </div>
+          ) : (
+            <>
+              {/* Stats Cards */}
+              <div className="grid gap-4 md:grid-cols-4 mb-6">
             <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0">
               <CardContent className="p-6">
                 <div className="text-2xl font-bold">

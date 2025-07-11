@@ -30,9 +30,22 @@ import {
 export default function ProductInfo() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const location = useLocation();
+  const isEditMode = location.pathname.includes("/edit");
+
   const [product, setProduct] = useState(null);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [formData, setFormData] = useState({
+    productName: "",
+    productId: "",
+    category_id: "",
+    stock: "",
+    price: "",
+    description: "",
+  });
 
   useEffect(() => {
     // Check authentication

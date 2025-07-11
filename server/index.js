@@ -759,6 +759,7 @@ export function createServer() {
 
   // Database test route
   app.get("/api/test-db", testDatabase);
+  app.get("/api/test-simple", testSimple);
 
   // Local database transaction routes
   app.get("/api/transactions", getTransactionsWorking);

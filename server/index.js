@@ -133,6 +133,53 @@ export function createServer() {
     }
   });
 
+  app.get("/api/products/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [rows] = await req.db.execute(
+        `SELECT
+          p.id,
+          p.name as productName,
+          p.sku as productId,
+          COALESCE(c.name, p.category) as category,
+          p.category_id,
+          p.quantity as stock,
+          p.price,
+          s.name as storeName,
+          p.store_id as storeId,
+          'kg' as unit,
+          CASE
+            WHEN p.quantity = 0 THEN 'Out of Stock'
+            WHEN p.quantity <= p.minimum_stock THEN 'Low Stock'
+            ELSE 'Available'
+          END as status,
+          p.minimum_stock as minimumStock,
+          p.maximum_stock as maximumStock,
+          sup.name as supplier,
+          DATE_FORMAT(p.updated_at, '%Y-%m-%d') as lastUpdated,
+          p.barcode,
+          p.location_in_store as location,
+          p.description,
+          DATE_FORMAT(p.created_at, '%Y-%m-%d') as createdAt
+        FROM products p
+        JOIN stores s ON p.store_id = s.id
+        LEFT JOIN suppliers sup ON p.supplier_id = sup.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.id = ? AND p.status = 'active'`,
+        [id],
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      res.json({ product: rows[0] });
+    } catch (error) {
+      console.error("Product fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch product" });
+    }
+  });
+
   app.post("/api/products", async (req, res) => {
     try {
       const {

@@ -18,9 +18,10 @@ import {
   BarChart3,
   X,
   Filter,
+  Brain,
+  Target,
+  Activity,
 } from "lucide-react";
-
-const forecastData = [
   {
     id: "1",
     productName: "Organic Bananas",

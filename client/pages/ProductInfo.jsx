@@ -117,6 +117,36 @@ export default function ProductInfo() {
     navigate(`/products/${id}/edit`);
   };
 
+  const handleSave = async () => {
+    try {
+      setSaving(true);
+      const response = await fetch(`/api/products/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Refresh product data and exit edit mode
+      await fetchProduct();
+      navigate(`/products/${id}`);
+    } catch (err) {
+      console.error("Failed to save product:", err);
+      setError("Failed to save product. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancel = () => {
+    navigate(`/products/${id}`);
+  };
+
   const getStockStatusIcon = (status) => {
     switch (status) {
       case "Available":

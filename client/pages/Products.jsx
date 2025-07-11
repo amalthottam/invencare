@@ -494,6 +494,21 @@ export default function Products() {
                     </select>
                   </div>
 
+                  <div>
+                    <Label htmlFor="description">Description (Optional)</Label>
+                    <Input
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
+                      placeholder="Enter product description"
+                    />
+                  </div>
+
                   <div className="grid grid-cols-2 gap-2">
                     <div>
                       <Label htmlFor="stock">Stock</Label>

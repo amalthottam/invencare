@@ -302,8 +302,8 @@ export function createServer() {
     }
   });
 
-  // AI Analytics API endpoints
-  app.get("/api/analytics/demand-predictions", async (req, res) => {
+    // AI Analytics API endpoints (COMMENTED OUT - USING SQLITE VERSIONS)
+  // app.get("/api/analytics/demand-predictions", async (req, res) => {
     try {
       const { product_id, store_id, days = 30 } = req.query;
 

@@ -15,6 +15,7 @@ import {
   getStores,
   getProducts,
 } from "./routes/transactions.js";
+import { getTransactions as getTransactionsSimple } from "./routes/transactions-simple.js";
 import {
   getDemandPredictions,
   getForecastingDashboard,

@@ -7,24 +7,26 @@ export const getTransactions = async (req, res) => {
 
     let sql = `
       SELECT 
-        id,
-        reference_number,
-        transaction_type as type,
-        product_id,
-        product_name,
-        category,
-        quantity,
-        unit_price,
-        total_amount,
-        store_id,
-        store_name,
-        transfer_to_store_id,
-        transfer_to_store_name,
-        user_id,
-        user_name,
-        notes,
-        created_at as timestamp
-      FROM inventory_transactions 
+        it.id,
+        it.reference_number,
+        it.transaction_type as type,
+        it.product_id,
+        it.product_name,
+        it.category,
+        it.quantity,
+        it.unit_price,
+        it.total_amount,
+        it.store_id,
+        s.name as store_name,
+        it.transfer_to_store_id,
+        ts.name as transfer_to_store_name,
+        it.user_id,
+        it.user_name,
+        it.notes,
+        it.created_at as timestamp
+      FROM inventory_transactions it
+      LEFT JOIN stores s ON it.store_id = s.id
+      LEFT JOIN stores ts ON it.transfer_to_store_id = ts.id
       WHERE 1=1
     `;
 
@@ -32,53 +34,53 @@ export const getTransactions = async (req, res) => {
 
     // Filter by store
     if (storeId && storeId !== "all") {
-      sql += " AND store_id = ?";
+      sql += " AND it.store_id = ?";
       params.push(storeId);
     }
 
     // Filter by transaction type
     if (type && type !== "all") {
-      sql += " AND transaction_type = ?";
+      sql += " AND it.transaction_type = ?";
       params.push(type);
     }
 
     // Search functionality
     if (search) {
       sql += ` AND (
-        product_name LIKE ? OR 
-        product_id LIKE ? OR 
-        reference_number LIKE ? OR 
-        user_name LIKE ?
+        it.product_name LIKE ? OR 
+        it.product_id LIKE ? OR 
+        it.reference_number LIKE ? OR 
+        it.user_name LIKE ?
       )`;
       const searchPattern = `%${search}%`;
       params.push(searchPattern, searchPattern, searchPattern, searchPattern);
     }
 
     // Order and pagination
-    sql += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+    sql += " ORDER BY it.created_at DESC LIMIT ? OFFSET ?";
     params.push(parseInt(limit), parseInt(offset));
 
     const [rows] = await req.db.execute(sql, params);
 
     // Get total count for pagination - simplified count query
-    let countSql = `SELECT COUNT(*) as total FROM inventory_transactions WHERE 1=1`;
+    let countSql = `SELECT COUNT(*) as total FROM inventory_transactions it WHERE 1=1`;
     const countParams = [];
 
     if (storeId && storeId !== "all") {
-      countSql += " AND store_id = ?";
+      countSql += " AND it.store_id = ?";
       countParams.push(storeId);
     }
     if (type && type !== "all") {
-      countSql += " AND transaction_type = ?";
+      countSql += " AND it.transaction_type = ?";
       countParams.push(type);
     }
 
     if (search) {
       countSql += ` AND (
-        product_name LIKE ? OR 
-        product_id LIKE ? OR 
-        reference_number LIKE ? OR 
-        user_name LIKE ?
+        it.product_name LIKE ? OR 
+        it.product_id LIKE ? OR 
+        it.reference_number LIKE ? OR 
+        it.user_name LIKE ?
       )`;
       const searchPattern = `%${search}%`;
       countParams.push(
@@ -120,10 +122,10 @@ export const getTransactionSummary = async (req, res) => {
     let sql = `
       SELECT 
         COUNT(*) as total_transactions,
-        SUM(CASE WHEN transaction_type = 'Sale' THEN total_amount ELSE 0 END) as total_sales,
-        COUNT(CASE WHEN transaction_type = 'Restock' THEN 1 END) as total_restocks,
-        COUNT(CASE WHEN transaction_type = 'Transfer' THEN 1 END) as total_transfers,
-        COUNT(CASE WHEN transaction_type = 'Adjustment' THEN 1 END) as total_adjustments
+        SUM(CASE WHEN transaction_type = 'sale' THEN total_amount ELSE 0 END) as total_sales,
+        COUNT(CASE WHEN transaction_type = 'restock' THEN 1 END) as total_restocks,
+        COUNT(CASE WHEN transaction_type = 'transfer' THEN 1 END) as total_transfers,
+        COUNT(CASE WHEN transaction_type = 'adjustment' THEN 1 END) as total_adjustments
       FROM inventory_transactions 
       WHERE 1=1
     `;
@@ -179,12 +181,12 @@ export const createTransaction = async (req, res) => {
     // Calculate total amount
     const totalAmount = quantity * unitPrice;
 
-    // Insert transaction
+    // Insert transaction - using MySQL schema without store_name/transfer_to_store_name columns
     const [result] = await req.db.execute(
       `
       INSERT INTO inventory_transactions 
-      (reference_number, transaction_type, product_id, product_name, category, quantity, unit_price, total_amount, store_id, store_name, transfer_to_store_id, transfer_to_store_name, user_id, user_name, notes) 
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      (reference_number, transaction_type, product_id, product_name, category, quantity, unit_price, total_amount, store_id, transfer_to_store_id, user_id, user_name, notes) 
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `,
       [
         referenceNumber,
@@ -196,9 +198,7 @@ export const createTransaction = async (req, res) => {
         unitPrice,
         totalAmount,
         storeId,
-        storeName,
         transferToStoreId,
-        transferToStoreName,
         userId,
         userName,
         notes,
@@ -209,7 +209,7 @@ export const createTransaction = async (req, res) => {
     if (productId) {
       // Check if product exists
       const [productRows] = await req.db.execute(
-        "SELECT current_stock FROM products WHERE id = ? AND store_id = ?",
+        "SELECT quantity FROM products WHERE id = ? AND store_id = ?",
         [productId, storeId],
       );
 
@@ -217,14 +217,14 @@ export const createTransaction = async (req, res) => {
         let stockChange = 0;
 
         switch (type) {
-          case "Sale":
-          case "Adjustment":
+          case "sale":
+          case "adjustment":
             stockChange = -Math.abs(quantity); // Negative for outbound
             break;
-          case "Restock":
+          case "restock":
             stockChange = Math.abs(quantity); // Positive for inbound
             break;
-          case "Transfer":
+          case "transfer":
             // Reduce from source store, increase in destination store
             stockChange = -Math.abs(quantity);
             break;
@@ -232,43 +232,45 @@ export const createTransaction = async (req, res) => {
 
         // Update source store stock
         await req.db.execute(
-          "UPDATE products SET current_stock = current_stock + ? WHERE id = ? AND store_id = ?",
+          "UPDATE products SET quantity = quantity + ? WHERE id = ? AND store_id = ?",
           [stockChange, productId, storeId],
         );
 
         // If transfer, update destination store stock
-        if (type === "Transfer" && transferToStoreId) {
+        if (type === "transfer" && transferToStoreId) {
           await req.db.execute(
-            "UPDATE products SET current_stock = current_stock + ? WHERE id = ? AND store_id = ?",
+            "UPDATE products SET quantity = quantity + ? WHERE id = ? AND store_id = ?",
             [Math.abs(quantity), productId, transferToStoreId],
           );
         }
       }
     }
 
-    // Get the created transaction
+    // Get the created transaction with store names
     const [newTransaction] = await req.db.execute(
       `
       SELECT 
-        id,
-        reference_number,
-        transaction_type as type,
-        product_id,
-        product_name,
-        category,
-        quantity,
-        unit_price,
-        total_amount,
-        store_id,
-        store_name,
-        transfer_to_store_id,
-        transfer_to_store_name,
-        user_id,
-        user_name,
-        notes,
-        created_at as timestamp
-      FROM inventory_transactions 
-      WHERE id = ?
+        it.id,
+        it.reference_number,
+        it.transaction_type as type,
+        it.product_id,
+        it.product_name,
+        it.category,
+        it.quantity,
+        it.unit_price,
+        it.total_amount,
+        it.store_id,
+        s.name as store_name,
+        it.transfer_to_store_id,
+        ts.name as transfer_to_store_name,
+        it.user_id,
+        it.user_name,
+        it.notes,
+        it.created_at as timestamp
+      FROM inventory_transactions it
+      LEFT JOIN stores s ON it.store_id = s.id
+      LEFT JOIN stores ts ON it.transfer_to_store_id = ts.id
+      WHERE it.id = ?
     `,
       [result.insertId],
     );
@@ -291,7 +293,7 @@ export const createTransaction = async (req, res) => {
 export const getStores = async (req, res) => {
   try {
     const [rows] = await req.db.execute(
-      "SELECT id, name, location FROM stores ORDER BY name",
+      "SELECT id, name, address FROM stores ORDER BY name",
     );
 
     res
@@ -309,7 +311,7 @@ export const getProducts = async (req, res) => {
     const { storeId } = req.query;
 
     let sql =
-      "SELECT id, name, category, unit_price, current_stock FROM products";
+      "SELECT id, name, category, price as unit_price, quantity as current_stock FROM products";
     const params = [];
 
     if (storeId && storeId !== "all") {

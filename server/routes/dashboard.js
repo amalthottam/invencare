@@ -31,7 +31,7 @@ export const getTopSellingCategories = async (req, res) => {
 
     params.push(parseInt(limit));
 
-    const [rows] = await query(sql, params);
+    const [rows] = await req.db.execute(sql, params);
 
     // Format the response
     const categories = rows.map((row) => ({

@@ -8,6 +8,18 @@ import {
   handleTransactionProcessor,
   handleLambdaHealthCheck,
 } from "./routes/lambda-integration.js";
+import {
+  getTransactions,
+  getTransactionSummary,
+  createTransaction,
+  getStores,
+  getProducts,
+} from "./routes/transactions.js";
+import {
+  testConnection,
+  initializeDatabase,
+  seedSampleData,
+} from "./db/database.js";
 
 // AWS Lambda Integration
 // import serverless from 'serverless-http';
@@ -58,6 +70,14 @@ export function createServer() {
   app.use(cors());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // Initialize local database on startup
+  initializeDatabase().then(async (success) => {
+    if (success) {
+      await seedSampleData();
+      console.log("🚀 Local database ready");
+    }
+  });
 
   // AWS RDS Database middleware
   app.use(async (req, res, next) => {
@@ -809,6 +829,13 @@ export function createServer() {
       res.status(500).json({ error: "Failed to initialize database" });
     }
   });
+
+  // Local database transaction routes
+  app.get("/api/transactions", getTransactions);
+  app.get("/api/transactions/summary", getTransactionSummary);
+  app.post("/api/transactions", createTransaction);
+  app.get("/api/stores", getStores);
+  app.get("/api/products", getProducts);
 
   // Lambda-powered API routes
   app.get("/api/analytics/inventory", handleInventoryAnalytics);

@@ -1,4 +1,4 @@
-import pool from "../db/database.js";
+import { query } from "../db/sqlite.js";
 import { createApiResponse, createApiError } from "../../shared/api.js";
 
 // Get all transactions with filtering

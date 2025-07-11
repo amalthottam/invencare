@@ -185,7 +185,6 @@ export default function Transactions() {
       transactions.length > 0 ||
       selectedStore ||
       selectedType ||
-      selectedDateRange ||
       searchTerm
     ) {
       const timeoutId = setTimeout(() => {
@@ -194,7 +193,7 @@ export default function Transactions() {
 
       return () => clearTimeout(timeoutId);
     }
-  }, [selectedStore, selectedType, selectedDateRange, searchTerm]);
+  }, [selectedStore, selectedType, searchTerm]);
 
   // Set filtered transactions to all transactions since filtering is done server-side
   useEffect(() => {

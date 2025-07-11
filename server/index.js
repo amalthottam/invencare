@@ -15,7 +15,10 @@ import {
   getStores,
   getProducts,
 } from "./routes/transactions.js";
-import { getTransactions as getTransactionsSimple } from "./routes/transactions-simple.js";
+import {
+  getTransactions as getTransactionsWorking,
+  getTransactionSummary as getTransactionSummaryWorking,
+} from "./routes/transactions-working.js";
 import { testDatabase } from "./routes/test-db.js";
 import {
   getDemandPredictions,

@@ -180,7 +180,7 @@ export const createTransaction = async (req, res) => {
     const totalAmount = quantity * unitPrice;
 
     // Insert transaction
-    const [result] = await query(
+    const [result] = await req.db.execute(
       `
       INSERT INTO inventory_transactions 
       (reference_number, transaction_type, product_id, product_name, category, quantity, unit_price, total_amount, store_id, store_name, transfer_to_store_id, transfer_to_store_name, user_id, user_name, notes) 
@@ -208,7 +208,7 @@ export const createTransaction = async (req, res) => {
     // Update product inventory if product exists
     if (productId) {
       // Check if product exists
-      const [productRows] = await query(
+      const [productRows] = await req.db.execute(
         "SELECT current_stock FROM products WHERE id = ? AND store_id = ?",
         [productId, storeId],
       );

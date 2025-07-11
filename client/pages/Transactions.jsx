@@ -93,7 +93,7 @@ export default function Transactions() {
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all");
-  const [selectedDateRange, setSelectedDateRange] = useState("today");
+  const [selectedDateRange, setSelectedDateRange] = useState("all");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [summaryStats, setSummaryStats] = useState({
@@ -157,7 +157,6 @@ export default function Transactions() {
       const params = {
         storeId: selectedStore !== "all" ? selectedStore : undefined,
         type: selectedType !== "all" ? selectedType : undefined,
-        dateRange: selectedDateRange !== "all" ? selectedDateRange : undefined,
         search: searchTerm || undefined,
         limit: 100,
       };
@@ -460,16 +459,6 @@ export default function Transactions() {
               <option value="Restock">Restocks</option>
               <option value="Adjustment">Adjustments</option>
               <option value="Transfer">Transfers</option>
-            </select>
-            <select
-              value={selectedDateRange}
-              onChange={(e) => setSelectedDateRange(e.target.value)}
-              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="today">Today</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="all">All Time</option>
             </select>
           </div>
 

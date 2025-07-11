@@ -382,7 +382,7 @@ export function createServer() {
       res.json({
         summary: {
           totalModels: totalModels[0].count,
-          avgAccuracy: (avgAccuracy[0].avg_accuracy || 0).toFixed(4),
+          avgAccuracy: parseFloat(avgAccuracy[0].avg_accuracy || 0).toFixed(4),
           totalPredictions: totalPredictions[0].count,
           highPriorityRecommendations: highPriorityRecommendations[0].count,
         },

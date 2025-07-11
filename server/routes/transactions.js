@@ -231,14 +231,14 @@ export const createTransaction = async (req, res) => {
         }
 
         // Update source store stock
-        await query(
+        await req.db.execute(
           "UPDATE products SET current_stock = current_stock + ? WHERE id = ? AND store_id = ?",
           [stockChange, productId, storeId],
         );
 
         // If transfer, update destination store stock
         if (type === "Transfer" && transferToStoreId) {
-          await query(
+          await req.db.execute(
             "UPDATE products SET current_stock = current_stock + ? WHERE id = ? AND store_id = ?",
             [Math.abs(quantity), productId, transferToStoreId],
           );

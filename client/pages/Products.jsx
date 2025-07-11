@@ -283,7 +283,7 @@ export default function Products() {
                     className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
                     <option value="all">All Categories</option>
-                    {categories.map((category) => (
+                    {productCategories.map((category) => (
                       <option key={category} value={category}>
                         {category}
                       </option>

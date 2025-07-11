@@ -93,7 +93,7 @@ export default function Transactions() {
   const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all");
-  const [selectedDateRange, setSelectedDateRange] = useState("all");
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [summaryStats, setSummaryStats] = useState({

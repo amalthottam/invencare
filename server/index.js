@@ -16,6 +16,13 @@ import {
   getProducts,
 } from "./routes/transactions.js";
 import {
+  getTransactions as getTransactionsWorking,
+  getTransactionSummary as getTransactionSummaryWorking,
+} from "./routes/transactions-working.js";
+import { testDatabase } from "./routes/test-db.js";
+import { testSimple } from "./routes/test-simple.js";
+import { testParams } from "./routes/test-params.js";
+import {
   getDemandPredictions,
   getForecastingDashboard,
 } from "./routes/forecasting.js";
@@ -751,9 +758,14 @@ export function createServer() {
     }
   });
 
+  // Database test route
+  app.get("/api/test-db", testDatabase);
+  app.get("/api/test-simple", testSimple);
+  app.get("/api/test-params", testParams);
+
   // Local database transaction routes
-  app.get("/api/transactions", getTransactions);
-  app.get("/api/transactions/summary", getTransactionSummary);
+  app.get("/api/transactions", getTransactionsWorking);
+  app.get("/api/transactions/summary", getTransactionSummaryWorking);
   app.post("/api/transactions", createTransaction);
   app.get("/api/stores", getStores);
   app.get("/api/products", getProducts);

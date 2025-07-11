@@ -1,4 +1,3 @@
-import { query } from "../db/sqlite.js";
 import { createApiResponse, createApiError } from "../../shared/api.js";
 
 // Get top selling categories for dashboard
@@ -13,7 +12,7 @@ export const getTopSellingCategories = async (req, res) => {
         SUM(total_amount) as total_revenue,
         COUNT(*) as transaction_count
       FROM inventory_transactions 
-      WHERE transaction_type = 'Sale'
+      WHERE transaction_type = 'sale'
     `;
 
     const params = [];
@@ -27,12 +26,10 @@ export const getTopSellingCategories = async (req, res) => {
     sql += `
       GROUP BY category
       ORDER BY total_revenue DESC
-      LIMIT ?
+      LIMIT ${parseInt(limit)}
     `;
 
-    params.push(parseInt(limit));
-
-    const [rows] = await query(sql, params);
+    const [rows] = await req.db.execute(sql, params);
 
     // Format the response
     const categories = rows.map((row) => ({
@@ -78,7 +75,7 @@ export const getDashboardAnalytics = async (req, res) => {
       inventoryParams.push(storeId);
     }
 
-    const [inventoryData] = await query(inventorySql, inventoryParams);
+    const [inventoryData] = await req.db.execute(inventorySql, inventoryParams);
 
     // Get top selling categories
     let categorySql = `
@@ -87,7 +84,7 @@ export const getDashboardAnalytics = async (req, res) => {
         SUM(total_amount) as total_revenue,
         SUM(quantity) as total_sold
       FROM inventory_transactions 
-      WHERE transaction_type = 'Sale'
+      WHERE transaction_type = 'sale'
     `;
 
     const categoryParams = [];
@@ -102,15 +99,15 @@ export const getDashboardAnalytics = async (req, res) => {
       LIMIT 5
     `;
 
-    const [categoryData] = await query(categorySql, categoryParams);
+    const [categoryData] = await req.db.execute(categorySql, categoryParams);
 
     // Get monthly revenue
     let revenueSql = `
       SELECT 
         SUM(total_amount) as monthly_revenue
       FROM inventory_transactions 
-      WHERE transaction_type = 'Sale'
-        AND datetime(created_at) >= datetime(date('now', 'start of month'))
+      WHERE transaction_type = 'sale'
+                AND created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
     `;
 
     const revenueParams = [];
@@ -119,15 +116,15 @@ export const getDashboardAnalytics = async (req, res) => {
       revenueParams.push(storeId);
     }
 
-    const [revenueData] = await query(revenueSql, revenueParams);
+    const [revenueData] = await req.db.execute(revenueSql, revenueParams);
 
     // Calculate inventory turnover (simplified)
     let turnoverSql = `
       SELECT 
         SUM(quantity) as total_sold
       FROM inventory_transactions 
-      WHERE transaction_type = 'Sale'
-        AND datetime(created_at) >= datetime(date('now', '-30 days'))
+      WHERE transaction_type = 'sale'
+                AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
     `;
 
     const turnoverParams = [];
@@ -136,7 +133,7 @@ export const getDashboardAnalytics = async (req, res) => {
       turnoverParams.push(storeId);
     }
 
-    const [turnoverData] = await query(turnoverSql, turnoverParams);
+    const [turnoverData] = await req.db.execute(turnoverSql, turnoverParams);
 
     const inventory = inventoryData[0] || {};
     const totalStock = inventory.total_stock || 1;

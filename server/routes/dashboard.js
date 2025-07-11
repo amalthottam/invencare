@@ -12,7 +12,7 @@ export const getTopSellingCategories = async (req, res) => {
         SUM(total_amount) as total_revenue,
         COUNT(*) as transaction_count
       FROM inventory_transactions 
-      WHERE transaction_type = 'Sale'
+      WHERE transaction_type = 'sale'
     `;
 
     const params = [];
@@ -86,7 +86,7 @@ export const getDashboardAnalytics = async (req, res) => {
         SUM(total_amount) as total_revenue,
         SUM(quantity) as total_sold
       FROM inventory_transactions 
-      WHERE transaction_type = 'Sale'
+      WHERE transaction_type = 'sale'
     `;
 
     const categoryParams = [];
@@ -108,7 +108,7 @@ export const getDashboardAnalytics = async (req, res) => {
       SELECT 
         SUM(total_amount) as monthly_revenue
       FROM inventory_transactions 
-      WHERE transaction_type = 'Sale'
+      WHERE transaction_type = 'sale'
                 AND created_at >= DATE_FORMAT(NOW(), '%Y-%m-01')
     `;
 
@@ -125,7 +125,7 @@ export const getDashboardAnalytics = async (req, res) => {
       SELECT 
         SUM(quantity) as total_sold
       FROM inventory_transactions 
-      WHERE transaction_type = 'Sale'
+      WHERE transaction_type = 'sale'
                 AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)
     `;
 

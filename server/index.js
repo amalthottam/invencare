@@ -756,6 +756,24 @@ export function createServer() {
   app.get("/api/analytics/demand-predictions", getDemandPredictions);
   app.get("/api/analytics/forecasting-dashboard", getForecastingDashboard);
 
+  // Product Analytics routes
+  app.get("/api/analytics/products/:storeId/dashboard", getAnalyticsDashboard);
+  app.get(
+    "/api/analytics/products/:productId/:storeId/performance",
+    getProductPerformance,
+  );
+  app.get(
+    "/api/analytics/products/:productId/:storeId/forecast",
+    getDemandForecast,
+  );
+  app.get(
+    "/api/analytics/products/:productId/:storeId/trends",
+    getProductSalesTrends,
+  );
+  app.get("/api/analytics/stores/:storeId/reorder", getReorderRecommendations);
+  app.post("/api/analytics/stores/:storeId/generate", generateStoreAnalytics);
+  app.post("/api/analytics/initialize", initializeAnalytics);
+
   // Database cleanup endpoint
   app.post("/api/database/cleanup", async (req, res) => {
     try {

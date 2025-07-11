@@ -25,8 +25,6 @@ import {
   X,
 } from "lucide-react";
 
-
-
 export default function Products() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
@@ -60,7 +58,7 @@ export default function Products() {
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const response = await fetch('/api/products');
+      const response = await fetch("/api/products");
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
@@ -68,8 +66,8 @@ export default function Products() {
       setAllProducts(data.products || []);
       setError(null);
     } catch (err) {
-      console.error('Failed to fetch products:', err);
-      setError('Failed to load products. Please try again.');
+      console.error("Failed to fetch products:", err);
+      setError("Failed to load products. Please try again.");
       // Fallback to empty array if API fails
       setAllProducts([]);
     } finally {
@@ -97,13 +95,13 @@ export default function Products() {
 
   const categories = [...new Set(allProducts.map((p) => p.category))];
 
-    const handleAddProduct = async (e) => {
+  const handleAddProduct = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('/api/products', {
-        method: 'POST',
+      const response = await fetch("/api/products", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify(formData),
       });
@@ -125,15 +123,15 @@ export default function Products() {
       });
       setIsAddModalOpen(false);
     } catch (err) {
-      console.error('Failed to add product:', err);
-      setError('Failed to add product. Please try again.');
+      console.error("Failed to add product:", err);
+      setError("Failed to add product. Please try again.");
     }
   };
 
-    const handleDeleteProduct = async (id) => {
+  const handleDeleteProduct = async (id) => {
     try {
       const response = await fetch(`/api/products/${id}`, {
-        method: 'DELETE',
+        method: "DELETE",
       });
 
       if (!response.ok) {
@@ -143,8 +141,8 @@ export default function Products() {
       // Refresh products list
       await fetchProducts();
     } catch (err) {
-      console.error('Failed to delete product:', err);
-      setError('Failed to delete product. Please try again.');
+      console.error("Failed to delete product:", err);
+      setError("Failed to delete product. Please try again.");
     }
   };
 
@@ -181,7 +179,7 @@ export default function Products() {
             </div>
           </div>
 
-                    {/* Error Message */}
+          {/* Error Message */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <p className="text-red-600">{error}</p>
@@ -208,288 +206,157 @@ export default function Products() {
             <>
               {/* Stats Cards */}
               <div className="grid gap-4 md:grid-cols-4 mb-6">
-            <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0">
-              <CardContent className="p-6">
-                <div className="text-2xl font-bold">
-                  {
-                    filteredProducts.filter((p) => p.status === "Available")
-                      .length
-                  }
-                </div>
-                <div className="text-green-100">Available Products</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white border-0">
-              <CardContent className="p-6">
-                <div className="text-2xl font-bold">
-                  {
-                    filteredProducts.filter((p) => p.status === "Low Stock")
-                      .length
-                  }
-                </div>
-                <div className="text-yellow-100">Low Stock Items</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-r from-red-500 to-pink-600 text-white border-0">
-              <CardContent className="p-6">
-                <div className="text-2xl font-bold">
-                  {
-                    filteredProducts.filter((p) => p.status === "Out of Stock")
-                      .length
-                  }
-                </div>
-                <div className="text-red-100">Out of Stock</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0">
-              <CardContent className="p-6">
-                <div className="text-2xl font-bold">
-                  {filteredProducts.length}
-                </div>
-                <div className="text-blue-100">Total Products</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Search and Filter */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search products, store names, or IDs..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <div className="flex gap-2">
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="all">All Categories</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          {/* Products Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Products Inventory</CardTitle>
-              <CardDescription>
-                Complete list of products in your inventory
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-4 font-semibold">
-                        Product Name
-                      </th>
-                      <th className="text-left p-4 font-semibold">
-                        Product ID
-                      </th>
-                      <th className="text-left p-4 font-semibold">Category</th>
-                      <th className="text-left p-4 font-semibold">
-                        Store Name
-                      </th>
-                      <th className="text-left p-4 font-semibold">Stock</th>
-                      <th className="text-left p-4 font-semibold">Unit</th>
-                      <th className="text-left p-4 font-semibold">Status</th>
-                      <th className="text-left p-4 font-semibold">
-                        Last Updated
-                      </th>
-                      <th className="text-left p-4 font-semibold">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredProducts.map((product) => (
-                      <tr
-                        key={product.id}
-                        className="border-b hover:bg-slate-50/50"
-                      >
-                        <td className="p-4 font-medium">
-                          {product.productName}
-                        </td>
-                        <td className="p-4 font-mono text-sm text-blue-600">
-                          {product.productId}
-                        </td>
-                        <td className="p-4">
-                          <CategoryBadge category={product.category} />
-                        </td>
-                        <td className="p-4">{product.storeName}</td>
-                        <td className="p-4 font-semibold">{product.stock}</td>
-                        <td className="p-4">{product.unit}</td>
-                        <td className="p-4">
-                          <StatusBadge status={product.status} />
-                        </td>
-                        <td className="p-4">{product.lastUpdated}</td>
-                        <td className="p-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteProduct(product.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+                <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0">
+                  <CardContent className="p-6">
+                    <div className="text-2xl font-bold">
+                      {
+                        filteredProducts.filter((p) => p.status === "Available")
+                          .length
+                      }
+                    </div>
+                    <div className="text-green-100">Available Products</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white border-0">
+                  <CardContent className="p-6">
+                    <div className="text-2xl font-bold">
+                      {
+                        filteredProducts.filter((p) => p.status === "Low Stock")
+                          .length
+                      }
+                    </div>
+                    <div className="text-yellow-100">Low Stock Items</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-r from-red-500 to-pink-600 text-white border-0">
+                  <CardContent className="p-6">
+                    <div className="text-2xl font-bold">
+                      {
+                        filteredProducts.filter(
+                          (p) => p.status === "Out of Stock",
+                        ).length
+                      }
+                    </div>
+                    <div className="text-red-100">Out of Stock</div>
+                  </CardContent>
+                </Card>
+                <Card className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0">
+                  <CardContent className="p-6">
+                    <div className="text-2xl font-bold">
+                      {filteredProducts.length}
+                    </div>
+                    <div className="text-blue-100">Total Products</div>
+                  </CardContent>
+                </Card>
               </div>
-            </CardContent>
-          </Card>
 
-          {/* Add Product Modal */}
-          {isAddModalOpen && (
-            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-              <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
-                <div className="flex justify-between items-center mb-4">
-                  <h2 className="text-xl font-semibold">Add New Product</h2>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setIsAddModalOpen(false)}
+              {/* Search and Filter */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search products, store names, or IDs..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                   >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-
-                <form onSubmit={handleAddProduct} className="space-y-4">
-                  <div>
-                    <Label htmlFor="productName">Product Name</Label>
-                    <Input
-                      id="productName"
-                      value={formData.productName}
-                      onChange={(e) =>
-                        setFormData({
-                          ...formData,
-                          productName: e.target.value,
-                        })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="productId">Product ID</Label>
-                    <Input
-                      id="productId"
-                      value={formData.productId}
-                      onChange={(e) =>
-                        setFormData({ ...formData, productId: e.target.value })
-                      }
-                      required
-                    />
-                  </div>
-
-                  <div>
-                    <Label htmlFor="category">Category</Label>
-                    <select
-                      id="category"
-                      value={formData.category}
-                      onChange={(e) =>
-                        setFormData({ ...formData, category: e.target.value })
-                      }
-                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      required
-                    >
-                      <option value="">Select category</option>
-                      <option value="Fruits & Vegetables">
-                        Fruits & Vegetables
+                    <option value="all">All Categories</option>
+                    {categories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
                       </option>
-                      <option value="Dairy">Dairy</option>
-                      <option value="Bakery">Bakery</option>
-                      <option value="Meat & Poultry">Meat & Poultry</option>
-                      <option value="Seafood">Seafood</option>
-                      <option value="Beverages">Beverages</option>
-                      <option value="Snacks">Snacks</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <Label htmlFor="storeName">Store Name</Label>
-                    <select
-                      id="storeName"
-                      value={formData.storeName}
-                      onChange={(e) =>
-                        setFormData({ ...formData, storeName: e.target.value })
-                      }
-                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      required
-                    >
-                      <option value="">Select store</option>
-                      <option value="Downtown Store">Downtown Store</option>
-                      <option value="Mall Location">Mall Location</option>
-                      <option value="Uptown Branch">Uptown Branch</option>
-                      <option value="Westside Market">Westside Market</option>
-                    </select>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <Label htmlFor="stock">Stock</Label>
-                      <Input
-                        id="stock"
-                        type="number"
-                        value={formData.stock}
-                        onChange={(e) =>
-                          setFormData({ ...formData, stock: e.target.value })
-                        }
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="unit">Unit</Label>
-                      <select
-                        id="unit"
-                        value={formData.unit}
-                        onChange={(e) =>
-                          setFormData({ ...formData, unit: e.target.value })
-                        }
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        required
-                      >
-                        <option value="">Select unit</option>
-                        <option value="kg">kg</option>
-                        <option value="liter">liter</option>
-                        <option value="piece">piece</option>
-                        <option value="pack">pack</option>
-                        <option value="bottle">bottle</option>
-                        <option value="can">can</option>
-                        <option value="box">box</option>
-                        <option value="loaf">loaf</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  <div className="flex gap-2 pt-4">
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsAddModalOpen(false)}
-                      className="flex-1"
-                    >
-                      Cancel
-                    </Button>
-                    <Button type="submit" className="flex-1">
-                      Add Product
-                    </Button>
-                  </div>
-                </form>
+                    ))}
+                  </select>
+                </div>
               </div>
-            </div>
-                      </>
+
+              {/* Products Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Products Inventory</CardTitle>
+                  <CardDescription>
+                    Complete list of products in your inventory
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-4 font-semibold">
+                            Product Name
+                          </th>
+                          <th className="text-left p-4 font-semibold">
+                            Product ID
+                          </th>
+                          <th className="text-left p-4 font-semibold">
+                            Category
+                          </th>
+                          <th className="text-left p-4 font-semibold">
+                            Store Name
+                          </th>
+                          <th className="text-left p-4 font-semibold">Stock</th>
+                          <th className="text-left p-4 font-semibold">Unit</th>
+                          <th className="text-left p-4 font-semibold">
+                            Status
+                          </th>
+                          <th className="text-left p-4 font-semibold">
+                            Last Updated
+                          </th>
+                          <th className="text-left p-4 font-semibold">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredProducts.map((product) => (
+                          <tr
+                            key={product.id}
+                            className="border-b hover:bg-slate-50/50"
+                          >
+                            <td className="p-4 font-medium">
+                              {product.productName}
+                            </td>
+                            <td className="p-4 font-mono text-sm text-blue-600">
+                              {product.productId}
+                            </td>
+                            <td className="p-4">
+                              <CategoryBadge category={product.category} />
+                            </td>
+                            <td className="p-4">{product.storeName}</td>
+                            <td className="p-4 font-semibold">
+                              {product.stock}
+                            </td>
+                            <td className="p-4">{product.unit}</td>
+                            <td className="p-4">
+                              <StatusBadge status={product.status} />
+                            </td>
+                            <td className="p-4">{product.lastUpdated}</td>
+                            <td className="p-4">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleDeleteProduct(product.id)}
+                                className="text-red-600 hover:text-red-700"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
           )}
 
           {/* Add Product Modal */}

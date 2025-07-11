@@ -258,44 +258,67 @@ export default function Products() {
             <>
               {/* Stats Cards */}
               <div className="grid gap-4 md:grid-cols-4 mb-6">
-                <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0">
+                <Card
+                  className={`bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "Available" ? "ring-4 ring-white" : ""}`}
+                  onClick={() =>
+                    setStatusFilter(
+                      statusFilter === "Available" ? "all" : "Available",
+                    )
+                  }
+                >
                   <CardContent className="p-6">
                     <div className="text-2xl font-bold">
                       {
-                        filteredProducts.filter((p) => p.status === "Available")
+                        allProducts.filter((p) => p.status === "Available")
                           .length
                       }
                     </div>
                     <div className="text-green-100">Available Products</div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white border-0">
+                <Card
+                  className={`bg-gradient-to-r from-yellow-500 to-orange-600 text-white border-0 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "Low Stock" ? "ring-4 ring-white" : ""}`}
+                  onClick={() =>
+                    setStatusFilter(
+                      statusFilter === "Low Stock" ? "all" : "Low Stock",
+                    )
+                  }
+                >
                   <CardContent className="p-6">
                     <div className="text-2xl font-bold">
                       {
-                        filteredProducts.filter((p) => p.status === "Low Stock")
+                        allProducts.filter((p) => p.status === "Low Stock")
                           .length
                       }
                     </div>
                     <div className="text-yellow-100">Low Stock Items</div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-r from-red-500 to-pink-600 text-white border-0">
+                <Card
+                  className={`bg-gradient-to-r from-red-500 to-pink-600 text-white border-0 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "Out of Stock" ? "ring-4 ring-white" : ""}`}
+                  onClick={() =>
+                    setStatusFilter(
+                      statusFilter === "Out of Stock" ? "all" : "Out of Stock",
+                    )
+                  }
+                >
                   <CardContent className="p-6">
                     <div className="text-2xl font-bold">
                       {
-                        filteredProducts.filter(
-                          (p) => p.status === "Out of Stock",
-                        ).length
+                        allProducts.filter((p) => p.status === "Out of Stock")
+                          .length
                       }
                     </div>
                     <div className="text-red-100">Out of Stock</div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0">
+                <Card
+                  className={`bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "all" ? "ring-4 ring-white" : ""}`}
+                  onClick={() => setStatusFilter("all")}
+                >
                   <CardContent className="p-6">
                     <div className="text-2xl font-bold">
-                      {filteredProducts.length}
+                      {allProducts.length}
                     </div>
                     <div className="text-blue-100">Total Products</div>
                   </CardContent>

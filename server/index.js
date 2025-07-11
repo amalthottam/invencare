@@ -19,7 +19,7 @@ import {
   testConnection,
   initializeDatabase,
   seedSampleData,
-} from "./db/database.js";
+} from "./db/sqlite.js";
 
 // AWS Lambda Integration
 // import serverless from 'serverless-http';

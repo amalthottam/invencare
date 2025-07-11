@@ -1,6 +1,7 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/AuthContext";
 import {
   LayoutDashboard,
   Package,
@@ -10,12 +11,27 @@ import {
   X,
   TrendingUp,
   Receipt,
+  User,
 } from "lucide-react";
 import { useState } from "react";
 
-export default function Navigation({ onLogout }) {
+export default function Navigation() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const { user, isAuthenticated, signOut } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Don't show navigation for unauthenticated users
+  if (!isAuthenticated) {
+    return null;
+  }
+
+  const handleSignOut = async () => {
+    const result = await signOut();
+    if (result.success) {
+      navigate("/");
+    }
+  };
 
   const navigationItems = [
     {
@@ -108,12 +124,18 @@ export default function Navigation({ onLogout }) {
             })}
           </nav>
 
-          {/* Logout */}
-          <div className="border-t p-3">
+          {/* User info and Logout */}
+          <div className="border-t p-3 space-y-2">
+            <div className="flex items-center space-x-2 px-3 py-2 text-sm text-muted-foreground">
+              <User className="h-4 w-4" />
+              <span className="truncate">
+                {user?.attributes?.name || user?.username || "User"}
+              </span>
+            </div>
             <Button
               variant="ghost"
               className="w-full justify-start text-muted-foreground hover:text-foreground"
-              onClick={onLogout}
+              onClick={handleSignOut}
             >
               <LogOut className="mr-3 h-4 w-4" />
               Logout

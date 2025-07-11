@@ -232,10 +232,11 @@ export function createServer() {
   app.put("/api/products/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const { productName, productId, category, stock, price } = req.body;
+      const { productName, productId, category_id, stock, price, description } =
+        req.body;
       await req.db.execute(
-        "UPDATE products SET name=?, sku=?, category=?, quantity=?, price=? WHERE id=?",
-        [productName, productId, category, stock, price, id],
+        "UPDATE products SET name=?, sku=?, category_id=?, quantity=?, price=?, description=? WHERE id=?",
+        [productName, productId, category_id, stock, price, description, id],
       );
       res.json({ message: "Product updated successfully" });
     } catch (error) {

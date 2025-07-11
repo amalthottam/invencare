@@ -261,7 +261,12 @@ export const query = async (sql, params = []) => {
       return [rows];
     } else {
       const result = await dbRun(sql, params);
-      return [{ insertId: result.lastID, affectedRows: result.changes }];
+      return [
+        {
+          insertId: result?.lastID || result,
+          affectedRows: result?.changes || 1,
+        },
+      ];
     }
   } catch (error) {
     throw error;

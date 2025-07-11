@@ -489,6 +489,148 @@ export default function Products() {
                 </form>
               </div>
             </div>
+                      </>
+          )}
+
+          {/* Add Product Modal */}
+          {isAddModalOpen && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                <div className="flex justify-between items-center mb-4">
+                  <h2 className="text-xl font-semibold">Add New Product</h2>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setIsAddModalOpen(false)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <form onSubmit={handleAddProduct} className="space-y-4">
+                  <div>
+                    <Label htmlFor="productName">Product Name</Label>
+                    <Input
+                      id="productName"
+                      value={formData.productName}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          productName: e.target.value,
+                        })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="productId">Product ID</Label>
+                    <Input
+                      id="productId"
+                      value={formData.productId}
+                      onChange={(e) =>
+                        setFormData({ ...formData, productId: e.target.value })
+                      }
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <Label htmlFor="category">Category</Label>
+                    <select
+                      id="category"
+                      value={formData.category}
+                      onChange={(e) =>
+                        setFormData({ ...formData, category: e.target.value })
+                      }
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      required
+                    >
+                      <option value="">Select category</option>
+                      <option value="Fruits & Vegetables">
+                        Fruits & Vegetables
+                      </option>
+                      <option value="Dairy">Dairy</option>
+                      <option value="Bakery">Bakery</option>
+                      <option value="Meat & Poultry">Meat & Poultry</option>
+                      <option value="Seafood">Seafood</option>
+                      <option value="Beverages">Beverages</option>
+                      <option value="Snacks">Snacks</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="storeName">Store Name</Label>
+                    <select
+                      id="storeName"
+                      value={formData.storeName}
+                      onChange={(e) =>
+                        setFormData({ ...formData, storeName: e.target.value })
+                      }
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      required
+                    >
+                      <option value="">Select store</option>
+                      <option value="Downtown Store">Downtown Store</option>
+                      <option value="Mall Location">Mall Location</option>
+                      <option value="Uptown Branch">Uptown Branch</option>
+                      <option value="Westside Market">Westside Market</option>
+                    </select>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <Label htmlFor="stock">Stock</Label>
+                      <Input
+                        id="stock"
+                        type="number"
+                        value={formData.stock}
+                        onChange={(e) =>
+                          setFormData({ ...formData, stock: e.target.value })
+                        }
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="unit">Unit</Label>
+                      <select
+                        id="unit"
+                        value={formData.unit}
+                        onChange={(e) =>
+                          setFormData({ ...formData, unit: e.target.value })
+                        }
+                        className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                        required
+                      >
+                        <option value="">Select unit</option>
+                        <option value="kg">kg</option>
+                        <option value="liter">liter</option>
+                        <option value="piece">piece</option>
+                        <option value="pack">pack</option>
+                        <option value="bottle">bottle</option>
+                        <option value="can">can</option>
+                        <option value="box">box</option>
+                        <option value="loaf">loaf</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div className="flex gap-2 pt-4">
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => setIsAddModalOpen(false)}
+                      className="flex-1"
+                    >
+                      Cancel
+                    </Button>
+                    <Button type="submit" className="flex-1">
+                      Add Product
+                    </Button>
+                  </div>
+                </form>
+              </div>
+            </div>
           )}
         </main>
       </div>

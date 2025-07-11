@@ -74,7 +74,7 @@ export const getTransactions = async (req, res) => {
       }
 
       if (startDateTime) {
-        sql += " AND created_at >= ?";
+        sql += " AND datetime(created_at) >= datetime(?)";
         params.push(startDateTime.toISOString());
       }
     }

@@ -423,6 +423,66 @@ export default function Products() {
             </>
           )}
 
+          {/* Delete Confirmation Modal */}
+          {deleteConfirmOpen && productToDelete && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <Trash2 className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Delete Product
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      This action cannot be undone
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <p className="text-gray-700">
+                    Are you sure you want to delete{" "}
+                    <span className="font-semibold text-gray-900">
+                      {productToDelete.productName}
+                    </span>
+                    ? This will permanently remove the product from your
+                    inventory.
+                  </p>
+                  <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Product ID:</span>{" "}
+                      {productToDelete.productId}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Current Stock:</span>{" "}
+                      {productToDelete.stock} {productToDelete.unit}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={cancelDelete}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={confirmDelete}
+                    className="flex-1"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Product
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Add Product Modal */}
           {isAddModalOpen && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">

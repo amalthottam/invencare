@@ -146,9 +146,16 @@ export default function Products() {
     }
   };
 
-  const handleDeleteProduct = async (id) => {
+  const handleDeleteProduct = (product) => {
+    setProductToDelete(product);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+
     try {
-      const response = await fetch(`/api/products/${id}`, {
+      const response = await fetch(`/api/products/${productToDelete.id}`, {
         method: "DELETE",
       });
 
@@ -158,10 +165,17 @@ export default function Products() {
 
       // Refresh products list
       await fetchProducts();
+      setDeleteConfirmOpen(false);
+      setProductToDelete(null);
     } catch (err) {
       console.error("Failed to delete product:", err);
       setError("Failed to delete product. Please try again.");
     }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmOpen(false);
+    setProductToDelete(null);
   };
 
   return (

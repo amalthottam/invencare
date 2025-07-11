@@ -198,7 +198,7 @@ export const createTransaction = async (req, res) => {
         unitPrice,
         totalAmount,
         storeId,
-        transferToStoreId,
+        transferToStoreId || null,
         userId,
         userName,
         notes,

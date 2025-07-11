@@ -58,9 +58,10 @@ export default function Products() {
       return;
     }
 
-    // Fetch products and categories from API
+    // Fetch products, categories, and stores from API
     fetchProducts();
     fetchCategories();
+    fetchStores();
   }, [navigate]);
 
   const fetchCategories = async () => {

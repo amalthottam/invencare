@@ -222,6 +222,19 @@ export function createServer() {
 
   app.get("/api/demo", handleDemo);
 
+  // Categories API endpoints
+  app.get("/api/categories", async (req, res) => {
+    try {
+      const [rows] = await req.db.execute(
+        "SELECT id, name, description FROM categories ORDER BY name ASC",
+      );
+      res.json({ categories: rows });
+    } catch (error) {
+      console.error("Categories fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch categories" });
+    }
+  });
+
   // Database initialization endpoint
   app.post("/api/init-database", async (req, res) => {
     try {

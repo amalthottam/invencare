@@ -85,6 +85,19 @@ export default function ProductInfo() {
       }
       const data = await response.json();
       setProduct(data.product);
+
+      // Populate form data in edit mode
+      if (isEditMode) {
+        setFormData({
+          productName: data.product.productName,
+          productId: data.product.productId,
+          category_id: data.product.category_id || "",
+          stock: data.product.stock.toString(),
+          price: data.product.price.toString(),
+          description: data.product.description || "",
+        });
+      }
+
       setError(null);
     } catch (err) {
       console.error("Failed to fetch product:", err);

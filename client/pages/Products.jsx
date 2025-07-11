@@ -33,6 +33,8 @@ export default function Products() {
   const [allProducts, setAllProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({

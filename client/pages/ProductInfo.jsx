@@ -225,7 +225,7 @@ export default function ProductInfo() {
                     <Package className="h-6 w-6 text-white" />
                   </div>
                   <h1 className="text-3xl font-bold tracking-tight">
-                    {product.productName}
+                    {isEditMode ? "Edit Product" : product.productName}
                   </h1>
                 </div>
                 <p className="text-muted-foreground">
@@ -234,10 +234,25 @@ export default function ProductInfo() {
               </div>
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleEdit}>
-                <Edit className="h-4 w-4 mr-2" />
-                Edit Product
-              </Button>
+              {isEditMode ? (
+                <>
+                  <Button
+                    variant="outline"
+                    onClick={handleCancel}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </Button>
+                  <Button onClick={handleSave} disabled={saving}>
+                    {saving ? "Saving..." : "Save Changes"}
+                  </Button>
+                </>
+              ) : (
+                <Button onClick={handleEdit}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Edit Product
+                </Button>
+              )}
             </div>
           </div>
 

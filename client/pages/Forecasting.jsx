@@ -53,8 +53,8 @@ export default function Forecasting() {
         "/api/analytics/forecasting-dashboard",
       );
       if (dashboardResponse.ok) {
-        const dashboardData = await dashboardResponse.json();
-        setDashboardData(dashboardData);
+        const response = await dashboardResponse.json();
+        setDashboardData(response.data);
       }
 
       // Fetch demand predictions

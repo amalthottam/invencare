@@ -108,7 +108,7 @@ export default function Products() {
     setFilteredProducts(filtered);
   }, [searchTerm, categoryFilter, allProducts]);
 
-  const categories = [...new Set(allProducts.map((p) => p.category))];
+  const productCategories = [...new Set(allProducts.map((p) => p.category))];
 
   const handleAddProduct = async (e) => {
     e.preventDefault();

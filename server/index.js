@@ -753,7 +753,7 @@ export function createServer() {
   });
 
   // Local database transaction routes
-  app.get("/api/transactions", getTransactions);
+  app.get("/api/transactions", getTransactionsSimple);
   app.get("/api/transactions/summary", getTransactionSummary);
   app.post("/api/transactions", createTransaction);
   app.get("/api/stores", getStores);

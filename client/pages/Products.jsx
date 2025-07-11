@@ -456,23 +456,22 @@ export default function Products() {
                     <Label htmlFor="category">Category</Label>
                     <select
                       id="category"
-                      value={formData.category}
+                      value={formData.category_id}
                       onChange={(e) =>
-                        setFormData({ ...formData, category: e.target.value })
+                        setFormData({
+                          ...formData,
+                          category_id: e.target.value,
+                        })
                       }
                       className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                       required
                     >
                       <option value="">Select category</option>
-                      <option value="Fruits & Vegetables">
-                        Fruits & Vegetables
-                      </option>
-                      <option value="Dairy">Dairy</option>
-                      <option value="Bakery">Bakery</option>
-                      <option value="Meat & Poultry">Meat & Poultry</option>
-                      <option value="Seafood">Seafood</option>
-                      <option value="Beverages">Beverages</option>
-                      <option value="Snacks">Snacks</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 

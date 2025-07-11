@@ -15,11 +15,7 @@ import {
   getStores,
   getProducts,
 } from "./routes/transactions.js";
-import {
-  testConnection,
-  initializeDatabase,
-  seedSampleData,
-} from "./db/sqlite.js";
+import { initializeDatabase, seedSampleData } from "./db/sqlite.js";
 
 // AWS Lambda Integration
 // import serverless from 'serverless-http';

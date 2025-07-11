@@ -95,35 +95,37 @@ export default function Products() {
 
   const categories = [...new Set(allProducts.map((p) => p.category))];
 
-  const handleAddProduct = (e) => {
+  const handleAddProduct = async (e) => {
     e.preventDefault();
-    const newProduct = {
-      id: Date.now().toString(),
-      productName: formData.productName,
-      productId: formData.productId,
-      category: formData.category,
-      storeName: formData.storeName,
-      stock: parseInt(formData.stock),
-      unit: formData.unit,
-      status:
-        parseInt(formData.stock) === 0
-          ? "Out of Stock"
-          : parseInt(formData.stock) < 10
-            ? "Low Stock"
-            : "Available",
-      lastUpdated: new Date().toISOString().split("T")[0],
-    };
+    try {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-    setAllProducts([...allProducts, newProduct]);
-    setFormData({
-      productName: "",
-      productId: "",
-      category: "",
-      storeName: "",
-      stock: "",
-      unit: "",
-    });
-    setIsAddModalOpen(false);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Refresh products list
+      await fetchProducts();
+
+      setFormData({
+        productName: "",
+        productId: "",
+        category: "",
+        storeName: "",
+        stock: "",
+        unit: "",
+      });
+      setIsAddModalOpen(false);
+    } catch (err) {
+      console.error("Failed to add product:", err);
+      setError("Failed to add product. Please try again.");
+    }
   };
 
   const handleDeleteProduct = (id) => {

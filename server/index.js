@@ -222,6 +222,88 @@ export function createServer() {
 
   app.get("/api/demo", handleDemo);
 
+  // Database initialization endpoint
+  app.post("/api/init-database", async (req, res) => {
+    try {
+      // Create categories table
+      await req.db.execute(`
+        CREATE TABLE IF NOT EXISTS categories (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(100) NOT NULL UNIQUE,
+          description TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_name (name)
+        )
+      `);
+
+      // Insert default categories
+      const categories = [
+        [
+          "Fruits & Vegetables",
+          "Fresh produce including fruits and vegetables",
+        ],
+        ["Dairy", "Milk, cheese, yogurt and other dairy products"],
+        ["Bakery", "Bread, pastries and baked goods"],
+        ["Meat & Poultry", "Fresh meat and poultry products"],
+        ["Seafood", "Fresh fish and seafood"],
+        ["Beverages", "Drinks including juices, sodas and water"],
+        ["Snacks", "Chips, nuts and snack foods"],
+        ["Grains", "Rice, pasta and grain products"],
+        ["Frozen Foods", "Frozen vegetables, meals and ice cream"],
+        ["Personal Care", "Health and beauty products"],
+      ];
+
+      for (const [name, description] of categories) {
+        await req.db.execute(
+          "INSERT IGNORE INTO categories (name, description) VALUES (?, ?)",
+          [name, description],
+        );
+      }
+
+      // Add category_id column to products table if it doesn't exist
+      try {
+        await req.db.execute(`
+          ALTER TABLE products
+          ADD COLUMN category_id INT,
+          ADD FOREIGN KEY (category_id) REFERENCES categories(id)
+        `);
+      } catch (error) {
+        // Column might already exist, ignore error
+        console.log("Category_id column might already exist:", error.message);
+      }
+
+      // Update existing products to use category_id
+      const categoryMapping = {
+        "Fruits & Vegetables": 1,
+        Dairy: 2,
+        Bakery: 3,
+        "Meat & Poultry": 4,
+        Seafood: 5,
+        Beverages: 6,
+        Snacks: 7,
+        Grains: 8,
+      };
+
+      for (const [categoryName, categoryId] of Object.entries(
+        categoryMapping,
+      )) {
+        await req.db.execute(
+          "UPDATE products SET category_id = ? WHERE category = ?",
+          [categoryId, categoryName],
+        );
+      }
+
+      res.json({
+        message: "Database initialized successfully",
+        categoriesCreated: categories.length,
+      });
+    } catch (error) {
+      console.error("Database initialization error:", error);
+      res.status(500).json({ error: "Failed to initialize database" });
+    }
+  });
+
   // Lambda-powered API routes
   app.get("/api/analytics/inventory", handleInventoryAnalytics);
   app.get("/api/analytics/transactions", handleTransactionAnalytics);

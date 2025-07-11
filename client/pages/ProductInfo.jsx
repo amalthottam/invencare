@@ -45,6 +45,8 @@ export default function ProductInfo() {
     stock: "",
     price: "",
     description: "",
+    minimumStock: "",
+    maximumStock: "",
   });
 
   useEffect(() => {
@@ -95,6 +97,8 @@ export default function ProductInfo() {
           stock: data.product.stock.toString(),
           price: data.product.price.toString(),
           description: data.product.description || "",
+          minimumStock: data.product.minimumStock?.toString() || "",
+          maximumStock: data.product.maximumStock?.toString() || "",
         });
       }
 
@@ -354,6 +358,36 @@ export default function ProductInfo() {
                               })
                             }
                             required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="minimumStock">Minimum Stock</Label>
+                          <Input
+                            id="minimumStock"
+                            type="number"
+                            value={formData.minimumStock}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                minimumStock: e.target.value,
+                              })
+                            }
+                            placeholder="Enter minimum stock level"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="maximumStock">Maximum Stock</Label>
+                          <Input
+                            id="maximumStock"
+                            type="number"
+                            value={formData.maximumStock}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                maximumStock: e.target.value,
+                              })
+                            }
+                            placeholder="Enter maximum stock level"
                           />
                         </div>
                       </div>

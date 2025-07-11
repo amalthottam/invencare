@@ -53,8 +53,8 @@ export default function Forecasting() {
         "/api/analytics/forecasting-dashboard",
       );
       if (dashboardResponse.ok) {
-        const dashboardData = await dashboardResponse.json();
-        setDashboardData(dashboardData);
+        const response = await dashboardResponse.json();
+        setDashboardData(response.data);
       }
 
       // Fetch demand predictions
@@ -62,8 +62,8 @@ export default function Forecasting() {
         `/api/analytics/demand-predictions?days=${selectedTimeframe}`,
       );
       if (predictionsResponse.ok) {
-        const predictionsData = await predictionsResponse.json();
-        setPredictions(predictionsData.predictions || []);
+        const response = await predictionsResponse.json();
+        setPredictions(response.data.predictions || []);
       }
 
       setError(null);
@@ -183,7 +183,7 @@ export default function Forecasting() {
           )}
 
           {/* Summary Stats */}
-          {dashboardData && (
+          {dashboardData && dashboardData.summary && (
             <div className="grid gap-4 md:grid-cols-4 mb-8">
               <Card className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-0">
                 <CardContent className="p-6">
@@ -319,9 +319,9 @@ export default function Forecasting() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-4">
-                    {dashboardData.modelPerformance.map((model) => (
+                    {dashboardData.modelPerformance.map((model, index) => (
                       <div
-                        key={model.model_name}
+                        key={`${model.model_name}-${model.model_type}-${index}`}
                         className="flex items-center justify-between p-4 border rounded-lg"
                       >
                         <div className="flex-1">
@@ -377,9 +377,9 @@ export default function Forecasting() {
                       </tr>
                     </thead>
                     <tbody>
-                      {dashboardData.recentPredictions.map((product) => (
+                      {dashboardData.recentPredictions.map((product, index) => (
                         <tr
-                          key={`${product.product_id}-${product.store_name}`}
+                          key={`${product.product_id}-${product.store_name}-${index}`}
                           className="border-b hover:bg-slate-50/50"
                         >
                           <td className="p-4">

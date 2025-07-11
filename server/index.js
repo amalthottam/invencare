@@ -18,9 +18,10 @@ import mysql from "mysql2/promise";
 // RDS Connection Configuration
 const dbConfig = {
   host:
-    process.env.RDS_HOSTNAME || "your-rds-endpoint.region.rds.amazonaws.com",
-  user: process.env.RDS_USERNAME || "admin",
-  password: process.env.RDS_PASSWORD || "your-password",
+    process.env.RDS_HOSTNAME ||
+    "invencaredb.cihe2wg8etco.us-east-1.rds.amazonaws.com",
+  user: process.env.RDS_USERNAME || "admiin",
+  password: process.env.RDS_PASSWORD || "InvenCare123",
   database: process.env.RDS_DB_NAME || "invencare",
   port: process.env.RDS_PORT || 3306,
   ssl: {

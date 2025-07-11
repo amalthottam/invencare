@@ -340,14 +340,41 @@ export default function Products() {
                             </td>
                             <td className="p-4">{product.lastUpdated}</td>
                             <td className="p-4">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={() => handleDeleteProduct(product.id)}
-                                className="text-red-600 hover:text-red-700"
-                              >
-                                <Trash2 className="h-4 w-4" />
-                              </Button>
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    navigate(`/products/${product.id}`)
+                                  }
+                                  className="text-blue-600 hover:text-blue-700"
+                                  title="View Product Info"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    navigate(`/products/${product.id}/edit`)
+                                  }
+                                  className="text-green-600 hover:text-green-700"
+                                  title="Edit Product"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    handleDeleteProduct(product.id)
+                                  }
+                                  className="text-red-600 hover:text-red-700"
+                                  title="Delete Product"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </td>
                           </tr>
                         ))}

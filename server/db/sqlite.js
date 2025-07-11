@@ -237,7 +237,6 @@ export const seedSampleData = async () => {
           "mgr_002",
           "Mike Wilson",
           "Low stock transfer to high-demand location",
-          twoDaysAgo.toISOString(),
         ],
         [
           "ADJ-2024-012",

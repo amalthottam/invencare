@@ -131,10 +131,11 @@ export default function Products() {
       setFormData({
         productName: "",
         productId: "",
-        category: "",
+        category_id: "",
         storeName: "",
         stock: "",
         unit: "",
+        description: "",
       });
       setIsAddModalOpen(false);
     } catch (err) {

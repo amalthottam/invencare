@@ -83,44 +83,6 @@ export const getTransactions = async (req, res) => {
       countParams.push(type);
     }
 
-    // Add date filtering to count query (same as main query)
-    if (dateRange !== "all") {
-      const now = new Date();
-      let startDateTime;
-
-      switch (dateRange) {
-        case "today":
-          startDateTime = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate(),
-          );
-          break;
-        case "week":
-          startDateTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case "month":
-          startDateTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-      }
-
-      if (startDateTime) {
-        countSql += " AND datetime(created_at) >= datetime(?)";
-        countParams.push(startDateTime.toISOString());
-      }
-    }
-
-    // Custom date range for count query
-    if (startDate) {
-      countSql += " AND datetime(created_at) >= datetime(?)";
-      countParams.push(new Date(startDate).toISOString());
-    }
-
-    if (endDate) {
-      countSql += " AND datetime(created_at) <= datetime(?)";
-      countParams.push(new Date(endDate).toISOString());
-    }
-
     if (search) {
       countSql += ` AND (
         product_name LIKE ? OR 

@@ -31,16 +31,18 @@ export default function Products() {
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     productName: "",
     productId: "",
-    category: "",
+    category_id: "",
     storeName: "",
     stock: "",
     unit: "",
+    description: "",
   });
 
   useEffect(() => {

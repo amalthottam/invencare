@@ -247,7 +247,7 @@ export const createTransaction = async (req, res) => {
     }
 
     // Get the created transaction
-    const [newTransaction] = await query(
+    const [newTransaction] = await req.db.execute(
       `
       SELECT 
         id,
@@ -290,7 +290,7 @@ export const createTransaction = async (req, res) => {
 // Get stores (for dropdown)
 export const getStores = async (req, res) => {
   try {
-    const [rows] = await query(
+    const [rows] = await req.db.execute(
       "SELECT id, name, location FROM stores ORDER BY name",
     );
 

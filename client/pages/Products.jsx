@@ -121,10 +121,14 @@ export default function Products() {
         product.storeName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory =
         categoryFilter === "all" || product.category === categoryFilter;
-      return matchesSearch && matchesCategory;
+      const matchesStore =
+        storeFilter === "all" || product.storeName === storeFilter;
+      const matchesStatus =
+        statusFilter === "all" || product.status === statusFilter;
+      return matchesSearch && matchesCategory && matchesStore && matchesStatus;
     });
     setFilteredProducts(filtered);
-  }, [searchTerm, categoryFilter, allProducts]);
+  }, [searchTerm, categoryFilter, storeFilter, statusFilter, allProducts]);
 
   const productCategories = [...new Set(allProducts.map((p) => p.category))];
 

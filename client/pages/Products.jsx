@@ -75,6 +75,18 @@ export default function Products() {
     }
   };
 
+  const fetchStores = async () => {
+    try {
+      const response = await fetch("/api/stores");
+      if (response.ok) {
+        const data = await response.json();
+        setStores(data.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch stores:", err);
+    }
+  };
+
   const fetchProducts = async () => {
     try {
       setLoading(true);

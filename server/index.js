@@ -29,6 +29,10 @@ import {
   generateStoreAnalytics,
 } from "./routes/productAnalytics.js";
 import { ProductAnalyticsService } from "./services/productAnalytics.js";
+import {
+  getTopSellingCategories,
+  getDashboardAnalytics,
+} from "./routes/dashboard.js";
 import { initializeDatabase, seedSampleData, query } from "./db/sqlite.js";
 import { cleanupDatabase } from "./db/cleanup.js";
 

@@ -92,60 +92,106 @@ export function createServer() {
   // });
 
   // AWS RDS Product Management endpoints
-  // app.get("/api/products", async (req, res) => {
-  //   try {
-  //     const [rows] = await req.db.execute(
-  //       'SELECT * FROM products ORDER BY created_at DESC'
-  //     );
-  //     res.json({ products: rows });
-  //   } catch (error) {
-  //     console.error('Products fetch error:', error);
-  //     res.status(500).json({ error: 'Failed to fetch products' });
-  //   }
-  // });
-  //
-  // app.post("/api/products", async (req, res) => {
-  //   try {
-  //     const { name, description, price, quantity, category } = req.body;
-  //     const [result] = await req.db.execute(
-  //       'INSERT INTO products (name, description, price, quantity, category) VALUES (?, ?, ?, ?, ?)',
-  //       [name, description, price, quantity, category]
-  //     );
-  //     res.json({
-  //       message: 'Product created successfully',
-  //       productId: result.insertId
-  //     });
-  //   } catch (error) {
-  //     console.error('Product creation error:', error);
-  //     res.status(500).json({ error: 'Failed to create product' });
-  //   }
-  // });
-  //
-  // app.put("/api/products/:id", async (req, res) => {
-  //   try {
-  //     const { id } = req.params;
-  //     const { name, description, price, quantity, category } = req.body;
-  //     await req.db.execute(
-  //       'UPDATE products SET name=?, description=?, price=?, quantity=?, category=? WHERE id=?',
-  //       [name, description, price, quantity, category, id]
-  //     );
-  //     res.json({ message: 'Product updated successfully' });
-  //   } catch (error) {
-  //     console.error('Product update error:', error);
-  //     res.status(500).json({ error: 'Failed to update product' });
-  //   }
-  // });
-  //
-  // app.delete("/api/products/:id", async (req, res) => {
-  //   try {
-  //     const { id } = req.params;
-  //     await req.db.execute('DELETE FROM products WHERE id=?', [id]);
-  //     res.json({ message: 'Product deleted successfully' });
-  //   } catch (error) {
-  //     console.error('Product deletion error:', error);
-  //     res.status(500).json({ error: 'Failed to delete product' });
-  //   }
-  // });
+  app.get("/api/products", async (req, res) => {
+    try {
+      const [rows] = await req.db.execute(
+        `SELECT
+          p.id,
+          p.name as productName,
+          p.sku as productId,
+          p.category,
+          p.quantity as stock,
+          p.price,
+          s.name as storeName,
+          p.store_id as storeId,
+          'kg' as unit,
+          CASE
+            WHEN p.quantity = 0 THEN 'Out of Stock'
+            WHEN p.quantity <= p.minimum_stock THEN 'Low Stock'
+            ELSE 'Available'
+          END as status,
+          p.minimum_stock as minimumStock,
+          sup.name as supplier,
+          DATE_FORMAT(p.updated_at, '%Y-%m-%d') as lastUpdated,
+          p.barcode,
+          p.location_in_store as location
+        FROM products p
+        JOIN stores s ON p.store_id = s.id
+        LEFT JOIN suppliers sup ON p.supplier_id = sup.id
+        WHERE p.status = 'active'
+        ORDER BY p.updated_at DESC`,
+      );
+      res.json({ products: rows });
+    } catch (error) {
+      console.error("Products fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+
+  app.post("/api/products", async (req, res) => {
+    try {
+      const {
+        productName,
+        productId,
+        category,
+        storeName,
+        stock,
+        unit,
+        price = 0,
+      } = req.body;
+
+      // Get store_id from store name
+      const [stores] = await req.db.execute(
+        "SELECT id FROM stores WHERE name = ?",
+        [storeName],
+      );
+
+      if (stores.length === 0) {
+        return res.status(400).json({ error: "Store not found" });
+      }
+
+      const storeId = stores[0].id;
+
+      const [result] = await req.db.execute(
+        "INSERT INTO products (name, sku, category, quantity, price, store_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
+        [productName, productId, category, stock, price, storeId, "active"],
+      );
+
+      res.json({
+        message: "Product created successfully",
+        productId: result.insertId,
+      });
+    } catch (error) {
+      console.error("Product creation error:", error);
+      res.status(500).json({ error: "Failed to create product" });
+    }
+  });
+
+  app.put("/api/products/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const { productName, productId, category, stock, price } = req.body;
+      await req.db.execute(
+        "UPDATE products SET name=?, sku=?, category=?, quantity=?, price=? WHERE id=?",
+        [productName, productId, category, stock, price, id],
+      );
+      res.json({ message: "Product updated successfully" });
+    } catch (error) {
+      console.error("Product update error:", error);
+      res.status(500).json({ error: "Failed to update product" });
+    }
+  });
+
+  app.delete("/api/products/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await req.db.execute("DELETE FROM products WHERE id=?", [id]);
+      res.json({ message: "Product deleted successfully" });
+    } catch (error) {
+      console.error("Product deletion error:", error);
+      res.status(500).json({ error: "Failed to delete product" });
+    }
+  });
 
   // AWS RDS Inventory Analytics
   // app.get("/api/analytics/inventory", async (req, res) => {

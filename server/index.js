@@ -20,7 +20,7 @@ const dbConfig = {
   host:
     process.env.RDS_HOSTNAME ||
     "invencaredb.cihe2wg8etco.us-east-1.rds.amazonaws.com",
-  user: process.env.RDS_USERNAME || "admiin",
+  user: process.env.RDS_USERNAME || "admin",
   password: process.env.RDS_PASSWORD || "InvenCare123",
   database: process.env.RDS_DB_NAME || "invencare",
   port: process.env.RDS_PORT || 3306,

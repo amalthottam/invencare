@@ -58,7 +58,7 @@ export const getTransactions = async (req, res) => {
     sql += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
     params.push(parseInt(limit), parseInt(offset));
 
-    const [rows] = await query(sql, params);
+    const [rows] = await req.db.execute(sql, params);
 
     // Get total count for pagination - simplified count query
     let countSql = `SELECT COUNT(*) as total FROM inventory_transactions WHERE 1=1`;
@@ -89,7 +89,7 @@ export const getTransactions = async (req, res) => {
       );
     }
 
-    const [countRows] = await query(countSql, countParams);
+    const [countRows] = await req.db.execute(countSql, countParams);
     const total = countRows[0].total;
 
     res.status(200).json(
@@ -136,7 +136,7 @@ export const getTransactionSummary = async (req, res) => {
       params.push(storeId);
     }
 
-    const [rows] = await query(sql, params);
+    const [rows] = await req.db.execute(sql, params);
 
     res
       .status(200)
@@ -319,7 +319,7 @@ export const getProducts = async (req, res) => {
 
     sql += " ORDER BY name";
 
-    const [rows] = await query(sql, params);
+    const [rows] = await req.db.execute(sql, params);
 
     res
       .status(200)

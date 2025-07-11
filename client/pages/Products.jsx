@@ -29,9 +29,11 @@ export default function Products() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [filteredProducts, setFilteredProducts] = useState(products);
-  const [allProducts, setAllProducts] = useState(products);
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     productName: "",
     productId: "",
@@ -48,7 +50,30 @@ export default function Products() {
       navigate("/login");
       return;
     }
+
+    // Fetch products from API
+    fetchProducts();
   }, [navigate]);
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/products");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setAllProducts(data.products || []);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to fetch products:", err);
+      setError("Failed to load products. Please try again.");
+      // Fallback to empty array if API fails
+      setAllProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("isAuthenticated");

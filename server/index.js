@@ -21,6 +21,7 @@ import {
 } from "./routes/transactions-working.js";
 import { testDatabase } from "./routes/test-db.js";
 import { testSimple } from "./routes/test-simple.js";
+import { testParams } from "./routes/test-params.js";
 import {
   getDemandPredictions,
   getForecastingDashboard,

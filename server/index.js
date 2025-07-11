@@ -185,11 +185,12 @@ export function createServer() {
       const {
         productName,
         productId,
-        category,
+        category_id,
         storeName,
         stock,
         unit,
         price = 0,
+        description = "",
       } = req.body;
 
       // Get store_id from store name
@@ -205,8 +206,17 @@ export function createServer() {
       const storeId = stores[0].id;
 
       const [result] = await req.db.execute(
-        "INSERT INTO products (name, sku, category, quantity, price, store_id, status) VALUES (?, ?, ?, ?, ?, ?, ?)",
-        [productName, productId, category, stock, price, storeId, "active"],
+        "INSERT INTO products (name, sku, category_id, quantity, price, store_id, status, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          productName,
+          productId,
+          category_id,
+          stock,
+          price,
+          storeId,
+          "active",
+          description,
+        ],
       );
 
       res.json({

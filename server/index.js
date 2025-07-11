@@ -13,28 +13,28 @@ import {
 // import serverless from 'serverless-http';
 
 // AWS RDS Integration
-// import mysql from 'mysql2/promise';
-// import { RDSClient, DescribeDBInstancesCommand } from '@aws-sdk/client-rds';
-//
+import mysql from "mysql2/promise";
+
 // RDS Connection Configuration
-// const dbConfig = {
-//   host: process.env.RDS_HOSTNAME || 'your-rds-endpoint.region.rds.amazonaws.com',
-//   user: process.env.RDS_USERNAME || 'admin',
-//   password: process.env.RDS_PASSWORD || 'your-password',
-//   database: process.env.RDS_DB_NAME || 'invencare',
-//   port: process.env.RDS_PORT || 3306,
-//   ssl: {
-//     rejectUnauthorized: false
-//   }
-// };
-//
+const dbConfig = {
+  host:
+    process.env.RDS_HOSTNAME || "your-rds-endpoint.region.rds.amazonaws.com",
+  user: process.env.RDS_USERNAME || "admin",
+  password: process.env.RDS_PASSWORD || "your-password",
+  database: process.env.RDS_DB_NAME || "invencare",
+  port: process.env.RDS_PORT || 3306,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+};
+
 // Create RDS connection pool
-// const pool = mysql.createPool({
-//   ...dbConfig,
-//   waitForConnections: true,
-//   connectionLimit: 10,
-//   queueLimit: 0
-// });
+const pool = mysql.createPool({
+  ...dbConfig,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
 //
 // RDS Health Check Function
 // const checkRDSConnection = async () => {

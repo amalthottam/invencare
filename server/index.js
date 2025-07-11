@@ -15,6 +15,10 @@ import {
   getStores,
   getProducts,
 } from "./routes/transactions.js";
+import {
+  getDemandPredictions,
+  getForecastingDashboard,
+} from "./routes/forecasting.js";
 import { initializeDatabase, seedSampleData } from "./db/sqlite.js";
 
 // AWS Lambda Integration

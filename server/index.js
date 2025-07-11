@@ -59,15 +59,15 @@ export function createServer() {
   app.use(express.urlencoded({ extended: true }));
 
   // AWS RDS Database middleware
-  // app.use(async (req, res, next) => {
-  //   try {
-  //     req.db = pool;
-  //     next();
-  //   } catch (error) {
-  //     console.error('Database middleware error:', error);
-  //     res.status(500).json({ error: 'Database connection failed' });
-  //   }
-  // });
+  app.use(async (req, res, next) => {
+    try {
+      req.db = pool;
+      next();
+    } catch (error) {
+      console.error("Database middleware error:", error);
+      res.status(500).json({ error: "Database connection failed" });
+    }
+  });
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {

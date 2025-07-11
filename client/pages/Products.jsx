@@ -405,9 +405,7 @@ export default function Products() {
                                 <Button
                                   variant="ghost"
                                   size="sm"
-                                  onClick={() =>
-                                    handleDeleteProduct(product.id)
-                                  }
+                                  onClick={() => handleDeleteProduct(product)}
                                   className="text-red-600 hover:text-red-700"
                                   title="Delete Product"
                                 >

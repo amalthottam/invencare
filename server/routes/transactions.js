@@ -81,12 +81,12 @@ export const getTransactions = async (req, res) => {
 
     // Custom date range
     if (startDate) {
-      sql += " AND created_at >= ?";
+      sql += " AND datetime(created_at) >= datetime(?)";
       params.push(new Date(startDate).toISOString());
     }
 
     if (endDate) {
-      sql += " AND created_at <= ?";
+      sql += " AND datetime(created_at) <= datetime(?)";
       params.push(new Date(endDate).toISOString());
     }
 

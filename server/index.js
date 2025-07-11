@@ -760,8 +760,8 @@ export function createServer() {
   app.get("/api/test-db", testDatabase);
 
   // Local database transaction routes
-  app.get("/api/transactions", getTransactionsSimple);
-  app.get("/api/transactions/summary", getTransactionSummary);
+  app.get("/api/transactions", getTransactionsWorking);
+  app.get("/api/transactions/summary", getTransactionSummaryWorking);
   app.post("/api/transactions", createTransaction);
   app.get("/api/stores", getStores);
   app.get("/api/products", getProducts);

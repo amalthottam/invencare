@@ -214,24 +214,37 @@ export default function Dashboard() {
       //   setAnalyticsData(responsePayload);
       // }
 
-      // Fetch real data from database
-      const response = await fetch("/api/analytics/inventory-db");
+      // Fetch real dashboard analytics data
+      const storeParam =
+        selectedStore !== "all" ? `?storeId=${selectedStore}` : "";
+      const response = await fetch(`/api/dashboard/analytics${storeParam}`);
+
       if (response.ok) {
-        const data = await response.json();
+        const result = await response.json();
+        const data = result.data;
         setAnalyticsData({
           totalProducts: data.totalProducts,
-          lowStockItems: data.lowStockItems.length,
-          revenueThisMonth: data.totalValue,
-          inventoryTurnover: 4.2, // This would come from transaction analytics
-          topSellingCategories: [
-            { name: "Beverages", sales: 2150 },
-            { name: "Snacks", sales: 1820 },
-            { name: "Dairy", sales: 1650 },
-          ], // This would come from transaction analytics
+          lowStockItems: data.lowStockItems,
+          revenueThisMonth: data.revenueThisMonth,
+          inventoryTurnover: data.inventoryTurnover,
+          topSellingCategories: data.topSellingCategories,
         });
       } else {
-        // Fallback to mock data if API fails
-        setAnalyticsData(storeAnalytics[selectedStore]);
+        // Fallback to basic inventory data if dashboard API fails
+        const fallbackResponse = await fetch("/api/analytics/inventory-db");
+        if (fallbackResponse.ok) {
+          const data = await fallbackResponse.json();
+          setAnalyticsData({
+            totalProducts: data.totalProducts,
+            lowStockItems: data.lowStockItems.length,
+            revenueThisMonth: data.totalValue,
+            inventoryTurnover: 0,
+            topSellingCategories: [],
+          });
+        } else {
+          // Final fallback to mock data
+          setAnalyticsData(storeAnalytics[selectedStore]);
+        }
       }
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);

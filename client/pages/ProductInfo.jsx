@@ -31,7 +31,7 @@ export default function ProductInfo() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const isEditMode = location.pathname.includes("/edit");
+  const isEditMode = location.pathname.includes('/edit');
 
   const [product, setProduct] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -55,7 +55,7 @@ export default function ProductInfo() {
       return;
     }
 
-    fetchProduct();
+        fetchProduct();
     if (isEditMode) {
       fetchCategories();
     }
@@ -83,7 +83,7 @@ export default function ProductInfo() {
         }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      const data = await response.json();
+            const data = await response.json();
       setProduct(data.product);
 
       // Populate form data in edit mode
@@ -113,7 +113,7 @@ export default function ProductInfo() {
     navigate("/login");
   };
 
-  const handleEdit = () => {
+    const handleEdit = () => {
     navigate(`/products/${id}/edit`);
   };
 
@@ -224,7 +224,7 @@ export default function ProductInfo() {
                   <div className="h-10 w-10 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
                     <Package className="h-6 w-6 text-white" />
                   </div>
-                  <h1 className="text-3xl font-bold tracking-tight">
+                                    <h1 className="text-3xl font-bold tracking-tight">
                     {isEditMode ? "Edit Product" : product.productName}
                   </h1>
                 </div>
@@ -257,16 +257,109 @@ export default function ProductInfo() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-            {/* Main Product Info */}
+                        {/* Main Product Info */}
             <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>Product Details</CardTitle>
+                  <CardTitle>{isEditMode ? "Edit Product" : "Product Details"}</CardTitle>
                   <CardDescription>
-                    Comprehensive information about this product
+                    {isEditMode
+                      ? "Update product information"
+                      : "Comprehensive information about this product"
+                    }
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
+                  {isEditMode ? (
+                    // Edit Form
+                    <div className="space-y-4">
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <Label htmlFor="productName">Product Name</Label>
+                          <Input
+                            id="productName"
+                            value={formData.productName}
+                            onChange={(e) =>
+                              setFormData({
+                                ...formData,
+                                productName: e.target.value,
+                              })
+                            }
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="productId">Product ID</Label>
+                          <Input
+                            id="productId"
+                            value={formData.productId}
+                            onChange={(e) =>
+                              setFormData({ ...formData, productId: e.target.value })
+                            }
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="category">Category</Label>
+                          <select
+                            id="category"
+                            value={formData.category_id}
+                            onChange={(e) =>
+                              setFormData({ ...formData, category_id: e.target.value })
+                            }
+                            className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                            required
+                          >
+                            <option value="">Select category</option>
+                            {categories.map((category) => (
+                              <option key={category.id} value={category.id}>
+                                {category.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        <div>
+                          <Label htmlFor="price">Price</Label>
+                          <Input
+                            id="price"
+                            type="number"
+                            step="0.01"
+                            value={formData.price}
+                            onChange={(e) =>
+                              setFormData({ ...formData, price: e.target.value })
+                            }
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="stock">Stock Quantity</Label>
+                          <Input
+                            id="stock"
+                            type="number"
+                            value={formData.stock}
+                            onChange={(e) =>
+                              setFormData({ ...formData, stock: e.target.value })
+                            }
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <Label htmlFor="description">Description</Label>
+                        <Input
+                          id="description"
+                          value={formData.description}
+                          onChange={(e) =>
+                            setFormData({ ...formData, description: e.target.value })
+                          }
+                          placeholder="Enter product description"
+                        />
+                      </div>
+                    </div>
+                  ) : (
+                    // View Mode Content
+                    <>
                   {/* Basic Info */}
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div>

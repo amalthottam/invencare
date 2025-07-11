@@ -284,6 +284,163 @@ export function createServer() {
 
   app.get("/api/demo", handleDemo);
 
+  // Generate sample AI analytics data
+  app.post("/api/generate-analytics-data", async (req, res) => {
+    try {
+      // 1. Create sample forecasting models
+      const models = [
+        {
+          name: "Seasonal ARIMA Model",
+          type: "arima",
+          endpoint:
+            "arn:aws:sagemaker:us-east-1:123456789012:endpoint/seasonal-arima-v1",
+          accuracy: 0.8547,
+          status: "deployed",
+          store_id: "store_001",
+          category_id: 1,
+        },
+        {
+          name: "LSTM Deep Learning Model",
+          type: "lstm",
+          endpoint:
+            "arn:aws:sagemaker:us-east-1:123456789012:endpoint/lstm-demand-v2",
+          accuracy: 0.9122,
+          status: "deployed",
+          store_id: null,
+          category_id: 6,
+        },
+        {
+          name: "Prophet Trend Model",
+          type: "prophet",
+          endpoint:
+            "arn:aws:sagemaker:us-east-1:123456789012:endpoint/prophet-trend-v1",
+          accuracy: 0.8934,
+          status: "deployed",
+          store_id: "store_002",
+          category_id: 2,
+        },
+      ];
+
+      for (const model of models) {
+        await req.db.execute(
+          `INSERT IGNORE INTO demand_forecasting_models
+           (model_name, model_type, sagemaker_endpoint, model_accuracy, training_status, store_id, category_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            model.name,
+            model.type,
+            model.endpoint,
+            model.accuracy,
+            model.status,
+            model.store_id,
+            model.category_id,
+          ],
+        );
+      }
+
+      // 2. Generate demand predictions for next 30 days
+      const [products] = await req.db.execute(
+        "SELECT id, store_id FROM products LIMIT 10",
+      );
+      const [modelIds] = await req.db.execute(
+        "SELECT id FROM demand_forecasting_models",
+      );
+
+      for (const product of products) {
+        for (let days = 1; days <= 30; days++) {
+          const predictionDate = new Date();
+          predictionDate.setDate(predictionDate.getDate() + days);
+
+          const basedemand = 20 + Math.random() * 50;
+          const seasonalFactor = 1 + 0.3 * Math.sin((days / 7) * Math.PI);
+          const predictedDemand = Math.round(basedemand * seasonalFactor);
+
+          await req.db.execute(
+            `INSERT IGNORE INTO demand_predictions
+             (product_id, store_id, model_id, prediction_date, predicted_demand,
+              confidence_interval_lower, confidence_interval_upper, factors, lambda_execution_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              product.id,
+              product.store_id,
+              modelIds[Math.floor(Math.random() * modelIds.length)].id,
+              predictionDate.toISOString().split("T")[0],
+              predictedDemand,
+              Math.round(predictedDemand * 0.8),
+              Math.round(predictedDemand * 1.2),
+              JSON.stringify({
+                seasonality: "weekly",
+                weatherImpact: "minimal",
+                promotions: Math.random() > 0.8 ? "active" : "none",
+              }),
+              `lambda-exec-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            ],
+          );
+        }
+      }
+
+      // 3. Generate inventory optimization recommendations
+      for (const product of products) {
+        const currentStock = 50 + Math.random() * 200;
+        const recommendedStock = currentStock + (Math.random() * 40 - 20);
+        const reorderPoint = Math.round(currentStock * 0.3);
+
+        await req.db.execute(
+          `INSERT IGNORE INTO inventory_optimization
+           (product_id, store_id, current_stock, recommended_stock, reorder_point,
+            optimal_order_quantity, safety_stock, stockout_probability, excess_inventory_risk,
+            cost_optimization_score, recommendation_type, reasoning, implementation_priority,
+            estimated_cost_savings, lambda_function_version, analysis_date, expires_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            product.id,
+            product.store_id,
+            Math.round(currentStock),
+            Math.round(recommendedStock),
+            reorderPoint,
+            Math.round(recommendedStock * 0.6),
+            Math.round(reorderPoint * 0.5),
+            (Math.random() * 0.15).toFixed(2),
+            (Math.random() * 0.25).toFixed(2),
+            (Math.random() * 1000).toFixed(2),
+            recommendedStock > currentStock
+              ? "increase"
+              : recommendedStock < currentStock
+                ? "decrease"
+                : "maintain",
+            JSON.stringify({
+              demandTrend: Math.random() > 0.5 ? "increasing" : "stable",
+              seasonalFactor: "moderate",
+              supplierReliability: "high",
+              storageCost: "low",
+            }),
+            Math.random() > 0.6
+              ? "high"
+              : Math.random() > 0.3
+                ? "medium"
+                : "low",
+            (Math.random() * 500).toFixed(2),
+            "lambda-inv-opt-v1.2",
+            new Date().toISOString().split("T")[0],
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split("T")[0],
+          ],
+        );
+      }
+
+      res.json({
+        message: "AI Analytics sample data generated successfully",
+        modelsCreated: models.length,
+        predictionsGenerated: products.length * 30,
+        optimizationRecommendations: products.length,
+      });
+    } catch (error) {
+      console.error("Analytics data generation error:", error);
+      res.status(500).json({ error: "Failed to generate analytics data" });
+    }
+  });
+
   // Categories API endpoints
   app.get("/api/categories", async (req, res) => {
     try {

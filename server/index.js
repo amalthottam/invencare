@@ -86,6 +86,8 @@ export function createServer() {
   initializeDatabase().then(async (success) => {
     if (success) {
       await seedSampleData();
+      // Initialize product analytics tables
+      await ProductAnalyticsService.initializeTables();
       console.log("🚀 Local database ready");
     }
   });

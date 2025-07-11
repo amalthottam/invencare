@@ -186,7 +186,6 @@ export const seedSampleData = async () => {
           "emp_001",
           "John Smith",
           "Family weekly shopping",
-          today.toISOString(),
         ],
         [
           "SALE-2024-003",

@@ -116,7 +116,7 @@ export const getTransactions = async (req, res) => {
 // Get transaction analytics/summary
 export const getTransactionSummary = async (req, res) => {
   try {
-    const { storeId, dateRange = "month" } = req.query;
+    const { storeId } = req.query;
 
     let sql = `
       SELECT 

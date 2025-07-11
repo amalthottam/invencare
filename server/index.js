@@ -369,9 +369,168 @@ export function createServer() {
         );
       }
 
+      // Create AI Analytics tables for Lambda and SageMaker integration
+
+      // 1. Demand Forecasting Models table
+      await req.db.execute(`
+        CREATE TABLE IF NOT EXISTS demand_forecasting_models (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          model_name VARCHAR(100) NOT NULL,
+          model_type ENUM('arima', 'lstm', 'prophet', 'linear_regression') NOT NULL,
+          sagemaker_endpoint VARCHAR(255),
+          model_artifacts_s3_path VARCHAR(500),
+          training_data_s3_path VARCHAR(500),
+          model_accuracy DECIMAL(5,4),
+          training_status ENUM('training', 'completed', 'failed', 'deployed') DEFAULT 'training',
+          created_by VARCHAR(255),
+          store_id VARCHAR(50),
+          category_id INT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (store_id) REFERENCES stores(id),
+          FOREIGN KEY (category_id) REFERENCES categories(id),
+          INDEX idx_model_type (model_type),
+          INDEX idx_training_status (training_status),
+          INDEX idx_store_category (store_id, category_id)
+        )
+      `);
+
+      // 2. Demand Predictions table
+      await req.db.execute(`
+        CREATE TABLE IF NOT EXISTS demand_predictions (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          product_id INT NOT NULL,
+          store_id VARCHAR(50) NOT NULL,
+          model_id INT NOT NULL,
+          prediction_date DATE NOT NULL,
+          predicted_demand DECIMAL(10,2) NOT NULL,
+          confidence_interval_lower DECIMAL(10,2),
+          confidence_interval_upper DECIMAL(10,2),
+          actual_demand DECIMAL(10,2) NULL,
+          prediction_accuracy DECIMAL(5,4) NULL,
+          factors JSON,
+          lambda_execution_id VARCHAR(100),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+          FOREIGN KEY (store_id) REFERENCES stores(id),
+          FOREIGN KEY (model_id) REFERENCES demand_forecasting_models(id),
+          INDEX idx_product_date (product_id, prediction_date),
+          INDEX idx_store_date (store_id, prediction_date),
+          INDEX idx_model_execution (model_id, lambda_execution_id),
+          UNIQUE KEY unique_prediction (product_id, store_id, model_id, prediction_date)
+        )
+      `);
+
+      // 3. Market Trends Analysis table
+      await req.db.execute(`
+        CREATE TABLE IF NOT EXISTS market_trends (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          category_id INT NOT NULL,
+          store_id VARCHAR(50),
+          trend_type ENUM('seasonal', 'promotional', 'competitor', 'economic', 'weather') NOT NULL,
+          trend_period ENUM('daily', 'weekly', 'monthly', 'quarterly', 'yearly') NOT NULL,
+          trend_value DECIMAL(10,4) NOT NULL,
+          trend_direction ENUM('increasing', 'decreasing', 'stable') NOT NULL,
+          confidence_score DECIMAL(3,2) NOT NULL,
+          external_factors JSON,
+          analysis_date DATE NOT NULL,
+          sagemaker_job_name VARCHAR(100),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (category_id) REFERENCES categories(id),
+          FOREIGN KEY (store_id) REFERENCES stores(id),
+          INDEX idx_category_date (category_id, analysis_date),
+          INDEX idx_trend_type (trend_type, trend_period),
+          INDEX idx_sagemaker_job (sagemaker_job_name)
+        )
+      `);
+
+      // 4. Customer Behavior Analytics table
+      await req.db.execute(`
+        CREATE TABLE IF NOT EXISTS customer_behavior_analytics (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          customer_segment VARCHAR(50) NOT NULL,
+          store_id VARCHAR(50) NOT NULL,
+          category_id INT NOT NULL,
+          purchase_frequency DECIMAL(5,2),
+          average_basket_size DECIMAL(8,2),
+          price_sensitivity DECIMAL(3,2),
+          seasonal_preference JSON,
+          loyalty_score DECIMAL(3,2),
+          churn_probability DECIMAL(3,2),
+          predicted_ltv DECIMAL(10,2),
+          behavior_drivers JSON,
+          analysis_period_start DATE NOT NULL,
+          analysis_period_end DATE NOT NULL,
+          ml_model_version VARCHAR(50),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (store_id) REFERENCES stores(id),
+          FOREIGN KEY (category_id) REFERENCES categories(id),
+          INDEX idx_segment_store (customer_segment, store_id),
+          INDEX idx_analysis_period (analysis_period_start, analysis_period_end),
+          INDEX idx_loyalty_churn (loyalty_score, churn_probability)
+        )
+      `);
+
+      // 5. Inventory Optimization Recommendations table
+      await req.db.execute(`
+        CREATE TABLE IF NOT EXISTS inventory_optimization (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          product_id INT NOT NULL,
+          store_id VARCHAR(50) NOT NULL,
+          current_stock INT NOT NULL,
+          recommended_stock INT NOT NULL,
+          reorder_point INT NOT NULL,
+          optimal_order_quantity INT NOT NULL,
+          safety_stock INT NOT NULL,
+          stockout_probability DECIMAL(3,2),
+          excess_inventory_risk DECIMAL(3,2),
+          cost_optimization_score DECIMAL(8,2),
+          recommendation_type ENUM('increase', 'decrease', 'maintain', 'discontinue') NOT NULL,
+          reasoning JSON,
+          implementation_priority ENUM('high', 'medium', 'low') NOT NULL,
+          estimated_cost_savings DECIMAL(10,2),
+          lambda_function_version VARCHAR(50),
+          analysis_date DATE NOT NULL,
+          expires_at DATE NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+          FOREIGN KEY (store_id) REFERENCES stores(id),
+          INDEX idx_product_store (product_id, store_id),
+          INDEX idx_recommendation_type (recommendation_type, implementation_priority),
+          INDEX idx_analysis_expiry (analysis_date, expires_at),
+          INDEX idx_cost_savings (estimated_cost_savings DESC)
+        )
+      `);
+
+      // 6. AI Model Performance Metrics table
+      await req.db.execute(`
+        CREATE TABLE IF NOT EXISTS ai_model_metrics (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          model_id INT NOT NULL,
+          model_name VARCHAR(100) NOT NULL,
+          metric_type ENUM('accuracy', 'precision', 'recall', 'f1_score', 'mape', 'rmse', 'mae') NOT NULL,
+          metric_value DECIMAL(8,6) NOT NULL,
+          evaluation_dataset VARCHAR(100),
+          evaluation_period_start DATE NOT NULL,
+          evaluation_period_end DATE NOT NULL,
+          sagemaker_training_job VARCHAR(100),
+          hyperparameters JSON,
+          feature_importance JSON,
+          model_drift_score DECIMAL(3,2),
+          retrain_recommended BOOLEAN DEFAULT FALSE,
+          benchmark_comparison DECIMAL(8,6),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (model_id) REFERENCES demand_forecasting_models(id),
+          INDEX idx_model_metric (model_id, metric_type),
+          INDEX idx_evaluation_period (evaluation_period_start, evaluation_period_end),
+          INDEX idx_drift_retrain (model_drift_score, retrain_recommended)
+        )
+      `);
+
       res.json({
-        message: "Database initialized successfully",
+        message: "Database initialized successfully with AI Analytics tables",
         categoriesCreated: categories.length,
+        aiTablesCreated: 6,
       });
     } catch (error) {
       console.error("Database initialization error:", error);

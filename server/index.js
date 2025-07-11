@@ -780,6 +780,10 @@ export function createServer() {
   app.post("/api/analytics/stores/:storeId/generate", generateStoreAnalytics);
   app.post("/api/analytics/initialize", initializeAnalytics);
 
+  // Dashboard Analytics routes
+  app.get("/api/dashboard/analytics", getDashboardAnalytics);
+  app.get("/api/dashboard/categories", getTopSellingCategories);
+
   // Database cleanup endpoint
   app.post("/api/database/cleanup", async (req, res) => {
     try {

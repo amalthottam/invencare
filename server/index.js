@@ -727,6 +727,25 @@ export function createServer() {
   app.get("/api/analytics/demand-predictions", getDemandPredictions);
   app.get("/api/analytics/forecasting-dashboard", getForecastingDashboard);
 
+  // Database cleanup endpoint
+  app.post("/api/database/cleanup", async (req, res) => {
+    try {
+      const success = await cleanupDatabase();
+      if (success) {
+        res.json({
+          success: true,
+          message: "Database cleanup completed successfully",
+        });
+      } else {
+        res
+          .status(500)
+          .json({ success: false, message: "Database cleanup failed" });
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
   // Lambda-powered API routes
   app.get("/api/analytics/inventory", handleInventoryAnalytics);
   app.get("/api/analytics/transactions", handleTransactionAnalytics);

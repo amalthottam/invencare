@@ -15,7 +15,7 @@ export const getTransactions = async (req, res) => {
       offset = 0,
     } = req.query;
 
-    let query = `
+    let sql = `
       SELECT 
         id,
         reference_number,
@@ -42,13 +42,13 @@ export const getTransactions = async (req, res) => {
 
     // Filter by store
     if (storeId && storeId !== "all") {
-      query += " AND store_id = ?";
+      sql += " AND store_id = ?";
       params.push(storeId);
     }
 
     // Filter by transaction type
     if (type && type !== "all") {
-      query += " AND transaction_type = ?";
+      sql += " AND transaction_type = ?";
       params.push(type);
     }
 
@@ -74,25 +74,25 @@ export const getTransactions = async (req, res) => {
       }
 
       if (startDateTime) {
-        query += " AND created_at >= ?";
-        params.push(startDateTime);
+        sql += " AND created_at >= ?";
+        params.push(startDateTime.toISOString());
       }
     }
 
     // Custom date range
     if (startDate) {
-      query += " AND created_at >= ?";
-      params.push(new Date(startDate));
+      sql += " AND created_at >= ?";
+      params.push(new Date(startDate).toISOString());
     }
 
     if (endDate) {
-      query += " AND created_at <= ?";
-      params.push(new Date(endDate));
+      sql += " AND created_at <= ?";
+      params.push(new Date(endDate).toISOString());
     }
 
     // Search functionality
     if (search) {
-      query += ` AND (
+      sql += ` AND (
         product_name LIKE ? OR 
         product_id LIKE ? OR 
         reference_number LIKE ? OR 
@@ -103,66 +103,40 @@ export const getTransactions = async (req, res) => {
     }
 
     // Order and pagination
-    query += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
+    sql += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
     params.push(parseInt(limit), parseInt(offset));
 
-    const [rows] = await pool.execute(query, params);
+    const [rows] = await query(sql, params);
 
-    // Get total count for pagination
-    let countQuery = `
-      SELECT COUNT(*) as total 
-      FROM inventory_transactions 
-      WHERE 1=1
-    `;
-
-    const countParams = params.slice(0, -2); // Remove LIMIT and OFFSET params
+    // Get total count for pagination - simplified count query
+    let countSql = `SELECT COUNT(*) as total FROM inventory_transactions WHERE 1=1`;
+    const countParams = [];
 
     if (storeId && storeId !== "all") {
-      countQuery += " AND store_id = ?";
+      countSql += " AND store_id = ?";
+      countParams.push(storeId);
     }
     if (type && type !== "all") {
-      countQuery += " AND transaction_type = ?";
-    }
-    if (dateRange !== "all") {
-      const now = new Date();
-      let startDateTime;
-
-      switch (dateRange) {
-        case "today":
-          startDateTime = new Date(
-            now.getFullYear(),
-            now.getMonth(),
-            now.getDate(),
-          );
-          break;
-        case "week":
-          startDateTime = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-          break;
-        case "month":
-          startDateTime = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-          break;
-      }
-
-      if (startDateTime) {
-        countQuery += " AND created_at >= ?";
-      }
-    }
-    if (startDate) {
-      countQuery += " AND created_at >= ?";
-    }
-    if (endDate) {
-      countQuery += " AND created_at <= ?";
+      countSql += " AND transaction_type = ?";
+      countParams.push(type);
     }
     if (search) {
-      countQuery += ` AND (
+      countSql += ` AND (
         product_name LIKE ? OR 
         product_id LIKE ? OR 
         reference_number LIKE ? OR 
         user_name LIKE ?
       )`;
+      const searchPattern = `%${search}%`;
+      countParams.push(
+        searchPattern,
+        searchPattern,
+        searchPattern,
+        searchPattern,
+      );
     }
 
-    const [countRows] = await pool.execute(countQuery, countParams);
+    const [countRows] = await query(countSql, countParams);
     const total = countRows[0].total;
 
     res.status(200).json(
@@ -190,7 +164,7 @@ export const getTransactionSummary = async (req, res) => {
   try {
     const { storeId, dateRange = "month" } = req.query;
 
-    let query = `
+    let sql = `
       SELECT 
         COUNT(*) as total_transactions,
         SUM(CASE WHEN transaction_type = 'Sale' THEN total_amount ELSE 0 END) as total_sales,
@@ -205,7 +179,7 @@ export const getTransactionSummary = async (req, res) => {
 
     // Filter by store
     if (storeId && storeId !== "all") {
-      query += " AND store_id = ?";
+      sql += " AND store_id = ?";
       params.push(storeId);
     }
 
@@ -231,12 +205,12 @@ export const getTransactionSummary = async (req, res) => {
       }
 
       if (startDateTime) {
-        query += " AND created_at >= ?";
-        params.push(startDateTime);
+        sql += " AND created_at >= ?";
+        params.push(startDateTime.toISOString());
       }
     }
 
-    const [rows] = await pool.execute(query, params);
+    const [rows] = await query(sql, params);
 
     res
       .status(200)
@@ -254,11 +228,7 @@ export const getTransactionSummary = async (req, res) => {
 
 // Create a new transaction
 export const createTransaction = async (req, res) => {
-  const connection = await pool.getConnection();
-
   try {
-    await connection.beginTransaction();
-
     const {
       type,
       productId,
@@ -284,7 +254,7 @@ export const createTransaction = async (req, res) => {
     const totalAmount = quantity * unitPrice;
 
     // Insert transaction
-    const [result] = await connection.execute(
+    const [result] = await query(
       `
       INSERT INTO inventory_transactions 
       (reference_number, transaction_type, product_id, product_name, category, quantity, unit_price, total_amount, store_id, store_name, transfer_to_store_id, transfer_to_store_name, user_id, user_name, notes) 
@@ -312,7 +282,7 @@ export const createTransaction = async (req, res) => {
     // Update product inventory if product exists
     if (productId) {
       // Check if product exists
-      const [productRows] = await connection.execute(
+      const [productRows] = await query(
         "SELECT current_stock FROM products WHERE id = ? AND store_id = ?",
         [productId, storeId],
       );
@@ -335,14 +305,14 @@ export const createTransaction = async (req, res) => {
         }
 
         // Update source store stock
-        await connection.execute(
+        await query(
           "UPDATE products SET current_stock = current_stock + ? WHERE id = ? AND store_id = ?",
           [stockChange, productId, storeId],
         );
 
         // If transfer, update destination store stock
         if (type === "Transfer" && transferToStoreId) {
-          await connection.execute(
+          await query(
             "UPDATE products SET current_stock = current_stock + ? WHERE id = ? AND store_id = ?",
             [Math.abs(quantity), productId, transferToStoreId],
           );
@@ -350,10 +320,8 @@ export const createTransaction = async (req, res) => {
       }
     }
 
-    await connection.commit();
-
     // Get the created transaction
-    const [newTransaction] = await connection.execute(
+    const [newTransaction] = await query(
       `
       SELECT 
         id,
@@ -388,18 +356,15 @@ export const createTransaction = async (req, res) => {
         ),
       );
   } catch (error) {
-    await connection.rollback();
     console.error("Create transaction error:", error);
     res.status(500).json(createApiError(error));
-  } finally {
-    connection.release();
   }
 };
 
 // Get stores (for dropdown)
 export const getStores = async (req, res) => {
   try {
-    const [rows] = await pool.execute(
+    const [rows] = await query(
       "SELECT id, name, location FROM stores ORDER BY name",
     );
 
@@ -417,18 +382,18 @@ export const getProducts = async (req, res) => {
   try {
     const { storeId } = req.query;
 
-    let query =
+    let sql =
       "SELECT id, name, category, unit_price, current_stock FROM products";
     const params = [];
 
     if (storeId && storeId !== "all") {
-      query += " WHERE store_id = ?";
+      sql += " WHERE store_id = ?";
       params.push(storeId);
     }
 
-    query += " ORDER BY name";
+    sql += " ORDER BY name";
 
-    const [rows] = await pool.execute(query, params);
+    const [rows] = await query(sql, params);
 
     res
       .status(200)

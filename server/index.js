@@ -195,30 +195,30 @@ export function createServer() {
   });
 
   // AWS RDS Inventory Analytics
-  // app.get("/api/analytics/inventory", async (req, res) => {
-  //   try {
-  //     const [lowStockItems] = await req.db.execute(
-  //       'SELECT * FROM products WHERE quantity < 10 ORDER BY quantity ASC'
-  //     );
-  //
-  //     const [totalProducts] = await req.db.execute(
-  //       'SELECT COUNT(*) as total FROM products'
-  //     );
-  //
-  //     const [totalValue] = await req.db.execute(
-  //       'SELECT SUM(price * quantity) as total_value FROM products'
-  //     );
-  //
-  //     res.json({
-  //       lowStockItems,
-  //       totalProducts: totalProducts[0].total,
-  //       totalValue: totalValue[0].total_value || 0
-  //     });
-  //   } catch (error) {
-  //     console.error('Analytics error:', error);
-  //     res.status(500).json({ error: 'Failed to fetch analytics' });
-  //   }
-  // });
+  app.get("/api/analytics/inventory-db", async (req, res) => {
+    try {
+      const [lowStockItems] = await req.db.execute(
+        "SELECT * FROM products WHERE quantity <= minimum_stock ORDER BY quantity ASC",
+      );
+
+      const [totalProducts] = await req.db.execute(
+        'SELECT COUNT(*) as total FROM products WHERE status = "active"',
+      );
+
+      const [totalValue] = await req.db.execute(
+        'SELECT SUM(price * quantity) as total_value FROM products WHERE status = "active"',
+      );
+
+      res.json({
+        lowStockItems,
+        totalProducts: totalProducts[0].total,
+        totalValue: totalValue[0].total_value || 0,
+      });
+    } catch (error) {
+      console.error("Analytics error:", error);
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
 
   app.get("/api/demo", handleDemo);
 

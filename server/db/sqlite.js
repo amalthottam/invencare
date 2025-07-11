@@ -187,6 +187,7 @@ export const seedSampleData = async () => {
           "emp_001",
           "John Smith",
           "Family weekly shopping",
+          today.toISOString(),
         ],
         [
           "SALE-2024-003",
@@ -204,6 +205,7 @@ export const seedSampleData = async () => {
           "emp_002",
           "Sarah Johnson",
           "Premium meat selection",
+          yesterday.toISOString(),
         ],
         [
           "RST-2024-006",
@@ -221,6 +223,7 @@ export const seedSampleData = async () => {
           "mgr_001",
           "Lisa Davis",
           "Weekly delivery from Fresh Farm Co",
+          yesterday.toISOString(),
         ],
         [
           "TRF-2024-010",
@@ -238,6 +241,7 @@ export const seedSampleData = async () => {
           "mgr_002",
           "Mike Wilson",
           "Low stock transfer to high-demand location",
+          twoDaysAgo.toISOString(),
         ],
         [
           "ADJ-2024-012",
@@ -255,6 +259,7 @@ export const seedSampleData = async () => {
           "mgr_003",
           "Anna Garcia",
           "Expired seafood disposal",
+          twoDaysAgo.toISOString(),
         ],
       ];
 

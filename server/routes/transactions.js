@@ -1,4 +1,3 @@
-import { RequestHandler } from "express";
 import pool from "../db/database.js";
 import { createApiResponse, createApiError } from "../../shared/api.js";
 

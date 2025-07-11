@@ -746,6 +746,30 @@ export function createServer() {
     }
   });
 
+  // Debug endpoint for transactions
+  app.get("/api/debug/transactions", async (req, res) => {
+    try {
+      const [transactions] = await query(
+        "SELECT * FROM inventory_transactions ORDER BY created_at DESC LIMIT 10",
+      );
+      const [stores] = await query("SELECT * FROM stores");
+      const [products] = await query("SELECT * FROM products LIMIT 5");
+
+      res.json({
+        success: true,
+        data: {
+          transactions,
+          stores,
+          products,
+          transactionCount: transactions.length,
+          storeCount: stores.length,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Lambda-powered API routes
   app.get("/api/analytics/inventory", handleInventoryAnalytics);
   app.get("/api/analytics/transactions", handleTransactionAnalytics);

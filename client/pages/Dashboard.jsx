@@ -231,22 +231,6 @@ export default function Dashboard() {
     }
   };
 
-  const handleLogout = async () => {
-    try {
-      // AWS Cognito Sign Out
-      // await signOut();
-
-      // Demo logout (remove when implementing Cognito)
-      localStorage.removeItem("isAuthenticated");
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Force logout on error
-      localStorage.removeItem("isAuthenticated");
-      navigate("/login");
-    }
-  };
-
   // Show loading state
   if (isLoading) {
     return (
@@ -484,7 +468,7 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <Navigation onLogout={handleLogout} />
+      <Navigation />
 
       <div className="lg:pl-64">
         <main className="container mx-auto px-4 py-8">

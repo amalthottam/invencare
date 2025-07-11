@@ -753,6 +753,9 @@ export function createServer() {
     }
   });
 
+  // Database test route
+  app.get("/api/test-db", testDatabase);
+
   // Local database transaction routes
   app.get("/api/transactions", getTransactionsSimple);
   app.get("/api/transactions/summary", getTransactionSummary);

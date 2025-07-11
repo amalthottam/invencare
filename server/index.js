@@ -76,21 +76,21 @@ export function createServer() {
   });
 
   // AWS RDS Health Check endpoint
-  // app.get("/api/health", async (req, res) => {
-  //   try {
-  //     const dbHealthy = await checkRDSConnection();
-  //     res.json({
-  //       status: 'ok',
-  //       database: dbHealthy ? 'connected' : 'disconnected',
-  //       timestamp: new Date().toISOString()
-  //     });
-  //   } catch (error) {
-  //     res.status(500).json({
-  //       status: 'error',
-  //       error: error.message
-  //     });
-  //   }
-  // });
+  app.get("/api/health", async (req, res) => {
+    try {
+      const dbHealthy = await checkRDSConnection();
+      res.json({
+        status: "ok",
+        database: dbHealthy ? "connected" : "disconnected",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        error: error.message,
+      });
+    }
+  });
 
   // AWS RDS Product Management endpoints
   app.get("/api/products", async (req, res) => {

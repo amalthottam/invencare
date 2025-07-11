@@ -31,7 +31,7 @@ export default function ProductInfo() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
-  const isEditMode = location.pathname.includes('/edit');
+  const isEditMode = location.pathname.includes("/edit");
 
   const [product, setProduct] = useState(null);
   const [categories, setCategories] = useState([]);
@@ -55,7 +55,7 @@ export default function ProductInfo() {
       return;
     }
 
-        fetchProduct();
+    fetchProduct();
     if (isEditMode) {
       fetchCategories();
     }
@@ -83,7 +83,7 @@ export default function ProductInfo() {
         }
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-            const data = await response.json();
+      const data = await response.json();
       setProduct(data.product);
 
       // Populate form data in edit mode
@@ -113,7 +113,7 @@ export default function ProductInfo() {
     navigate("/login");
   };
 
-    const handleEdit = () => {
+  const handleEdit = () => {
     navigate(`/products/${id}/edit`);
   };
 
@@ -224,7 +224,7 @@ export default function ProductInfo() {
                   <div className="h-10 w-10 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
                     <Package className="h-6 w-6 text-white" />
                   </div>
-                                    <h1 className="text-3xl font-bold tracking-tight">
+                  <h1 className="text-3xl font-bold tracking-tight">
                     {isEditMode ? "Edit Product" : product.productName}
                   </h1>
                 </div>
@@ -257,16 +257,17 @@ export default function ProductInfo() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-3">
-                        {/* Main Product Info */}
+            {/* Main Product Info */}
             <div className="lg:col-span-2">
               <Card>
                 <CardHeader>
-                  <CardTitle>{isEditMode ? "Edit Product" : "Product Details"}</CardTitle>
+                  <CardTitle>
+                    {isEditMode ? "Edit Product" : "Product Details"}
+                  </CardTitle>
                   <CardDescription>
                     {isEditMode
                       ? "Update product information"
-                      : "Comprehensive information about this product"
-                    }
+                      : "Comprehensive information about this product"}
                   </CardDescription>
                 </CardHeader>
                 <CardContent className="space-y-6">
@@ -294,7 +295,10 @@ export default function ProductInfo() {
                             id="productId"
                             value={formData.productId}
                             onChange={(e) =>
-                              setFormData({ ...formData, productId: e.target.value })
+                              setFormData({
+                                ...formData,
+                                productId: e.target.value,
+                              })
                             }
                             required
                           />
@@ -305,7 +309,10 @@ export default function ProductInfo() {
                             id="category"
                             value={formData.category_id}
                             onChange={(e) =>
-                              setFormData({ ...formData, category_id: e.target.value })
+                              setFormData({
+                                ...formData,
+                                category_id: e.target.value,
+                              })
                             }
                             className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                             required
@@ -326,7 +333,10 @@ export default function ProductInfo() {
                             step="0.01"
                             value={formData.price}
                             onChange={(e) =>
-                              setFormData({ ...formData, price: e.target.value })
+                              setFormData({
+                                ...formData,
+                                price: e.target.value,
+                              })
                             }
                             required
                           />
@@ -338,7 +348,10 @@ export default function ProductInfo() {
                             type="number"
                             value={formData.stock}
                             onChange={(e) =>
-                              setFormData({ ...formData, stock: e.target.value })
+                              setFormData({
+                                ...formData,
+                                stock: e.target.value,
+                              })
                             }
                             required
                           />
@@ -351,7 +364,10 @@ export default function ProductInfo() {
                           id="description"
                           value={formData.description}
                           onChange={(e) =>
-                            setFormData({ ...formData, description: e.target.value })
+                            setFormData({
+                              ...formData,
+                              description: e.target.value,
+                            })
                           }
                           placeholder="Enter product description"
                         />
@@ -360,122 +376,126 @@ export default function ProductInfo() {
                   ) : (
                     // View Mode Content
                     <>
-                  {/* Basic Info */}
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Product Name
-                      </label>
-                      <p className="text-lg font-semibold">
-                        {product.productName}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Product ID
-                      </label>
-                      <p className="text-lg font-mono text-blue-600">
-                        {product.productId}
-                      </p>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Category
-                      </label>
-                      <div className="mt-1">
-                        <CategoryBadge category={product.category} />
+                      {/* Basic Info */}
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Product Name
+                          </label>
+                          <p className="text-lg font-semibold">
+                            {product.productName}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Product ID
+                          </label>
+                          <p className="text-lg font-mono text-blue-600">
+                            {product.productId}
+                          </p>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Category
+                          </label>
+                          <div className="mt-1">
+                            <CategoryBadge category={product.category} />
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Price
+                          </label>
+                          <p className="text-lg font-semibold text-green-600">
+                            ${product.price}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Price
-                      </label>
-                      <p className="text-lg font-semibold text-green-600">
-                        ${product.price}
-                      </p>
-                    </div>
-                  </div>
 
-                  {/* Description */}
-                  {product.description && (
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Description
-                      </label>
-                      <p className="mt-1 text-base">{product.description}</p>
-                    </div>
+                      {/* Description */}
+                      {product.description && (
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Description
+                          </label>
+                          <p className="mt-1 text-base">
+                            {product.description}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Location Info */}
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Store
+                          </label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Building className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-base">{product.storeName}</p>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Location
+                          </label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <MapPin className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-base">
+                              {product.location || "Not specified"}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Additional Info */}
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Barcode
+                          </label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Barcode className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-base font-mono">
+                              {product.barcode || "Not specified"}
+                            </p>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Supplier
+                          </label>
+                          <p className="text-base mt-1">
+                            {product.supplier || "Not specified"}
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Dates */}
+                      <div className="grid gap-4 sm:grid-cols-2">
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Created Date
+                          </label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-base">
+                              {product.createdAt || "Not available"}
+                            </p>
+                          </div>
+                        </div>
+                        <div>
+                          <label className="text-sm font-medium text-muted-foreground">
+                            Last Updated
+                          </label>
+                          <div className="flex items-center gap-2 mt-1">
+                            <Calendar className="h-4 w-4 text-muted-foreground" />
+                            <p className="text-base">{product.lastUpdated}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
                   )}
-
-                  {/* Location Info */}
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Store
-                      </label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Building className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-base">{product.storeName}</p>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Location
-                      </label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <MapPin className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-base">
-                          {product.location || "Not specified"}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Additional Info */}
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Barcode
-                      </label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Barcode className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-base font-mono">
-                          {product.barcode || "Not specified"}
-                        </p>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Supplier
-                      </label>
-                      <p className="text-base mt-1">
-                        {product.supplier || "Not specified"}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Dates */}
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Created Date
-                      </label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-base">
-                          {product.createdAt || "Not available"}
-                        </p>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium text-muted-foreground">
-                        Last Updated
-                      </label>
-                      <div className="flex items-center gap-2 mt-1">
-                        <Calendar className="h-4 w-4 text-muted-foreground" />
-                        <p className="text-base">{product.lastUpdated}</p>
-                      </div>
-                    </div>
-                  </div>
                 </CardContent>
               </Card>
             </div>
@@ -568,25 +588,27 @@ export default function ProductInfo() {
               </Card>
 
               {/* Quick Actions */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Quick Actions</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <Button onClick={handleEdit} className="w-full">
-                    <Edit className="h-4 w-4 mr-2" />
-                    Edit Product
-                  </Button>
-                  <Button variant="outline" className="w-full">
-                    <TrendingUp className="h-4 w-4 mr-2" />
-                    View Analytics
-                  </Button>
-                  <Button variant="outline" className="w-full">
-                    <DollarSign className="h-4 w-4 mr-2" />
-                    Update Price
-                  </Button>
-                </CardContent>
-              </Card>
+              {!isEditMode && (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Quick Actions</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button onClick={handleEdit} className="w-full">
+                      <Edit className="h-4 w-4 mr-2" />
+                      Edit Product
+                    </Button>
+                    <Button variant="outline" className="w-full">
+                      <TrendingUp className="h-4 w-4 mr-2" />
+                      View Analytics
+                    </Button>
+                    <Button variant="outline" className="w-full">
+                      <DollarSign className="h-4 w-4 mr-2" />
+                      Update Price
+                    </Button>
+                  </CardContent>
+                </Card>
+              )}
             </div>
           </div>
         </main>

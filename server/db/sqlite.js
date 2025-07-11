@@ -254,7 +254,6 @@ export const seedSampleData = async () => {
           "mgr_003",
           "Anna Garcia",
           "Expired seafood disposal",
-          twoDaysAgo.toISOString(),
         ],
       ];
 

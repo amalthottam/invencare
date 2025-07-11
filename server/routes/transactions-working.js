@@ -53,8 +53,7 @@ export const getTransactions = async (req, res) => {
     }
 
     // Order and pagination
-    sql += " ORDER BY created_at DESC LIMIT ? OFFSET ?";
-    params.push(parseInt(limit), parseInt(offset));
+    sql += ` ORDER BY created_at DESC LIMIT ${parseInt(limit)} OFFSET ${parseInt(offset)}`;
 
     const [rows] = await req.db.execute(sql, params);
 

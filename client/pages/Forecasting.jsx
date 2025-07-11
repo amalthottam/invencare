@@ -62,8 +62,8 @@ export default function Forecasting() {
         `/api/analytics/demand-predictions?days=${selectedTimeframe}`,
       );
       if (predictionsResponse.ok) {
-        const predictionsData = await predictionsResponse.json();
-        setPredictions(predictionsData.predictions || []);
+        const response = await predictionsResponse.json();
+        setPredictions(response.data.predictions || []);
       }
 
       setError(null);

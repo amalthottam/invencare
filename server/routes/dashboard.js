@@ -26,10 +26,8 @@ export const getTopSellingCategories = async (req, res) => {
     sql += `
       GROUP BY category
       ORDER BY total_revenue DESC
-      LIMIT ?
+      LIMIT ${parseInt(limit)}
     `;
-
-    params.push(parseInt(limit));
 
     const [rows] = await req.db.execute(sql, params);
 

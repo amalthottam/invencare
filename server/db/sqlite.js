@@ -203,7 +203,6 @@ export const seedSampleData = async () => {
           "emp_002",
           "Sarah Johnson",
           "Premium meat selection",
-          yesterday.toISOString(),
         ],
         [
           "RST-2024-006",

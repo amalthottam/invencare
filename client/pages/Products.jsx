@@ -29,9 +29,12 @@ export default function Products() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [storeFilter, setStoreFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [stores, setStores] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);

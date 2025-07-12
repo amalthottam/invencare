@@ -357,80 +357,235 @@ export default function Settings({ user, userRole, storeAccess, onSignOut }) {
           </div>
 
           {/* Profile Settings */}
-          <Card className="mt-6">
-            <CardHeader>
-              <CardTitle>Profile Settings</CardTitle>
-              <CardDescription>
-                Update your personal information and preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <form onSubmit={handleSaveProfile} className="space-y-4 max-w-md">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    value={profileData.name}
-                    onChange={(e) =>
-                      setProfileData({ ...profileData, name: e.target.value })
-                    }
-                    disabled={!isEditingProfile}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profileData.email}
-                    onChange={(e) =>
-                      setProfileData({ ...profileData, email: e.target.value })
-                    }
-                    disabled={!isEditingProfile}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <div className="flex items-center gap-2">
-                    <RoleBadge role={profileData.role} />
-                    <span className="text-sm text-muted-foreground">
-                      {profileData.role}
-                    </span>
+          <div className="grid gap-6 md:grid-cols-2 mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <User className="h-5 w-5" />
+                  Profile Settings
+                </CardTitle>
+                <CardDescription>
+                  Update your personal information and preferences
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <form onSubmit={handleSaveProfile} className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Full Name</Label>
+                    <Input
+                      id="name"
+                      value={profileData.name}
+                      onChange={(e) =>
+                        setProfileData({ ...profileData, name: e.target.value })
+                      }
+                      disabled={!isEditingProfile}
+                    />
                   </div>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="department">Department</Label>
-                  <div className="flex items-center gap-2">
-                    <DepartmentBadge department={profileData.department} />
-                    <span className="text-sm text-muted-foreground">
-                      {profileData.department}
-                    </span>
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={profileData.email}
+                      onChange={(e) =>
+                        setProfileData({
+                          ...profileData,
+                          email: e.target.value,
+                        })
+                      }
+                      disabled={!isEditingProfile}
+                    />
                   </div>
-                </div>
-                <div className="flex gap-2">
-                  {isEditingProfile ? (
-                    <>
-                      <Button type="submit">Save Changes</Button>
+                  <div className="space-y-2">
+                    <Label htmlFor="role">Role</Label>
+                    <div className="flex items-center gap-2">
+                      <RoleBadge role={profileData.role} />
+                      <span className="text-sm text-muted-foreground">
+                        {profileData.role}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="storeAccess">Store Access</Label>
+                    <div className="flex flex-wrap gap-1">
+                      {profileData.storeAccess?.length > 0 ? (
+                        profileData.storeAccess.map((store, index) => (
+                          <Badge key={index} variant="outline">
+                            {store}
+                          </Badge>
+                        ))
+                      ) : (
+                        <Badge variant="secondary">All Stores</Badge>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    {isEditingProfile ? (
+                      <>
+                        <Button type="submit" disabled={isLoading}>
+                          {isLoading ? "Saving..." : "Save Changes"}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => setIsEditingProfile(false)}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    ) : (
+                      <Button
+                        type="button"
+                        onClick={() => setIsEditingProfile(true)}
+                      >
+                        <User className="h-4 w-4 mr-2" />
+                        Edit Profile
+                      </Button>
+                    )}
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+
+            {/* Password Change */}
+            {showChangePassword && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Lock className="h-5 w-5" />
+                    Change Password
+                  </CardTitle>
+                  <CardDescription>
+                    Update your account password
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <form onSubmit={handleChangePassword} className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="currentPassword">Current Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="currentPassword"
+                          type={showPasswords.current ? "text" : "password"}
+                          value={passwordData.currentPassword}
+                          onChange={(e) =>
+                            setPasswordData({
+                              ...passwordData,
+                              currentPassword: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowPasswords({
+                              ...showPasswords,
+                              current: !showPasswords.current,
+                            })
+                          }
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                        >
+                          {showPasswords.current ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="newPassword">New Password</Label>
+                      <div className="relative">
+                        <Input
+                          id="newPassword"
+                          type={showPasswords.new ? "text" : "password"}
+                          value={passwordData.newPassword}
+                          onChange={(e) =>
+                            setPasswordData({
+                              ...passwordData,
+                              newPassword: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowPasswords({
+                              ...showPasswords,
+                              new: !showPasswords.new,
+                            })
+                          }
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                        >
+                          {showPasswords.new ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">
+                        Confirm New Password
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="confirmPassword"
+                          type={showPasswords.confirm ? "text" : "password"}
+                          value={passwordData.confirmPassword}
+                          onChange={(e) =>
+                            setPasswordData({
+                              ...passwordData,
+                              confirmPassword: e.target.value,
+                            })
+                          }
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowPasswords({
+                              ...showPasswords,
+                              confirm: !showPasswords.confirm,
+                            })
+                          }
+                          className="absolute right-3 top-1/2 transform -translate-y-1/2"
+                        >
+                          {showPasswords.confirm ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <Button type="submit" disabled={isLoading}>
+                        {isLoading ? "Changing..." : "Change Password"}
+                      </Button>
                       <Button
                         type="button"
                         variant="outline"
-                        onClick={() => setIsEditingProfile(false)}
+                        onClick={() => {
+                          setShowChangePassword(false);
+                          setPasswordData({
+                            currentPassword: "",
+                            newPassword: "",
+                            confirmPassword: "",
+                          });
+                        }}
                       >
                         Cancel
                       </Button>
-                    </>
-                  ) : (
-                    <Button
-                      type="button"
-                      onClick={() => setIsEditingProfile(true)}
-                    >
-                      Edit Profile
-                    </Button>
-                  )}
-                </div>
-              </form>
-            </CardContent>
-          </Card>
+                    </div>
+                  </form>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </main>
       </div>
     </div>

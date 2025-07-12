@@ -180,7 +180,7 @@ export const getForecastingDashboard = async (req, res) => {
       ),
     );
   } catch (error) {
-    console.error("Forecasting dashboard fetch error:", error);
+    console.error("❌ Forecasting dashboard fetch error:", error);
     res.status(500).json(createApiError(error));
   }
 };

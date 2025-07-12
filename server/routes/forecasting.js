@@ -104,7 +104,7 @@ export const getDemandPredictions = async (req, res) => {
       ),
     );
   } catch (error) {
-    console.error("Demand predictions fetch error:", error);
+    console.error("❌ Demand predictions fetch error:", error);
     res.status(500).json(createApiError(error));
   }
 };

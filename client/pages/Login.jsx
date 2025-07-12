@@ -1,10 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   signIn,
   signUp,
   confirmSignUp,
   resendSignUpCode,
+  getCurrentUser,
+  signOut,
 } from "aws-amplify/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -34,12 +36,34 @@ export default function Login({ onAuthChange }) {
   const [needsConfirmation, setNeedsConfirmation] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
     name: "",
     confirmationCode: "",
   });
+
+  // Check if user is already authenticated when component mounts
+  useEffect(() => {
+    checkExistingAuth();
+  }, []);
+
+  const checkExistingAuth = async () => {
+    try {
+      const currentUser = await getCurrentUser();
+      if (currentUser) {
+        // User is already authenticated, redirect to dashboard
+        navigate("/dashboard");
+        return;
+      }
+    } catch (error) {
+      // No authenticated user, which is expected on login page
+      console.log("No authenticated user found, staying on login page");
+    } finally {
+      setIsCheckingAuth(false);
+    }
+  };
 
   const handleInputChange = (e) => {
     setFormData({
@@ -55,6 +79,20 @@ export default function Login({ onAuthChange }) {
     setError("");
 
     try {
+      // Check if user is already authenticated before attempting sign in
+      try {
+        const currentUser = await getCurrentUser();
+        if (currentUser) {
+          // User is already signed in, sign them out first
+          await signOut();
+          setSuccess("Previous session ended. Please sign in again.");
+          // Add a small delay to allow the sign out to complete
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      } catch (authError) {
+        // No current user, which is expected, continue with sign in
+      }
+
       await signIn({
         username: formData.email,
         password: formData.password,
@@ -65,7 +103,24 @@ export default function Login({ onAuthChange }) {
       navigate("/dashboard");
     } catch (error) {
       console.error("Sign in error:", error);
-      setError(error.message || "Failed to sign in. Please try again.");
+
+      // Handle specific error cases
+      if (error.name === "UserAlreadyAuthenticatedException") {
+        setError("You are already signed in. Redirecting to dashboard...");
+        setTimeout(() => {
+          onAuthChange();
+          navigate("/dashboard");
+        }, 2000);
+      } else if (error.name === "NotAuthorizedException") {
+        setError("Incorrect email or password. Please try again.");
+      } else if (error.name === "UserNotConfirmedException") {
+        setError(
+          "Please confirm your email before signing in. Check your email for the verification code.",
+        );
+        setNeedsConfirmation(true);
+      } else {
+        setError(error.message || "Failed to sign in. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }

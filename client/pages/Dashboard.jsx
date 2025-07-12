@@ -214,38 +214,82 @@ export default function Dashboard() {
       //   setAnalyticsData(responsePayload);
       // }
 
-      // Fetch real dashboard analytics data
-      const storeParam =
-        selectedStore !== "all" ? `?storeId=${selectedStore}` : "";
-      const response = await fetch(`/api/dashboard/analytics${storeParam}`);
+      // Fetch real dashboard analytics data with improved error handling
+      let analyticsDataResult = null;
 
-      if (response.ok) {
-        const result = await response.json();
-        const data = result.data;
-        setAnalyticsData({
-          totalProducts: data.totalProducts,
-          lowStockItems: data.lowStockItems,
-          revenueThisMonth: data.revenueThisMonth,
-          inventoryTurnover: data.inventoryTurnover,
-          topSellingCategories: data.topSellingCategories,
+      try {
+        const storeParam =
+          selectedStore !== "all" ? `?storeId=${selectedStore}` : "";
+
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
+        const response = await fetch(`/api/dashboard/analytics${storeParam}`, {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          signal: controller.signal,
         });
-      } else {
-        // Fallback to basic inventory data if dashboard API fails
-        const fallbackResponse = await fetch("/api/analytics/inventory-db");
-        if (fallbackResponse.ok) {
-          const data = await fallbackResponse.json();
-          setAnalyticsData({
+
+        clearTimeout(timeoutId);
+
+        if (response.ok) {
+          const result = await response.json();
+          const data = result.data;
+          analyticsDataResult = {
             totalProducts: data.totalProducts,
-            lowStockItems: data.lowStockItems.length,
-            revenueThisMonth: data.totalValue,
-            inventoryTurnover: 0,
-            topSellingCategories: [],
-          });
+            lowStockItems: data.lowStockItems,
+            revenueThisMonth: data.revenueThisMonth,
+            inventoryTurnover: data.inventoryTurnover,
+            topSellingCategories: data.topSellingCategories,
+          };
         } else {
+          console.warn(
+            `Dashboard API returned ${response.status}: ${response.statusText}`,
+          );
+          throw new Error(`API returned ${response.status}`);
+        }
+      } catch (fetchError) {
+        console.warn(
+          "Primary dashboard API failed, trying fallback:",
+          fetchError.message,
+        );
+
+        try {
+          // Fallback to basic inventory data if dashboard API fails
+          const fallbackResponse = await fetch("/api/analytics/inventory-db", {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (fallbackResponse.ok) {
+            const data = await fallbackResponse.json();
+            analyticsDataResult = {
+              totalProducts: data.totalProducts,
+              lowStockItems: data.lowStockItems.length,
+              revenueThisMonth: data.totalValue,
+              inventoryTurnover: 0,
+              topSellingCategories: [],
+            };
+            console.info("Using fallback inventory data");
+          } else {
+            throw new Error(`Fallback API returned ${fallbackResponse.status}`);
+          }
+        } catch (fallbackError) {
+          console.warn(
+            "Fallback API also failed, using mock data:",
+            fallbackError.message,
+          );
           // Final fallback to mock data
-          setAnalyticsData(storeAnalytics[selectedStore]);
+          analyticsDataResult =
+            storeAnalytics[selectedStore] || storeAnalytics.all;
         }
       }
+
+      setAnalyticsData(analyticsDataResult);
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
       // Set fallback data

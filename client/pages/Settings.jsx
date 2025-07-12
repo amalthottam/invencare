@@ -183,42 +183,59 @@ export default function Settings({ user, userRole, storeAccess, onSignOut }) {
             </p>
           </div>
 
+          {/* Error/Success Messages */}
+          {error && (
+            <div className="mb-6 p-4 text-sm text-red-800 bg-red-50 border border-red-200 rounded-md">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="mb-6 p-4 text-sm text-green-800 bg-green-50 border border-green-200 rounded-md">
+              {success}
+            </div>
+          )}
+
           {/* Settings Cards */}
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
-                  User Management
-                </CardTitle>
-                <CardDescription>
-                  Manage user accounts and permissions
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span>Total Users</span>
-                    <Badge variant="secondary">15</Badge>
+            {(userRole === "admin" || userRole === "manager") && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Users className="h-5 w-5" />
+                    User Management
+                  </CardTitle>
+                  <CardDescription>
+                    Manage user accounts and permissions
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span>Your Role</span>
+                      <RoleBadge role={userRole} />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Store Access</span>
+                      <Badge variant="secondary">
+                        {storeAccess?.length > 0 ? storeAccess.length : "All"}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Account Status</span>
+                      <StatusBadge status="Active" />
+                    </div>
+                    <Button
+                      className="w-full"
+                      size="sm"
+                      onClick={handleManageUsers}
+                      disabled={userRole !== "admin"}
+                    >
+                      {userRole === "admin" ? "Manage Users" : "View Users"}
+                    </Button>
                   </div>
-                  <div className="flex items-center justify-between">
-                    <span>Active Users</span>
-                    <Badge variant="default">12</Badge>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Pending Users</span>
-                    <Badge variant="outline">3</Badge>
-                  </div>
-                  <Button
-                    className="w-full"
-                    size="sm"
-                    onClick={handleManageUsers}
-                  >
-                    Manage Users
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            )}
 
             <Card>
               <CardHeader>
@@ -233,25 +250,32 @@ export default function Settings({ user, userRole, storeAccess, onSignOut }) {
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span>Two-Factor Auth</span>
+                    <span>Authentication</span>
                     <StatusBadge status="Active" />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Session Timeout</span>
-                    <span className="text-sm text-muted-foreground">
-                      30 min
-                    </span>
+                    <span>Password Strength</span>
+                    <StatusBadge status="Strong" />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Password Policy</span>
+                    <span>Session Status</span>
                     <StatusBadge status="Active" />
                   </div>
                   <Button
                     className="w-full"
                     size="sm"
+                    onClick={() => setShowChangePassword(!showChangePassword)}
+                  >
+                    <Lock className="h-4 w-4 mr-2" />
+                    Change Password
+                  </Button>
+                  <Button
+                    className="w-full"
+                    size="sm"
+                    variant="outline"
                     onClick={handleSecuritySettings}
                   >
-                    Security Settings
+                    Advanced Security
                   </Button>
                 </div>
               </CardContent>
@@ -260,37 +284,76 @@ export default function Settings({ user, userRole, storeAccess, onSignOut }) {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Database className="h-5 w-5" />
-                  System Settings
+                  <Bell className="h-5 w-5" />
+                  Notifications
                 </CardTitle>
                 <CardDescription>
-                  Application and system configuration
+                  Manage your notification preferences
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span>Database Status</span>
-                    <StatusBadge status="Online" />
+                    <span>Email Notifications</span>
+                    <StatusBadge status="Active" />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Backup Status</span>
-                    <StatusBadge status="Success" />
+                    <span>Low Stock Alerts</span>
+                    <StatusBadge status="Active" />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>API Status</span>
-                    <StatusBadge status="Online" />
+                    <span>System Updates</span>
+                    <StatusBadge status="Active" />
                   </div>
                   <Button
                     className="w-full"
                     size="sm"
-                    onClick={handleSystemSettings}
+                    onClick={() =>
+                      alert("Notification settings would open here")
+                    }
                   >
-                    System Settings
+                    Configure Notifications
                   </Button>
                 </div>
               </CardContent>
             </Card>
+
+            {userRole === "admin" && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Database className="h-5 w-5" />
+                    System Settings
+                  </CardTitle>
+                  <CardDescription>
+                    Application and system configuration
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                      <span>Database Status</span>
+                      <StatusBadge status="Online" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>Backup Status</span>
+                      <StatusBadge status="Success" />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <span>API Status</span>
+                      <StatusBadge status="Online" />
+                    </div>
+                    <Button
+                      className="w-full"
+                      size="sm"
+                      onClick={handleSystemSettings}
+                    >
+                      System Settings
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
 
           {/* Profile Settings */}

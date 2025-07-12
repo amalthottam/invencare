@@ -145,109 +145,52 @@ export default function Login({ onAuthChange }) {
       : handleSignIn;
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <div className="w-full max-w-md space-y-8">
-        {/* Logo and header */}
-        <div className="text-center">
-          <div className="mx-auto h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
-            <Package className="h-7 w-7 text-primary-foreground" />
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full mb-4">
+            <ShoppingCart className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-3xl font-bold tracking-tight">InvenCare</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {confirmationStep
-              ? "Confirm your account"
-              : isSignUp
-                ? "Create your supermarket inventory account"
-                : "Sign in to your supermarket inventory system"}
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900">InvenCare</h1>
+          <p className="text-gray-600 mt-2">Inventory Management System</p>
         </div>
 
-        {/* Authentication form */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>
-              {confirmationStep
-                ? "Confirm Account"
+        <Card className="shadow-xl border-0">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl text-center">
+              {needsConfirmation
+                ? "Verify Email"
                 : isSignUp
-                  ? "Sign up"
-                  : "Sign in"}
+                  ? "Create Account"
+                  : "Welcome Back"}
             </CardTitle>
-            <CardDescription>
-              {confirmationStep
-                ? "Enter the confirmation code sent to your email"
+            <CardDescription className="text-center">
+              {needsConfirmation
+                ? "Enter the verification code sent to your email"
                 : isSignUp
-                  ? "Create an account to get started"
-                  : "Enter your credentials to access your account"}
+                  ? "Create your InvenCare account"
+                  : "Sign in to access your dashboard"}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!confirmationStep && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      className="h-11"
-                    />
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
-                        value={formData.password}
-                        onChange={handleInputChange}
-                        required
-                        className="h-11 pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {isSignUp && (
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm Password</Label>
-                      <Input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type="password"
-                        placeholder="Confirm your password"
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                        required
-                        className="h-11"
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-
-              {confirmationStep && (
+          <CardContent className="space-y-4">
+            {/* Error/Success Messages */}
+            {error && (
+              <div className="p-3 text-sm text-red-800 bg-red-50 border border-red-200 rounded-md">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="p-3 text-sm text-green-800 bg-green-50 border border-green-200 rounded-md">
+                {success}
+              </div>
+            )}
+            {needsConfirmation ? (
+              /* Email Confirmation Form */
+              <form onSubmit={handleConfirmSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="confirmationCode">Confirmation Code</Label>
+                  <Label htmlFor="confirmationCode">Verification Code</Label>
                   <Input
                     id="confirmationCode"
                     name="confirmationCode"
@@ -256,62 +199,211 @@ export default function Login({ onAuthChange }) {
                     value={formData.confirmationCode}
                     onChange={handleInputChange}
                     required
-                    className="h-11"
+                    className="text-center text-lg tracking-wider"
                     maxLength={6}
                   />
                 </div>
-              )}
 
-              <Button
-                type="submit"
-                className="w-full h-11"
-                disabled={isLoading}
-              >
-                {isLoading
-                  ? "Processing..."
-                  : confirmationStep
-                    ? "Confirm Account"
-                    : isSignUp
-                      ? "Sign up"
-                      : "Sign in"}
-              </Button>
-            </form>
-
-            {confirmationStep && (
-              <div className="mt-4 text-center">
                 <Button
-                  variant="ghost"
-                  onClick={handleResendCode}
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                   disabled={isLoading}
                 >
-                  Resend confirmation code
+                  {isLoading ? "Verifying..." : "Verify Email"}
                 </Button>
-              </div>
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={handleResendCode}
+                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                    disabled={isLoading}
+                  >
+                    Resend verification code
+                  </button>
+                </div>
+              </form>
+            ) : isSignUp ? (
+              /* Sign Up Form */
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      id="name"
+                      name="name"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      required
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Create a strong password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                      className="pl-10 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Password must be at least 8 characters with uppercase,
+                    lowercase, numbers, and symbols
+                  </p>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Creating Account..." : "Create Account"}
+                </Button>
+              </form>
+            ) : (
+              /* Sign In Form */
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                      className="pl-10 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Signing In..." : "Sign In"}
+                </Button>
+              </form>
             )}
 
-            <div className="mt-6 text-center">
-              {!confirmationStep && (
-                <Button
-                  variant="ghost"
-                  onClick={() => setIsSignUp(!isSignUp)}
-                  disabled={isLoading}
-                >
+            {/* Toggle between Sign In/Sign Up */}
+            {!needsConfirmation && (
+              <div className="text-center pt-4 border-t">
+                <p className="text-sm text-gray-600">
                   {isSignUp
-                    ? "Already have an account? Sign in"
-                    : "Don't have an account? Sign up"}
-                </Button>
-              )}
-
-              <p className="text-xs text-muted-foreground mt-2">
-                Demo credentials: Use any email and password
-              </p>
-            </div>
+                    ? "Already have an account?"
+                    : "Don't have an account?"}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSignUp(!isSignUp);
+                      setError("");
+                      setSuccess("");
+                      setFormData({
+                        email: "",
+                        password: "",
+                        name: "",
+                        confirmationCode: "",
+                      });
+                    }}
+                    className="ml-1 text-blue-600 hover:text-blue-700 hover:underline font-medium"
+                  >
+                    {isSignUp ? "Sign In" : "Sign Up"}
+                  </button>
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Footer */}
-        <div className="text-center text-xs text-muted-foreground">
-          <p>© 2024 InvenCare. All rights reserved.</p>
+        {/* Demo Credentials */}
+        <div className="mt-6 p-4 bg-white/60 backdrop-blur-sm rounded-lg border">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">
+            Demo Credentials
+          </h3>
+          <div className="text-xs text-gray-600 space-y-1">
+            <p>
+              <strong>Admin:</strong> admin@invencare.com / Admin123!
+            </p>
+            <p>
+              <strong>Manager:</strong> manager@invencare.com / Manager123!
+            </p>
+            <p>
+              <strong>Employee:</strong> employee@invencare.com / Employee123!
+            </p>
+          </div>
         </div>
       </div>
     </div>

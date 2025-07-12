@@ -1,5 +1,13 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  signIn,
+  signUp,
+  confirmSignUp,
+  resendSignUpCode,
+  getCurrentUser,
+  signOut,
+} from "aws-amplify/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,323 +18,250 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Package, Eye, EyeOff } from "lucide-react";
+import {
+  Package,
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  ShoppingCart,
+} from "lucide-react";
 
-// AWS Cognito Authentication
-// import { signIn, signUp, confirmSignUp, resendSignUpCode } from 'aws-amplify/auth';
-// import { toast } from "@/components/ui/use-toast";
-
-export default function Login() {
+export default function Login({ onAuthChange }) {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
-  const [confirmationStep, setConfirmationStep] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    confirmPassword: "",
+    name: "",
     confirmationCode: "",
   });
 
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+  // Check if user is already authenticated when component mounts
+  useEffect(() => {
+    checkExistingAuth();
+  }, []);
+
+  const checkExistingAuth = async () => {
+    try {
+      const currentUser = await getCurrentUser();
+      if (currentUser) {
+        // User is already authenticated, redirect to dashboard
+        navigate("/dashboard");
+        return;
+      }
+    } catch (error) {
+      // No authenticated user, which is expected on login page
+      console.log("No authenticated user found, staying on login page");
+    } finally {
+      setIsCheckingAuth(false);
+    }
   };
 
-  // AWS Cognito Sign In
+  const handleInputChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+    setError("");
+  };
+
   const handleSignIn = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
     try {
-      // AWS Cognito Sign In Implementation with Store Access Validation
-      // const { isSignedIn, nextStep } = await signIn({
-      //   username: formData.email,
-      //   password: formData.password,
-      // });
-      //
-      // if (isSignedIn) {
-      //   // After successful sign-in, fetch user attributes to validate store access
-      //   const userAttributes = await fetchUserAttributes();
-      //   const userStatus = userAttributes['custom:status'];
-      //   const storeAccess = userAttributes['custom:store_access'];
-      //   const userRole = userAttributes['custom:role'];
-      //
-      //   // Validate user account status
-      //   if (userStatus === 'inactive' || userStatus === 'suspended') {
-      //     await signOut();
-      //     toast({
-      //       title: "Account Inactive",
-      //       description: "Your account has been deactivated. Please contact your administrator.",
-      //       variant: "destructive",
-      //     });
-      //     return;
-      //   }
-      //
-      //   if (userStatus === 'pending') {
-      //     await signOut();
-      //     toast({
-      //       title: "Account Pending Approval",
-      //       description: "Your account is pending admin approval. Please wait for activation.",
-      //       variant: "destructive",
-      //     });
-      //     return;
-      //   }
-      //
-      //   // Validate store access
-      //   if (!storeAccess || (storeAccess !== 'all' && !storeAccess.includes('store_'))) {
-      //     await signOut();
-      //     toast({
-      //       title: "No Store Access",
-      //       description: "You don't have access to any stores. Please contact your administrator.",
-      //       variant: "destructive",
-      //     });
-      //     return;
-      //   }
-      //
-      //   toast({
-      //     title: "Success",
-      //     description: `Welcome back! You have ${storeAccess === 'all' ? 'full' : 'limited'} store access.`,
-      //   });
-      //   navigate("/dashboard");
-      // } else {
-      //   // Handle MFA or other next steps
-      //   console.log('Sign in next step:', nextStep);
-      // }
-
-      // Demo implementation (remove when implementing Cognito)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (formData.email && formData.password) {
-        localStorage.setItem("isAuthenticated", "true");
-        navigate("/dashboard");
+      // Check if user is already authenticated before attempting sign in
+      try {
+        const currentUser = await getCurrentUser();
+        if (currentUser) {
+          // User is already signed in, sign them out first
+          await signOut();
+          setSuccess("Previous session ended. Please sign in again.");
+          // Add a small delay to allow the sign out to complete
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+      } catch (authError) {
+        // No current user, which is expected, continue with sign in
       }
+
+      await signIn({
+        username: formData.email,
+        password: formData.password,
+      });
+
+      setSuccess("Sign in successful!");
+      onAuthChange();
+      navigate("/dashboard");
     } catch (error) {
       console.error("Sign in error:", error);
-      // toast({
-      //   title: "Error",
-      //   description: error.message || "Failed to sign in",
-      //   variant: "destructive",
-      // });
+
+      // Handle specific error cases
+      if (error.name === "UserAlreadyAuthenticatedException") {
+        setError("You are already signed in. Redirecting to dashboard...");
+        setTimeout(() => {
+          onAuthChange();
+          navigate("/dashboard");
+        }, 2000);
+      } else if (error.name === "NotAuthorizedException") {
+        setError("Incorrect email or password. Please try again.");
+      } else if (error.name === "UserNotConfirmedException") {
+        setError(
+          "Please confirm your email before signing in. Check your email for the verification code.",
+        );
+        setNeedsConfirmation(true);
+      } else {
+        setError(error.message || "Failed to sign in. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  // AWS Cognito Sign Up with Store Assignment
   const handleSignUp = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
     try {
-      // AWS Cognito Sign Up Implementation with Store-Based Attributes
-      // const { isSignUpComplete, userId, nextStep } = await signUp({
-      //   username: formData.email,
-      //   password: formData.password,
-      //   options: {
-      //     userAttributes: {
-      //       email: formData.email,
-      //       given_name: formData.firstName || '',
-      //       family_name: formData.lastName || '',
-      //       'custom:role': 'employee', // Default role for new signups
-      //       'custom:primary_store': 'store_001', // Assign to default store (can be changed by admin)
-      //       'custom:store_access': 'store_001', // Initial access to primary store only
-      //       'custom:department': 'general', // Department assignment
-      //       'custom:hire_date': new Date().toISOString().split('T')[0],
-      //       'custom:status': 'pending' // Account needs admin approval
-      //     },
-      //   },
-      // });
-      //
-      // // Note: In production, new employee accounts should require admin approval
-      // // before gaining access to store systems and inventory data
-      //
-      // if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
-      //   setConfirmationStep(true);
-      //   toast({
-      //     title: "Confirmation Required",
-      //     description: "Please check your email for confirmation code. Admin approval may be required.",
-      //   });
-      // }
+      await signUp({
+        username: formData.email,
+        password: formData.password,
+        attributes: {
+          email: formData.email,
+          name: formData.name,
+          "custom:role": "employee", // Default role
+          "custom:store_access": "", // Will be set by admin
+        },
+      });
 
-      // Demo implementation
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setConfirmationStep(true);
+      setSuccess(
+        "Account created! Please check your email for verification code.",
+      );
+      setNeedsConfirmation(true);
     } catch (error) {
       console.error("Sign up error:", error);
-      // toast({
-      //   title: "Error",
-      //   description: error.message || "Failed to sign up",
-      //   variant: "destructive",
-      // });
+      setError(error.message || "Failed to create account. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // AWS Cognito Confirm Sign Up
   const handleConfirmSignUp = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
     try {
-      // AWS Cognito Confirm Sign Up Implementation
-      // const { isSignUpComplete, nextStep } = await confirmSignUp({
-      //   username: formData.email,
-      //   confirmationCode: formData.confirmationCode,
-      // });
-      //
-      // if (isSignUpComplete) {
-      //   toast({
-      //     title: "Success",
-      //     description: "Account confirmed! Please sign in.",
-      //   });
-      //   setIsSignUp(false);
-      //   setConfirmationStep(false);
-      // }
+      await confirmSignUp({
+        username: formData.email,
+        confirmationCode: formData.confirmationCode,
+      });
 
-      // Demo implementation
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setSuccess("Email verified! You can now sign in.");
+      setNeedsConfirmation(false);
       setIsSignUp(false);
-      setConfirmationStep(false);
+      setFormData({ ...formData, confirmationCode: "" });
     } catch (error) {
       console.error("Confirmation error:", error);
-      // toast({
-      //   title: "Error",
-      //   description: error.message || "Failed to confirm account",
-      //   variant: "destructive",
-      // });
+      setError(error.message || "Failed to verify email. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // AWS Cognito Resend Confirmation Code
   const handleResendCode = async () => {
+    setIsLoading(true);
+    setError("");
+
     try {
-      // await resendSignUpCode({ username: formData.email });
-      // toast({
-      //   title: "Code Sent",
-      //   description: "Confirmation code resent to your email",
-      // });
+      await resendSignUpCode({ username: formData.email });
+      setSuccess("Verification code resent! Please check your email.");
     } catch (error) {
       console.error("Resend code error:", error);
+      setError(error.message || "Failed to resend code. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSubmit = confirmationStep
+  const handleSubmit = needsConfirmation
     ? handleConfirmSignUp
     : isSignUp
       ? handleSignUp
       : handleSignIn;
 
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 to-slate-100 p-4">
-      <div className="w-full max-w-md space-y-8">
-        {/* Logo and header */}
+  // Show loading spinner while checking existing authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
         <div className="text-center">
-          <div className="mx-auto h-12 w-12 rounded-xl bg-primary flex items-center justify-center mb-4">
-            <Package className="h-7 w-7 text-primary-foreground" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full mb-4">
+            <ShoppingCart className="w-8 h-8 text-white" />
           </div>
-          <h2 className="text-3xl font-bold tracking-tight">InvenCare</h2>
-          <p className="mt-2 text-sm text-muted-foreground">
-            {confirmationStep
-              ? "Confirm your account"
-              : isSignUp
-                ? "Create your supermarket inventory account"
-                : "Sign in to your supermarket inventory system"}
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 mb-4">InvenCare</h1>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+      <div className="w-full max-w-md">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-full mb-4">
+            <ShoppingCart className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-3xl font-bold text-gray-900">InvenCare</h1>
+          <p className="text-gray-600 mt-2">Inventory Management System</p>
         </div>
 
-        {/* Authentication form */}
-        <Card className="shadow-lg">
-          <CardHeader>
-            <CardTitle>
-              {confirmationStep
-                ? "Confirm Account"
+        <Card className="shadow-xl border-0">
+          <CardHeader className="space-y-1">
+            <CardTitle className="text-2xl text-center">
+              {needsConfirmation
+                ? "Verify Email"
                 : isSignUp
-                  ? "Sign up"
-                  : "Sign in"}
+                  ? "Create Account"
+                  : "Welcome Back"}
             </CardTitle>
-            <CardDescription>
-              {confirmationStep
-                ? "Enter the confirmation code sent to your email"
+            <CardDescription className="text-center">
+              {needsConfirmation
+                ? "Enter the verification code sent to your email"
                 : isSignUp
-                  ? "Create an account to get started"
-                  : "Enter your credentials to access your account"}
+                  ? "Create your InvenCare account"
+                  : "Sign in to access your dashboard"}
             </CardDescription>
           </CardHeader>
-          <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {!confirmationStep && (
-                <>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="Enter your email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      className="h-11"
-                    />
-                  </div>
 
-                  <div className="space-y-2">
-                    <Label htmlFor="password">Password</Label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        name="password"
-                        type={showPassword ? "text" : "password"}
-                        placeholder="Enter your password"
-                        value={formData.password}
-                        onChange={handleInputChange}
-                        required
-                        className="h-11 pr-10"
-                      />
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
-                        onClick={() => setShowPassword(!showPassword)}
-                      >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4 text-muted-foreground" />
-                        ) : (
-                          <Eye className="h-4 w-4 text-muted-foreground" />
-                        )}
-                      </Button>
-                    </div>
-                  </div>
-
-                  {isSignUp && (
-                    <div className="space-y-2">
-                      <Label htmlFor="confirmPassword">Confirm Password</Label>
-                      <Input
-                        id="confirmPassword"
-                        name="confirmPassword"
-                        type="password"
-                        placeholder="Confirm your password"
-                        value={formData.confirmPassword}
-                        onChange={handleInputChange}
-                        required
-                        className="h-11"
-                      />
-                    </div>
-                  )}
-                </>
-              )}
-
-              {confirmationStep && (
+          <CardContent className="space-y-4">
+            {/* Error/Success Messages */}
+            {error && (
+              <div className="p-3 text-sm text-red-800 bg-red-50 border border-red-200 rounded-md">
+                {error}
+              </div>
+            )}
+            {success && (
+              <div className="p-3 text-sm text-green-800 bg-green-50 border border-green-200 rounded-md">
+                {success}
+              </div>
+            )}
+            {needsConfirmation ? (
+              /* Email Confirmation Form */
+              <form onSubmit={handleConfirmSignUp} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="confirmationCode">Confirmation Code</Label>
+                  <Label htmlFor="confirmationCode">Verification Code</Label>
                   <Input
                     id="confirmationCode"
                     name="confirmationCode"
@@ -335,62 +270,211 @@ export default function Login() {
                     value={formData.confirmationCode}
                     onChange={handleInputChange}
                     required
-                    className="h-11"
+                    className="text-center text-lg tracking-wider"
                     maxLength={6}
                   />
                 </div>
-              )}
 
-              <Button
-                type="submit"
-                className="w-full h-11"
-                disabled={isLoading}
-              >
-                {isLoading
-                  ? "Processing..."
-                  : confirmationStep
-                    ? "Confirm Account"
-                    : isSignUp
-                      ? "Sign up"
-                      : "Sign in"}
-              </Button>
-            </form>
-
-            {confirmationStep && (
-              <div className="mt-4 text-center">
                 <Button
-                  variant="ghost"
-                  onClick={handleResendCode}
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
                   disabled={isLoading}
                 >
-                  Resend confirmation code
+                  {isLoading ? "Verifying..." : "Verify Email"}
                 </Button>
-              </div>
+
+                <div className="text-center">
+                  <button
+                    type="button"
+                    onClick={handleResendCode}
+                    className="text-sm text-blue-600 hover:text-blue-700 hover:underline"
+                    disabled={isLoading}
+                  >
+                    Resend verification code
+                  </button>
+                </div>
+              </form>
+            ) : isSignUp ? (
+              /* Sign Up Form */
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Full Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      id="name"
+                      name="name"
+                      type="text"
+                      placeholder="Enter your full name"
+                      value={formData.name}
+                      onChange={handleInputChange}
+                      required
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Create a strong password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                      className="pl-10 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    Password must be at least 8 characters with uppercase,
+                    lowercase, numbers, and symbols
+                  </p>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Creating Account..." : "Create Account"}
+                </Button>
+              </form>
+            ) : (
+              /* Sign In Form */
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="Enter your email"
+                      value={formData.email}
+                      onChange={handleInputChange}
+                      required
+                      className="pl-10"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="password">Password</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter your password"
+                      value={formData.password}
+                      onChange={handleInputChange}
+                      required
+                      className="pl-10 pr-10"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="h-4 w-4" />
+                      ) : (
+                        <Eye className="h-4 w-4" />
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                <Button
+                  type="submit"
+                  className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700"
+                  disabled={isLoading}
+                >
+                  {isLoading ? "Signing In..." : "Sign In"}
+                </Button>
+              </form>
             )}
 
-            <div className="mt-6 text-center">
-              {!confirmationStep && (
-                <Button
-                  variant="ghost"
-                  onClick={() => setIsSignUp(!isSignUp)}
-                  disabled={isLoading}
-                >
+            {/* Toggle between Sign In/Sign Up */}
+            {!needsConfirmation && (
+              <div className="text-center pt-4 border-t">
+                <p className="text-sm text-gray-600">
                   {isSignUp
-                    ? "Already have an account? Sign in"
-                    : "Don't have an account? Sign up"}
-                </Button>
-              )}
-
-              <p className="text-xs text-muted-foreground mt-2">
-                Demo credentials: Use any email and password
-              </p>
-            </div>
+                    ? "Already have an account?"
+                    : "Don't have an account?"}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsSignUp(!isSignUp);
+                      setError("");
+                      setSuccess("");
+                      setFormData({
+                        email: "",
+                        password: "",
+                        name: "",
+                        confirmationCode: "",
+                      });
+                    }}
+                    className="ml-1 text-blue-600 hover:text-blue-700 hover:underline font-medium"
+                  >
+                    {isSignUp ? "Sign In" : "Sign Up"}
+                  </button>
+                </p>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        {/* Footer */}
-        <div className="text-center text-xs text-muted-foreground">
-          <p>© 2024 InvenCare. All rights reserved.</p>
+        {/* Demo Credentials */}
+        <div className="mt-6 p-4 bg-white/60 backdrop-blur-sm rounded-lg border">
+          <h3 className="text-sm font-semibold text-gray-700 mb-2">
+            Demo Credentials
+          </h3>
+          <div className="text-xs text-gray-600 space-y-1">
+            <p>
+              <strong>Admin:</strong> admin@invencare.com / Admin123!
+            </p>
+            <p>
+              <strong>Manager:</strong> manager@invencare.com / Manager123!
+            </p>
+            <p>
+              <strong>Employee:</strong> employee@invencare.com / Employee123!
+            </p>
+          </div>
         </div>
       </div>
     </div>

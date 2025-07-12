@@ -111,6 +111,7 @@ export const getDemandPredictions = async (req, res) => {
 
 // Get forecasting dashboard summary
 export const getForecastingDashboard = async (req, res) => {
+  console.log("📊 getForecastingDashboard called");
   try {
     // Create mock dashboard data for demo purposes
     const dashboardData = {

@@ -49,21 +49,45 @@ export default function Forecasting() {
       setLoading(true);
 
       // Fetch dashboard summary
+      console.log("Fetching dashboard data...");
       const dashboardResponse = await fetch(
         "/api/analytics/forecasting-dashboard",
       );
+      console.log("Dashboard response status:", dashboardResponse.status);
+
       if (dashboardResponse.ok) {
         const response = await dashboardResponse.json();
+        console.log("Dashboard response:", response);
         setDashboardData(response.data);
+      } else {
+        console.error(
+          "Dashboard API failed:",
+          dashboardResponse.status,
+          dashboardResponse.statusText,
+        );
+        const errorText = await dashboardResponse.text();
+        console.error("Dashboard error details:", errorText);
       }
 
       // Fetch demand predictions
+      console.log("Fetching predictions data...");
       const predictionsResponse = await fetch(
         `/api/analytics/demand-predictions?days=${selectedTimeframe}`,
       );
+      console.log("Predictions response status:", predictionsResponse.status);
+
       if (predictionsResponse.ok) {
         const response = await predictionsResponse.json();
+        console.log("Predictions response:", response);
         setPredictions(response.data.predictions || []);
+      } else {
+        console.error(
+          "Predictions API failed:",
+          predictionsResponse.status,
+          predictionsResponse.statusText,
+        );
+        const errorText = await predictionsResponse.text();
+        console.error("Predictions error details:", errorText);
       }
 
       setError(null);

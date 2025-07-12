@@ -29,9 +29,12 @@ export default function Products() {
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
+  const [storeFilter, setStoreFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [filteredProducts, setFilteredProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [stores, setStores] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [productToDelete, setProductToDelete] = useState(null);
@@ -55,9 +58,10 @@ export default function Products() {
       return;
     }
 
-    // Fetch products and categories from API
+    // Fetch products, categories, and stores from API
     fetchProducts();
     fetchCategories();
+    fetchStores();
   }, [navigate]);
 
   const fetchCategories = async () => {
@@ -69,6 +73,18 @@ export default function Products() {
       }
     } catch (err) {
       console.error("Failed to fetch categories:", err);
+    }
+  };
+
+  const fetchStores = async () => {
+    try {
+      const response = await fetch("/api/stores");
+      if (response.ok) {
+        const data = await response.json();
+        setStores(data.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch stores:", err);
     }
   };
 
@@ -105,10 +121,14 @@ export default function Products() {
         product.storeName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory =
         categoryFilter === "all" || product.category === categoryFilter;
-      return matchesSearch && matchesCategory;
+      const matchesStore =
+        storeFilter === "all" || product.storeName === storeFilter;
+      const matchesStatus =
+        statusFilter === "all" || product.status === statusFilter;
+      return matchesSearch && matchesCategory && matchesStore && matchesStatus;
     });
     setFilteredProducts(filtered);
-  }, [searchTerm, categoryFilter, allProducts]);
+  }, [searchTerm, categoryFilter, storeFilter, statusFilter, allProducts]);
 
   const productCategories = [...new Set(allProducts.map((p) => p.category))];
 
@@ -238,44 +258,67 @@ export default function Products() {
             <>
               {/* Stats Cards */}
               <div className="grid gap-4 md:grid-cols-4 mb-6">
-                <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0">
+                <Card
+                  className={`bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "Available" ? "ring-4 ring-white" : ""}`}
+                  onClick={() =>
+                    setStatusFilter(
+                      statusFilter === "Available" ? "all" : "Available",
+                    )
+                  }
+                >
                   <CardContent className="p-6">
                     <div className="text-2xl font-bold">
                       {
-                        filteredProducts.filter((p) => p.status === "Available")
+                        allProducts.filter((p) => p.status === "Available")
                           .length
                       }
                     </div>
                     <div className="text-green-100">Available Products</div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white border-0">
+                <Card
+                  className={`bg-gradient-to-r from-yellow-500 to-orange-600 text-white border-0 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "Low Stock" ? "ring-4 ring-white" : ""}`}
+                  onClick={() =>
+                    setStatusFilter(
+                      statusFilter === "Low Stock" ? "all" : "Low Stock",
+                    )
+                  }
+                >
                   <CardContent className="p-6">
                     <div className="text-2xl font-bold">
                       {
-                        filteredProducts.filter((p) => p.status === "Low Stock")
+                        allProducts.filter((p) => p.status === "Low Stock")
                           .length
                       }
                     </div>
                     <div className="text-yellow-100">Low Stock Items</div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-r from-red-500 to-pink-600 text-white border-0">
+                <Card
+                  className={`bg-gradient-to-r from-red-500 to-pink-600 text-white border-0 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "Out of Stock" ? "ring-4 ring-white" : ""}`}
+                  onClick={() =>
+                    setStatusFilter(
+                      statusFilter === "Out of Stock" ? "all" : "Out of Stock",
+                    )
+                  }
+                >
                   <CardContent className="p-6">
                     <div className="text-2xl font-bold">
                       {
-                        filteredProducts.filter(
-                          (p) => p.status === "Out of Stock",
-                        ).length
+                        allProducts.filter((p) => p.status === "Out of Stock")
+                          .length
                       }
                     </div>
                     <div className="text-red-100">Out of Stock</div>
                   </CardContent>
                 </Card>
-                <Card className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0">
+                <Card
+                  className={`bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "all" ? "ring-4 ring-white" : ""}`}
+                  onClick={() => setStatusFilter("all")}
+                >
                   <CardContent className="p-6">
                     <div className="text-2xl font-bold">
-                      {filteredProducts.length}
+                      {allProducts.length}
                     </div>
                     <div className="text-blue-100">Total Products</div>
                   </CardContent>
@@ -293,7 +336,7 @@ export default function Products() {
                     className="pl-9"
                   />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <select
                     value={categoryFilter}
                     onChange={(e) => setCategoryFilter(e.target.value)}
@@ -306,6 +349,46 @@ export default function Products() {
                       </option>
                     ))}
                   </select>
+                  <select
+                    value={storeFilter}
+                    onChange={(e) => setStoreFilter(e.target.value)}
+                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="all">All Stores</option>
+                    {stores.map((store) => (
+                      <option key={store.id} value={store.name}>
+                        {store.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="Available">Available</option>
+                    <option value="Low Stock">Low Stock</option>
+                    <option value="Out of Stock">Out of Stock</option>
+                  </select>
+                  {(statusFilter !== "all" ||
+                    storeFilter !== "all" ||
+                    categoryFilter !== "all") && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setStatusFilter("all");
+                        setStoreFilter("all");
+                        setCategoryFilter("all");
+                        setSearchTerm("");
+                      }}
+                      className="h-10"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Clear
+                    </Button>
+                  )}
                 </div>
               </div>
 

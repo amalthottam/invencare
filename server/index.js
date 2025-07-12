@@ -8,6 +8,40 @@ import {
   handleTransactionProcessor,
   handleLambdaHealthCheck,
 } from "./routes/lambda-integration.js";
+import {
+  getTransactions,
+  getTransactionSummary,
+  createTransaction,
+  getStores,
+  getProducts,
+} from "./routes/transactions.js";
+import {
+  getTransactions as getTransactionsWorking,
+  getTransactionSummary as getTransactionSummaryWorking,
+} from "./routes/transactions-working.js";
+import { testDatabase } from "./routes/test-db.js";
+import { testSimple } from "./routes/test-simple.js";
+import { testParams } from "./routes/test-params.js";
+import {
+  getDemandPredictions,
+  getForecastingDashboard,
+} from "./routes/forecasting.js";
+import {
+  getProductPerformance,
+  getDemandForecast,
+  getReorderRecommendations,
+  getAnalyticsDashboard,
+  getProductSalesTrends,
+  initializeAnalytics,
+  generateStoreAnalytics,
+} from "./routes/productAnalytics.js";
+import { ProductAnalyticsService } from "./services/productAnalytics.js";
+import {
+  getTopSellingCategories,
+  getDashboardAnalytics,
+} from "./routes/dashboard.js";
+import { initializeDatabase, seedSampleData, query } from "./db/sqlite.js";
+import { cleanupDatabase } from "./db/cleanup.js";
 
 // AWS Lambda Integration
 // import serverless from 'serverless-http';
@@ -58,6 +92,16 @@ export function createServer() {
   app.use(cors());
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
+
+  // Initialize local database on startup
+  initializeDatabase().then(async (success) => {
+    if (success) {
+      await seedSampleData();
+      // Initialize product analytics tables
+      await ProductAnalyticsService.initializeTables();
+      console.log("🚀 Local database ready");
+    }
+  });
 
   // AWS RDS Database middleware
   app.use(async (req, res, next) => {
@@ -232,11 +276,30 @@ export function createServer() {
   app.put("/api/products/:id", async (req, res) => {
     try {
       const { id } = req.params;
-      const { productName, productId, category_id, stock, price, description } =
-        req.body;
+      const {
+        productName,
+        productId,
+        category_id,
+        stock,
+        price,
+        description,
+        minimumStock,
+        maximumStock,
+      } = req.body;
+
       await req.db.execute(
-        "UPDATE products SET name=?, sku=?, category_id=?, quantity=?, price=?, description=? WHERE id=?",
-        [productName, productId, category_id, stock, price, description, id],
+        "UPDATE products SET name=?, sku=?, category_id=?, quantity=?, price=?, description=?, minimum_stock=?, maximum_stock=? WHERE id=?",
+        [
+          productName,
+          productId,
+          category_id,
+          stock,
+          price,
+          description,
+          minimumStock ? parseInt(minimumStock) : null,
+          maximumStock ? parseInt(maximumStock) : null,
+          id,
+        ],
       );
       res.json({ message: "Product updated successfully" });
     } catch (error) {
@@ -279,121 +342,6 @@ export function createServer() {
     } catch (error) {
       console.error("Analytics error:", error);
       res.status(500).json({ error: "Failed to fetch analytics" });
-    }
-  });
-
-  // AI Analytics API endpoints
-  app.get("/api/analytics/demand-predictions", async (req, res) => {
-    try {
-      const { product_id, store_id, days = 30 } = req.query;
-
-      let query = `
-        SELECT
-          dp.prediction_date,
-          dp.predicted_demand,
-          dp.confidence_interval_lower,
-          dp.confidence_interval_upper,
-          dp.factors,
-          p.name as product_name,
-          p.sku as product_id,
-          s.name as store_name,
-          dfm.model_name,
-          dfm.model_accuracy
-        FROM demand_predictions dp
-        JOIN products p ON dp.product_id = p.id
-        JOIN stores s ON dp.store_id = s.id
-        JOIN demand_forecasting_models dfm ON dp.model_id = dfm.id
-        WHERE dp.prediction_date >= CURDATE()
-          AND dp.prediction_date <= DATE_ADD(CURDATE(), INTERVAL ? DAY)
-      `;
-
-      const params = [days];
-
-      if (product_id) {
-        query += " AND dp.product_id = ?";
-        params.push(product_id);
-      }
-
-      if (store_id) {
-        query += " AND dp.store_id = ?";
-        params.push(store_id);
-      }
-
-      query += " ORDER BY dp.prediction_date ASC, p.name ASC";
-
-      const [rows] = await req.db.execute(query, params);
-      res.json({ predictions: rows });
-    } catch (error) {
-      console.error("Demand predictions fetch error:", error);
-      res.status(500).json({ error: "Failed to fetch demand predictions" });
-    }
-  });
-
-  app.get("/api/analytics/forecasting-dashboard", async (req, res) => {
-    try {
-      // Get summary statistics for the forecasting dashboard
-      const [totalModels] = await req.db.execute(
-        'SELECT COUNT(*) as count FROM demand_forecasting_models WHERE training_status = "deployed"',
-      );
-
-      const [avgAccuracy] = await req.db.execute(
-        'SELECT AVG(model_accuracy) as avg_accuracy FROM demand_forecasting_models WHERE training_status = "deployed"',
-      );
-
-      const [totalPredictions] = await req.db.execute(
-        "SELECT COUNT(*) as count FROM demand_predictions WHERE prediction_date >= CURDATE()",
-      );
-
-      const [highPriorityRecommendations] = await req.db.execute(
-        'SELECT COUNT(*) as count FROM inventory_optimization WHERE implementation_priority = "high" AND expires_at >= CURDATE()',
-      );
-
-      // Get recent predictions for trending products
-      const [recentPredictions] = await req.db.execute(`
-        SELECT
-          p.name as product_name,
-          p.sku as product_id,
-          SUM(dp.predicted_demand) as total_predicted_demand,
-          AVG(dp.predicted_demand) as avg_daily_demand,
-          s.name as store_name
-        FROM demand_predictions dp
-        JOIN products p ON dp.product_id = p.id
-        JOIN stores s ON dp.store_id = s.id
-        WHERE dp.prediction_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
-        GROUP BY p.id, s.id
-        ORDER BY total_predicted_demand DESC
-        LIMIT 10
-      `);
-
-      // Get model performance metrics
-      const [modelPerformance] = await req.db.execute(`
-        SELECT
-          dfm.model_name,
-          dfm.model_type,
-          dfm.model_accuracy,
-          COUNT(dp.id) as predictions_count
-        FROM demand_forecasting_models dfm
-        LEFT JOIN demand_predictions dp ON dfm.id = dp.model_id
-        WHERE dfm.training_status = 'deployed'
-        GROUP BY dfm.id
-        ORDER BY dfm.model_accuracy DESC
-      `);
-
-      res.json({
-        summary: {
-          totalModels: totalModels[0].count,
-          avgAccuracy: parseFloat(avgAccuracy[0].avg_accuracy || 0).toFixed(4),
-          totalPredictions: totalPredictions[0].count,
-          highPriorityRecommendations: highPriorityRecommendations[0].count,
-        },
-        recentPredictions,
-        modelPerformance,
-      });
-    } catch (error) {
-      console.error("Forecasting dashboard fetch error:", error);
-      res
-        .status(500)
-        .json({ error: "Failed to fetch forecasting dashboard data" });
     }
   });
 
@@ -807,6 +755,87 @@ export function createServer() {
     } catch (error) {
       console.error("Database initialization error:", error);
       res.status(500).json({ error: "Failed to initialize database" });
+    }
+  });
+
+  // Database test route
+  app.get("/api/test-db", testDatabase);
+  app.get("/api/test-simple", testSimple);
+  app.get("/api/test-params", testParams);
+
+  // Local database transaction routes
+  app.get("/api/transactions", getTransactionsWorking);
+  app.get("/api/transactions/summary", getTransactionSummaryWorking);
+  app.post("/api/transactions", createTransaction);
+  app.get("/api/stores", getStores);
+  app.get("/api/products", getProducts);
+
+  // Local database forecasting routes
+  app.get("/api/analytics/demand-predictions", getDemandPredictions);
+  app.get("/api/analytics/forecasting-dashboard", getForecastingDashboard);
+
+  // Product Analytics routes
+  app.get("/api/analytics/products/:storeId/dashboard", getAnalyticsDashboard);
+  app.get(
+    "/api/analytics/products/:productId/:storeId/performance",
+    getProductPerformance,
+  );
+  app.get(
+    "/api/analytics/products/:productId/:storeId/forecast",
+    getDemandForecast,
+  );
+  app.get(
+    "/api/analytics/products/:productId/:storeId/trends",
+    getProductSalesTrends,
+  );
+  app.get("/api/analytics/stores/:storeId/reorder", getReorderRecommendations);
+  app.post("/api/analytics/stores/:storeId/generate", generateStoreAnalytics);
+  app.post("/api/analytics/initialize", initializeAnalytics);
+
+  // Dashboard Analytics routes
+  app.get("/api/dashboard/analytics", getDashboardAnalytics);
+  app.get("/api/dashboard/categories", getTopSellingCategories);
+
+  // Database cleanup endpoint
+  app.post("/api/database/cleanup", async (req, res) => {
+    try {
+      const success = await cleanupDatabase();
+      if (success) {
+        res.json({
+          success: true,
+          message: "Database cleanup completed successfully",
+        });
+      } else {
+        res
+          .status(500)
+          .json({ success: false, message: "Database cleanup failed" });
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // Debug endpoint for transactions
+  app.get("/api/debug/transactions", async (req, res) => {
+    try {
+      const [transactions] = await query(
+        "SELECT * FROM inventory_transactions ORDER BY created_at DESC LIMIT 10",
+      );
+      const [stores] = await query("SELECT * FROM stores");
+      const [products] = await query("SELECT * FROM products LIMIT 5");
+
+      res.json({
+        success: true,
+        data: {
+          transactions,
+          stores,
+          products,
+          transactionCount: transactions.length,
+          storeCount: stores.length,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
     }
   });
 

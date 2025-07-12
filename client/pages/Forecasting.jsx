@@ -269,9 +269,9 @@ export default function Forecasting() {
                       <p>No predictions available for the selected timeframe</p>
                     </div>
                   ) : (
-                    predictions.slice(0, 10).map((prediction) => (
+                    predictions.slice(0, 10).map((prediction, index) => (
                       <div
-                        key={`${prediction.product_id}-${prediction.prediction_date}`}
+                        key={`${prediction.product_id}-${prediction.store_name}-${prediction.prediction_date}-${index}`}
                         className="flex items-center justify-between p-4 border rounded-lg"
                       >
                         <div className="flex-1">

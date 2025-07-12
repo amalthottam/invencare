@@ -2,6 +2,7 @@ import { createApiResponse, createApiError } from "../../shared/api.js";
 
 // Get demand predictions
 export const getDemandPredictions = async (req, res) => {
+  console.log("🔍 getDemandPredictions called with query:", req.query);
   try {
     const { product_id, store_id, days = 30 } = req.query;
 

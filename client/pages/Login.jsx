@@ -1,5 +1,11 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  signIn,
+  signUp,
+  confirmSignUp,
+  resendSignUpCode,
+} from "aws-amplify/auth";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,214 +16,129 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Package, Eye, EyeOff } from "lucide-react";
+import {
+  Package,
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
+  ShoppingCart,
+} from "lucide-react";
 
-// AWS Cognito Authentication
-// import { signIn, signUp, confirmSignUp, resendSignUpCode } from 'aws-amplify/auth';
-// import { toast } from "@/components/ui/use-toast";
-
-export default function Login() {
+export default function Login({ onAuthChange }) {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
-  const [confirmationStep, setConfirmationStep] = useState(false);
+  const [needsConfirmation, setNeedsConfirmation] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const [formData, setFormData] = useState({
     email: "",
     password: "",
-    confirmPassword: "",
+    name: "",
     confirmationCode: "",
   });
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value,
+    });
+    setError("");
   };
 
-  // AWS Cognito Sign In
   const handleSignIn = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
     try {
-      // AWS Cognito Sign In Implementation with Store Access Validation
-      // const { isSignedIn, nextStep } = await signIn({
-      //   username: formData.email,
-      //   password: formData.password,
-      // });
-      //
-      // if (isSignedIn) {
-      //   // After successful sign-in, fetch user attributes to validate store access
-      //   const userAttributes = await fetchUserAttributes();
-      //   const userStatus = userAttributes['custom:status'];
-      //   const storeAccess = userAttributes['custom:store_access'];
-      //   const userRole = userAttributes['custom:role'];
-      //
-      //   // Validate user account status
-      //   if (userStatus === 'inactive' || userStatus === 'suspended') {
-      //     await signOut();
-      //     toast({
-      //       title: "Account Inactive",
-      //       description: "Your account has been deactivated. Please contact your administrator.",
-      //       variant: "destructive",
-      //     });
-      //     return;
-      //   }
-      //
-      //   if (userStatus === 'pending') {
-      //     await signOut();
-      //     toast({
-      //       title: "Account Pending Approval",
-      //       description: "Your account is pending admin approval. Please wait for activation.",
-      //       variant: "destructive",
-      //     });
-      //     return;
-      //   }
-      //
-      //   // Validate store access
-      //   if (!storeAccess || (storeAccess !== 'all' && !storeAccess.includes('store_'))) {
-      //     await signOut();
-      //     toast({
-      //       title: "No Store Access",
-      //       description: "You don't have access to any stores. Please contact your administrator.",
-      //       variant: "destructive",
-      //     });
-      //     return;
-      //   }
-      //
-      //   toast({
-      //     title: "Success",
-      //     description: `Welcome back! You have ${storeAccess === 'all' ? 'full' : 'limited'} store access.`,
-      //   });
-      //   navigate("/dashboard");
-      // } else {
-      //   // Handle MFA or other next steps
-      //   console.log('Sign in next step:', nextStep);
-      // }
+      await signIn({
+        username: formData.email,
+        password: formData.password,
+      });
 
-      // Demo implementation (remove when implementing Cognito)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (formData.email && formData.password) {
-        localStorage.setItem("isAuthenticated", "true");
-        navigate("/dashboard");
-      }
+      setSuccess("Sign in successful!");
+      onAuthChange();
+      navigate("/dashboard");
     } catch (error) {
       console.error("Sign in error:", error);
-      // toast({
-      //   title: "Error",
-      //   description: error.message || "Failed to sign in",
-      //   variant: "destructive",
-      // });
+      setError(error.message || "Failed to sign in. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // AWS Cognito Sign Up with Store Assignment
   const handleSignUp = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
     try {
-      // AWS Cognito Sign Up Implementation with Store-Based Attributes
-      // const { isSignUpComplete, userId, nextStep } = await signUp({
-      //   username: formData.email,
-      //   password: formData.password,
-      //   options: {
-      //     userAttributes: {
-      //       email: formData.email,
-      //       given_name: formData.firstName || '',
-      //       family_name: formData.lastName || '',
-      //       'custom:role': 'employee', // Default role for new signups
-      //       'custom:primary_store': 'store_001', // Assign to default store (can be changed by admin)
-      //       'custom:store_access': 'store_001', // Initial access to primary store only
-      //       'custom:department': 'general', // Department assignment
-      //       'custom:hire_date': new Date().toISOString().split('T')[0],
-      //       'custom:status': 'pending' // Account needs admin approval
-      //     },
-      //   },
-      // });
-      //
-      // // Note: In production, new employee accounts should require admin approval
-      // // before gaining access to store systems and inventory data
-      //
-      // if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
-      //   setConfirmationStep(true);
-      //   toast({
-      //     title: "Confirmation Required",
-      //     description: "Please check your email for confirmation code. Admin approval may be required.",
-      //   });
-      // }
+      await signUp({
+        username: formData.email,
+        password: formData.password,
+        attributes: {
+          email: formData.email,
+          name: formData.name,
+          "custom:role": "employee", // Default role
+          "custom:store_access": "", // Will be set by admin
+        },
+      });
 
-      // Demo implementation
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setConfirmationStep(true);
+      setSuccess(
+        "Account created! Please check your email for verification code.",
+      );
+      setNeedsConfirmation(true);
     } catch (error) {
       console.error("Sign up error:", error);
-      // toast({
-      //   title: "Error",
-      //   description: error.message || "Failed to sign up",
-      //   variant: "destructive",
-      // });
+      setError(error.message || "Failed to create account. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // AWS Cognito Confirm Sign Up
   const handleConfirmSignUp = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError("");
 
     try {
-      // AWS Cognito Confirm Sign Up Implementation
-      // const { isSignUpComplete, nextStep } = await confirmSignUp({
-      //   username: formData.email,
-      //   confirmationCode: formData.confirmationCode,
-      // });
-      //
-      // if (isSignUpComplete) {
-      //   toast({
-      //     title: "Success",
-      //     description: "Account confirmed! Please sign in.",
-      //   });
-      //   setIsSignUp(false);
-      //   setConfirmationStep(false);
-      // }
+      await confirmSignUp({
+        username: formData.email,
+        confirmationCode: formData.confirmationCode,
+      });
 
-      // Demo implementation
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      setSuccess("Email verified! You can now sign in.");
+      setNeedsConfirmation(false);
       setIsSignUp(false);
-      setConfirmationStep(false);
+      setFormData({ ...formData, confirmationCode: "" });
     } catch (error) {
       console.error("Confirmation error:", error);
-      // toast({
-      //   title: "Error",
-      //   description: error.message || "Failed to confirm account",
-      //   variant: "destructive",
-      // });
+      setError(error.message || "Failed to verify email. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
-  // AWS Cognito Resend Confirmation Code
   const handleResendCode = async () => {
+    setIsLoading(true);
+    setError("");
+
     try {
-      // await resendSignUpCode({ username: formData.email });
-      // toast({
-      //   title: "Code Sent",
-      //   description: "Confirmation code resent to your email",
-      // });
+      await resendSignUpCode({ username: formData.email });
+      setSuccess("Verification code resent! Please check your email.");
     } catch (error) {
       console.error("Resend code error:", error);
+      setError(error.message || "Failed to resend code. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const handleSubmit = confirmationStep
+  const handleSubmit = needsConfirmation
     ? handleConfirmSignUp
     : isSignUp
       ? handleSignUp

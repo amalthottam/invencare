@@ -292,14 +292,16 @@ export default function Dashboard() {
       setAnalyticsData(analyticsDataResult);
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
-      // Set fallback data
-      setAnalyticsData({
-        totalProducts: 0,
-        lowStockItems: 0,
-        topSellingCategories: [],
-        revenueThisMonth: 0,
-        inventoryTurnover: 0,
-      });
+      // Set safe fallback data to prevent UI crashes
+      setAnalyticsData(
+        storeAnalytics[selectedStore] || {
+          totalProducts: 0,
+          lowStockItems: 0,
+          topSellingCategories: [],
+          revenueThisMonth: 0,
+          inventoryTurnover: 0,
+        },
+      );
     } finally {
       setIsLoading(false);
     }

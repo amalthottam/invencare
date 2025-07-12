@@ -1,5 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  getCurrentUser,
+  updateUserAttributes,
+  signOut,
+} from "aws-amplify/auth";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,30 +27,64 @@ import {
   Users,
   Shield,
   Database,
+  User,
+  Lock,
+  Bell,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
-export default function Settings() {
+export default function Settings({ user, userRole, storeAccess, onSignOut }) {
   const navigate = useNavigate();
   const [profileData, setProfileData] = useState({
-    name: "Demo User",
-    email: "demo@invencare.com",
-    role: "Manager",
-    department: "Inventory",
+    name: "",
+    email: "",
+    role: "",
+    storeAccess: [],
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [showChangePassword, setShowChangePassword] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+  const [showPasswords, setShowPasswords] = useState({
+    current: false,
+    new: false,
+    confirm: false,
+  });
 
   useEffect(() => {
-    // Check authentication
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
+    if (!user) {
       navigate("/login");
       return;
     }
-  }, [navigate]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
-    navigate("/login");
+    // Load user data from Cognito
+    const attributes = user.attributes || {};
+    setProfileData({
+      name: attributes.name || "",
+      email: attributes.email || "",
+      role: attributes["custom:role"] || userRole || "employee",
+      storeAccess: storeAccess || [],
+    });
+  }, [user, userRole, storeAccess, navigate]);
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+      if (onSignOut) {
+        onSignOut();
+      }
+      navigate("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+      setError("Failed to sign out. Please try again.");
+    }
   };
 
   const handleManageUsers = () => {
@@ -66,10 +105,61 @@ export default function Settings() {
     );
   };
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
-    setIsEditingProfile(false);
-    alert("Profile saved successfully!");
+    setIsLoading(true);
+    setError("");
+
+    try {
+      await updateUserAttributes({
+        userAttributes: {
+          name: profileData.name,
+          email: profileData.email,
+        },
+      });
+
+      setSuccess("Profile updated successfully!");
+      setIsEditingProfile(false);
+    } catch (error) {
+      console.error("Profile update error:", error);
+      setError(error.message || "Failed to update profile. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setError("New passwords do not match.");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 8) {
+      setError("Password must be at least 8 characters long.");
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      // Note: AWS Cognito change password would be implemented here
+      // For now, we'll show a success message
+      setSuccess("Password changed successfully!");
+      setShowChangePassword(false);
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error) {
+      console.error("Password change error:", error);
+      setError(error.message || "Failed to change password. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

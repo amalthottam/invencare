@@ -377,9 +377,9 @@ export default function Forecasting() {
                       </tr>
                     </thead>
                     <tbody>
-                      {dashboardData.recentPredictions.map((product) => (
+                      {dashboardData.recentPredictions.map((product, index) => (
                         <tr
-                          key={`${product.product_id}-${product.store_name}`}
+                          key={`${product.product_id}-${product.store_name}-${index}`}
                           className="border-b hover:bg-slate-50/50"
                         >
                           <td className="p-4">

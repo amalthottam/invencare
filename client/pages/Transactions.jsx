@@ -30,7 +30,30 @@ import {
   Filter,
 } from "lucide-react";
 
-// API helper functions
+// Improved API helper functions with better error handling
+const makeApiRequest = async (url, options = {}) => {
+  try {
+    console.log(`Making API request to: ${url}`);
+    const response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+      ...options,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text().catch(() => 'Unknown error');
+      throw new Error(`HTTP ${response.status}: ${errorText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error(`API request failed for ${url}:`, error);
+    throw error;
+  }
+};
+
 const api = {
   async getTransactions(params = {}) {
     const queryParams = new URLSearchParams();
@@ -40,9 +63,8 @@ const api = {
       }
     });
 
-    const response = await fetch(`/api/transactions?${queryParams}`);
-    if (!response.ok) throw new Error("Failed to fetch transactions");
-    return response.json();
+    const url = `/api/transactions?${queryParams}`;
+    return makeApiRequest(url);
   },
 
   async getTransactionSummary(params = {}) {
@@ -53,34 +75,25 @@ const api = {
       }
     });
 
-    const response = await fetch(`/api/transactions/summary?${queryParams}`);
-    if (!response.ok) throw new Error("Failed to fetch transaction summary");
-    return response.json();
+    const url = `/api/transactions/summary?${queryParams}`;
+    return makeApiRequest(url);
   },
 
   async createTransaction(transactionData) {
-    const response = await fetch("/api/transactions", {
+    return makeApiRequest("/api/transactions", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
       body: JSON.stringify(transactionData),
     });
-    if (!response.ok) throw new Error("Failed to create transaction");
-    return response.json();
   },
 
   async getStores() {
-    const response = await fetch("/api/stores");
-    if (!response.ok) throw new Error("Failed to fetch stores");
-    return response.json();
+    return makeApiRequest("/api/stores");
   },
 
   async getProducts(storeId) {
     const queryParams = storeId ? `?storeId=${storeId}` : "";
-    const response = await fetch(`/api/products${queryParams}`);
-    if (!response.ok) throw new Error("Failed to fetch products");
-    return response.json();
+    const url = `/api/products${queryParams}`;
+    return makeApiRequest(url);
   },
 };
 

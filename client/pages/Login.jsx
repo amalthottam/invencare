@@ -28,6 +28,8 @@ export default function Login() {
     password: "",
     confirmPassword: "",
     confirmationCode: "",
+    firstName: "",
+    lastName: "",
   });
 
   const handleInputChange = (e) => {

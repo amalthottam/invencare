@@ -35,14 +35,10 @@ export default function Forecasting() {
   const { logout } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [predictions, setPredictions] = useState([]);
-  const [categoryInsights, setCategoryInsights] = useState([]);
-  const [stores, setStores] = useState([]);
-  const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedTimeframe, setSelectedTimeframe] = useState("7");
-  const [selectedStore, setSelectedStore] = useState("all");
-  const [selectedProduct, setSelectedProduct] = useState("");
+  const [generating, setGenerating] = useState(false);
+  const [generateSuccess, setGenerateSuccess] = useState(false);
 
   useEffect(() => {
     fetchForecastingData();

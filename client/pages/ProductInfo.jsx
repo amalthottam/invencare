@@ -32,6 +32,7 @@ export default function ProductInfo() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
   const isEditMode = location.pathname.includes("/edit");
 
   const [product, setProduct] = useState(null);

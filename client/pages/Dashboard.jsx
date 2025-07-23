@@ -184,6 +184,14 @@ export default function Dashboard() {
       setIsLoading(true);
       console.log(`Fetching dashboard data for store: ${selectedStore}`);
 
+      // Quick connectivity test in development mode
+      if (process.env.NODE_ENV === 'development') {
+        const connectivityTest = await testDashboardConnectivity(selectedStore);
+        if (!connectivityTest.success) {
+          console.warn('Connectivity test failed, proceeding with fallback');
+        }
+      }
+
       const data = await fetchDashboardAnalytics(selectedStore);
       console.log("Successfully fetched dashboard data:", data);
 

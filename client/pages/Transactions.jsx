@@ -105,6 +105,7 @@ export default function Transactions() {
     totalTransfers: 0,
   });
   const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
   const [error, setError] = useState(null);
 
   const [formData, setFormData] = useState({
@@ -137,8 +138,8 @@ export default function Transactions() {
       ];
       setStores(storeData);
 
-      // Load transactions
-      await loadTransactions();
+      // Load transactions and all products
+      await Promise.all([loadTransactions(), loadAllProducts()]);
     } catch (err) {
       console.error("Failed to load initial data:", err);
       setError("Failed to load data. Please try again.");
@@ -250,15 +251,21 @@ export default function Transactions() {
     }
   };
 
+  const loadAllProducts = async () => {
+    try {
+      const response = await api.getProducts(); // Load all products from all stores
+      setAllProducts(response?.products || []);
+    } catch (err) {
+      console.error("Failed to load products:", err);
+      setAllProducts([]);
+    }
+  };
+
   const loadProductsForStore = async (storeId) => {
     if (storeId && storeId !== "all") {
-      try {
-        const response = await api.getProducts(storeId);
-        setProducts(response?.data || []);
-      } catch (err) {
-        console.error("Failed to load products:", err);
-        setProducts([]);
-      }
+      // Filter products by selected store
+      const storeProducts = allProducts.filter(product => product.storeId === storeId);
+      setProducts(storeProducts);
     } else {
       setProducts([]);
     }

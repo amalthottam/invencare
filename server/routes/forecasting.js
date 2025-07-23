@@ -107,7 +107,7 @@ export const getCategoryInsights = async (req, res) => {
 // Get forecasting dashboard summary from real database
 export const getForecastingDashboard = async (req, res) => {
   try {
-    const [summaryResult] = await pool.execute(`
+    const [summaryResult] = await req.db.execute(`
       SELECT
         COUNT(DISTINCT dfm.id) as totalModels,
         AVG(dfm.model_accuracy) as avgAccuracy,
@@ -124,7 +124,7 @@ export const getForecastingDashboard = async (req, res) => {
     };
 
     // Get high priority recommendations (predictions with high demand variance)
-    const [highPriorityResult] = await pool.execute(`
+    const [highPriorityResult] = await req.db.execute(`
       SELECT COUNT(*) as count
       FROM demand_predictions dp
       WHERE dp.prediction_date >= CURDATE()
@@ -134,7 +134,7 @@ export const getForecastingDashboard = async (req, res) => {
     const highPriorityRecommendations = highPriorityResult[0]?.count || 0;
 
     // Get top predicted products for next 7 days
-    const [recentPredictions] = await pool.execute(`
+    const [recentPredictions] = await req.db.execute(`
       SELECT
         p.name as product_name,
         dp.product_id,
@@ -151,7 +151,7 @@ export const getForecastingDashboard = async (req, res) => {
     `);
 
     // Get model performance data
-    const [modelPerformance] = await pool.execute(`
+    const [modelPerformance] = await req.db.execute(`
       SELECT
         dfm.model_name,
         dfm.model_type,
@@ -166,7 +166,7 @@ export const getForecastingDashboard = async (req, res) => {
     `);
 
     // Get accuracy trends and insights
-    const [accuracyTrends] = await pool.execute(`
+    const [accuracyTrends] = await req.db.execute(`
       SELECT
         DATE(dp.created_at) as date,
         AVG(dp.prediction_accuracy) as avg_accuracy,

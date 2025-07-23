@@ -44,6 +44,11 @@ export default function Dashboard() {
   const [lowStockItems, setLowStockItems] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
 
+  // Individual loading states for components
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [lowStockLoading, setLowStockLoading] = useState(false);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
+
   useEffect(() => {
     // Perform health check in development mode for debugging
     if (process.env.NODE_ENV === 'development') {
@@ -68,6 +73,12 @@ export default function Dashboard() {
       fetchDashboardData();
     }
   }, [selectedStore]);
+
+  // Helper function to get product ID from name in low stock items
+  const getProductIdFromItem = (item) => {
+    // We'll need to fetch products to get the ID, for now navigate to products page with search
+    navigate(`/products?search=${encodeURIComponent(item.name)}`);
+  };
 
   const loadStores = async () => {
     try {
@@ -149,7 +160,6 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      setIsLoading(true);
       console.log(`Fetching dashboard data for store: ${selectedStore}`);
 
       // Quick connectivity test in development mode
@@ -160,45 +170,69 @@ export default function Dashboard() {
         }
       }
 
-      // Fetch all dashboard data in parallel
-      const [analyticsData, lowStockData, transactionsData] = await Promise.all([
-        fetchDashboardAnalytics(selectedStore),
-        fetchLowStockItems(selectedStore),
-        fetchRecentTransactions(selectedStore)
-      ]);
+      // Set individual loading states
+      setAnalyticsLoading(true);
+      setLowStockLoading(true);
+      setTransactionsLoading(true);
 
-      console.log("Successfully fetched dashboard data:", { analyticsData, lowStockData, transactionsData });
+      // Fetch all dashboard data in parallel but handle each individually
+      const fetchAnalytics = async () => {
+        try {
+          const data = await fetchDashboardAnalytics(selectedStore);
+          setAnalyticsData({
+            totalProducts: data.totalProducts,
+            lowStockItems: data.lowStockItems,
+            revenueThisMonth: data.revenueThisMonth,
+            inventoryTurnover: data.inventoryTurnover,
+            topSellingCategories: data.topSellingCategories,
+          });
+        } catch (error) {
+          console.error("Failed to fetch analytics:", error);
+          setAnalyticsData({
+            totalProducts: 0,
+            lowStockItems: 0,
+            topSellingCategories: [],
+            revenueThisMonth: 0,
+            inventoryTurnover: 0,
+          });
+        } finally {
+          setAnalyticsLoading(false);
+        }
+      };
 
-      setAnalyticsData({
-        totalProducts: analyticsData.totalProducts,
-        lowStockItems: analyticsData.lowStockItems,
-        revenueThisMonth: analyticsData.revenueThisMonth,
-        inventoryTurnover: analyticsData.inventoryTurnover,
-        topSellingCategories: analyticsData.topSellingCategories,
-      });
+      const fetchLowStock = async () => {
+        try {
+          const data = await fetchLowStockItems(selectedStore);
+          setLowStockItems(data || []);
+        } catch (error) {
+          console.error("Failed to fetch low stock items:", error);
+          setLowStockItems([]);
+        } finally {
+          setLowStockLoading(false);
+        }
+      };
 
-      setLowStockItems(lowStockData || []);
-      setRecentTransactions(transactionsData || []);
+      const fetchTransactions = async () => {
+        try {
+          const data = await fetchRecentTransactions(selectedStore);
+          setRecentTransactions(data || []);
+        } catch (error) {
+          console.error("Failed to fetch transactions:", error);
+          setRecentTransactions([]);
+        } finally {
+          setTransactionsLoading(false);
+        }
+      };
+
+      // Execute all fetches in parallel
+      await Promise.all([fetchAnalytics(), fetchLowStock(), fetchTransactions()]);
+
+      console.log("Successfully fetched all dashboard data");
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
-      console.log("Network error details:", {
-        message: error.message,
-        stack: error.stack,
-        origin: window.location.origin,
-        href: window.location.href
-      });
-
-      // Always provide fallback data to ensure the UI still works
-      console.log("Using fallback data due to network error");
-      setAnalyticsData({
-        totalProducts: 0,
-        lowStockItems: 0,
-        topSellingCategories: [],
-        revenueThisMonth: 0,
-        inventoryTurnover: 0,
-      });
-      setLowStockItems([]);
-      setRecentTransactions([]);
+      setAnalyticsLoading(false);
+      setLowStockLoading(false);
+      setTransactionsLoading(false);
     } finally {
       setIsLoading(false);
     }

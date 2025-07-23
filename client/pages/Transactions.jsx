@@ -461,7 +461,7 @@ export default function Transactions() {
             <CardHeader>
               <CardTitle>Transaction History</CardTitle>
               <CardDescription>
-                Showing {filteredTransactions.length} transactions
+                Showing {filteredTransactions?.length || 0} transactions
               </CardDescription>
             </CardHeader>
             <CardContent>

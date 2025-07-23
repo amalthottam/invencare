@@ -204,7 +204,7 @@ export const getForecastingDashboard = async (req, res) => {
 // Get stores for filtering
 export const getStores = async (req, res) => {
   try {
-    const [stores] = await pool.execute(`
+    const [stores] = await req.db.execute(`
       SELECT id, name, status
       FROM stores
       WHERE status = 'active'

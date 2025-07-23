@@ -29,6 +29,7 @@ import {
 export default function Products() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [storeFilter, setStoreFilter] = useState("all");

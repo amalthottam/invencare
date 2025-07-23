@@ -704,7 +704,7 @@ export default function Transactions() {
                       }
                       className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                       required
-                      disabled={formData.productId && products.length > 0}
+                      disabled={formData.productId && products?.length > 0}
                     >
                       <option value="">Select category</option>
                       <option value="Fruits & Vegetables">

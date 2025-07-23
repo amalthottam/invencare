@@ -38,12 +38,18 @@ export default function Settings() {
 
   useEffect(() => {
     // Profile data is now populated from Cognito user context
-    if (user) {
+    if (user && user.attributes) {
+      console.log("User attributes:", user.attributes);
       setProfileData({
-        name: user.attributes?.given_name + " " + (user.attributes?.family_name || ""),
-        email: user.username,
-        role: user.attributes?.["custom:role"] || "Employee",
-        department: "Inventory", // Could be added as custom attribute
+        name: user.attributes?.name ||
+              (user.attributes?.given_name ?
+                `${user.attributes.given_name} ${user.attributes.family_name || ''}`.trim() :
+                "User"),
+        email: user.attributes?.email || user.username,
+        role: user.attributes?.["custom:role"] || "employee",
+        storeAccess: user.attributes?.["custom:store_access"] || "none",
+        userId: user.attributes?.sub || user.username,
+        emailVerified: user.attributes?.email_verified === "true",
       });
     }
   }, [user]);

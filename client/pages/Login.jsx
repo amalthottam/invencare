@@ -56,11 +56,19 @@ export default function Login() {
       console.log('Amplify Config:', config.Auth?.Cognito);
 
       // AWS Cognito Sign In Implementation with Store Access Validation
-      console.log('Attempting signIn with SRP...');
-      const { isSignedIn, nextStep } = await signIn({
+      console.log('Attempting signIn...');
+
+      // Try with explicit options to handle potential auth flow issues
+      const signInOptions = {
         username: formData.email,
         password: formData.password,
-      });
+        options: {
+          authFlowType: 'USER_SRP_AUTH' // Explicitly specify auth flow
+        }
+      };
+
+      console.log('Sign in options:', signInOptions);
+      const { isSignedIn, nextStep } = await signIn(signInOptions);
 
       console.log('Sign in result:', { isSignedIn, nextStep });
 

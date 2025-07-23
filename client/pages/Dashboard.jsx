@@ -281,25 +281,6 @@ export default function Dashboard() {
     }
   };
 
-<<<<<<< HEAD
-=======
-  const handleLogout = async () => {
-    try {
-      // AWS Cognito Sign Out
-      const { signOut } = await import("aws-amplify/auth");
-      await signOut();
-
-      console.log("User signed out successfully");
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Force logout on error - clear any remaining auth state
-      localStorage.removeItem("isAuthenticated");
-      navigate("/login");
-    }
-  };
-
->>>>>>> origin/main
   // Show loading state
   if (isLoading) {
     return (

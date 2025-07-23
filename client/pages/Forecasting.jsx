@@ -191,9 +191,9 @@ export default function Forecasting() {
                 <option value="14">Next 14 days</option>
                 <option value="30">Next 30 days</option>
               </select>
-              <Button onClick={fetchForecastingData}>
-                <Activity className="h-4 w-4 mr-2" />
-                Refresh Data
+              <Button onClick={fetchForecastingData} disabled={loading}>
+                <Activity className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
+                {loading ? 'Generating Predictions...' : 'Refresh & Predict'}
               </Button>
             </div>
           </div>

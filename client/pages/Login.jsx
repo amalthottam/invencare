@@ -130,46 +130,50 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      // AWS Cognito Sign Up Implementation with Store-Based Attributes
-      // const { isSignUpComplete, userId, nextStep } = await signUp({
-      //   username: formData.email,
-      //   password: formData.password,
-      //   options: {
-      //     userAttributes: {
-      //       email: formData.email,
-      //       given_name: formData.firstName || '',
-      //       family_name: formData.lastName || '',
-      //       'custom:role': 'employee', // Default role for new signups
-      //       'custom:primary_store': 'store_001', // Assign to default store (can be changed by admin)
-      //       'custom:store_access': 'store_001', // Initial access to primary store only
-      //       'custom:department': 'general', // Department assignment
-      //       'custom:hire_date': new Date().toISOString().split('T')[0],
-      //       'custom:status': 'pending' // Account needs admin approval
-      //     },
-      //   },
-      // });
-      //
-      // // Note: In production, new employee accounts should require admin approval
-      // // before gaining access to store systems and inventory data
-      //
-      // if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
-      //   setConfirmationStep(true);
-      //   toast({
-      //     title: "Confirmation Required",
-      //     description: "Please check your email for confirmation code. Admin approval may be required.",
-      //   });
-      // }
+      // Validate password confirmation
+      if (formData.password !== formData.confirmPassword) {
+        toast({
+          title: "Password Mismatch",
+          description: "Passwords do not match. Please try again.",
+          variant: "destructive",
+        });
+        return;
+      }
 
-      // Demo implementation
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setConfirmationStep(true);
+      // AWS Cognito Sign Up Implementation with Store-Based Attributes
+      const { isSignUpComplete, userId, nextStep } = await signUp({
+        username: formData.email,
+        password: formData.password,
+        options: {
+          userAttributes: {
+            email: formData.email,
+            given_name: formData.firstName || '',
+            family_name: formData.lastName || '',
+            'custom:role': 'employee', // Default role for new signups
+            'custom:store_access': 'store_001', // Initial access to store_001 only
+            'custom:status': 'pending' // Account needs admin approval
+          },
+        },
+      });
+
+      // Note: In production, new employee accounts should require admin approval
+      // before gaining access to store systems and inventory data
+
+      if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
+        setConfirmationStep(true);
+        toast({
+          title: "Confirmation Required",
+          description: "Please check your email for confirmation code. Admin approval may be required.",
+          variant: "success",
+        });
+      }
     } catch (error) {
       console.error("Sign up error:", error);
-      // toast({
-      //   title: "Error",
-      //   description: error.message || "Failed to sign up",
-      //   variant: "destructive",
-      // });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to sign up",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

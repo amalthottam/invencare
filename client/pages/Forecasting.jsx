@@ -339,62 +339,7 @@ export default function Forecasting() {
             </div>
           )}
 
-          {/* Category Insights */}
-          {categoryInsights.length > 0 && (
-            <Card className="mb-8">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Layers className="h-5 w-5" />
-                  Category Performance Overview
-                </CardTitle>
-                <CardDescription>
-                  Demand insights by product category for next 7 days
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                  {categoryInsights.map((category) => (
-                    <div
-                      key={category.category}
-                      className="p-4 border rounded-lg bg-white"
-                    >
-                      <div className="flex justify-between items-start mb-3">
-                        <Badge className={getCategoryColor(category.category)}>
-                          {category.category}
-                        </Badge>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-blue-600">
-                            {Math.round(category.total_predicted_demand || 0)}
-                          </div>
-                          <div className="text-xs text-muted-foreground">units</div>
-                        </div>
-                      </div>
-                      <div className="space-y-2 text-sm">
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Products:</span>
-                          <span className="font-medium">{category.product_count}</span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Avg Daily:</span>
-                          <span className="font-medium">
-                            {Math.round(category.avg_predicted_demand || 0)}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-muted-foreground">Accuracy:</span>
-                          <span className={getConfidenceColor(category.avg_accuracy)}>
-                            {category.avg_accuracy ? 
-                              `${Math.round(category.avg_accuracy * 100)}%` : 
-                              'N/A'}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
+
 
           <div className="grid gap-6 lg:grid-cols-3">
             {/* Demand Predictions - Takes 2 columns */}

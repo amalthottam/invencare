@@ -43,22 +43,58 @@ export default function Forecasting() {
     try {
       setLoading(true);
 
-      // Fetch dashboard summary
-      const dashboardResponse = await fetch(
-        "/api/analytics/forecasting-dashboard",
+      // First check ML Analytics health
+      const healthResponse = await fetch("/api/ml/health");
+      console.log("ML Health check:", healthResponse.ok);
+
+      // Fetch ML dashboard data (new unified approach)
+      const mlDashboardResponse = await fetch(
+        `/api/ml/dashboard?time_period=${selectedTimeframe}days&include_trends=true&include_accuracy=true`,
       );
-      if (dashboardResponse.ok) {
-        const response = await dashboardResponse.json();
-        setDashboardData(response.data);
+
+      if (mlDashboardResponse.ok) {
+        const mlResponse = await mlDashboardResponse.json();
+        console.log("ML Dashboard data:", mlResponse);
+        setDashboardData(mlResponse.data);
       }
 
-      // Fetch demand predictions
+      // Trigger batch predictions for fresh data
+      const batchPredictResponse = await fetch("/api/ml/analytics", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "batch_predict",
+          store_id: "store_001", // You can make this dynamic
+          batch_size: 20,
+          model_type: "lstm"
+        }),
+      });
+
+      if (batchPredictResponse.ok) {
+        const batchResult = await batchPredictResponse.json();
+        console.log("Batch prediction result:", batchResult);
+      }
+
+      // Fetch latest predictions from database
       const predictionsResponse = await fetch(
         `/api/analytics/demand-predictions?days=${selectedTimeframe}`,
       );
       if (predictionsResponse.ok) {
         const response = await predictionsResponse.json();
         setPredictions(response.data.predictions || []);
+      }
+
+      // Fallback: Fetch original dashboard if ML dashboard fails
+      if (!mlDashboardResponse.ok) {
+        const dashboardResponse = await fetch(
+          "/api/analytics/forecasting-dashboard",
+        );
+        if (dashboardResponse.ok) {
+          const response = await dashboardResponse.json();
+          setDashboardData(response.data);
+        }
       }
 
       setError(null);

@@ -636,7 +636,7 @@ export default function Transactions() {
                         id="productSelect"
                         value={formData.productId}
                         onChange={(e) => {
-                          const selectedProduct = products.find(
+                          const selectedProduct = products?.find(
                             (p) => p.id === e.target.value,
                           );
                           if (selectedProduct) {

@@ -42,9 +42,9 @@ export const checkCognitoEndpoint = async (region = 'us-east-1') => {
   }
 };
 
-export const debugCognitoConfig = () => {
+export const debugCognitoConfig = async () => {
   try {
-    const { Amplify } = require('aws-amplify');
+    const { Amplify } = await import('aws-amplify');
     const config = Amplify.getConfig();
     
     console.group('🔍 Cognito Configuration Debug');

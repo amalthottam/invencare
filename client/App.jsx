@@ -13,6 +13,7 @@ import Forecasting from "./pages/Forecasting";
 import Settings from "./pages/Settings";
 import Transactions from "./pages/Transactions";
 import NotFound from "./pages/NotFound";
+import { Toaster } from "@/components/ui/toaster";
 
 // AWS Cognito Integration
 import { Amplify } from 'aws-amplify';

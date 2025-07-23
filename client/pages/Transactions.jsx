@@ -551,7 +551,7 @@ export default function Transactions() {
                           </td>
                           <td className="p-4">
                             <div className="text-sm">
-                              {formatDateTime(transaction.timestamp)}
+                              {formatDateTime(transaction.created_at || transaction.timestamp)}
                             </div>
                           </td>
                         </tr>

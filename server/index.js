@@ -852,6 +852,24 @@ export function createServer() {
   app.post("/api/transactions/process", handleTransactionProcessor);
   app.get("/api/lambda/health", handleLambdaHealthCheck);
 
+  // Unified ML Analytics routes (Lambda-powered)
+  import {
+    handleUnifiedMLAnalytics,
+    handleGetMLPredictions,
+    handleMLDashboard,
+    handleModelManagement,
+    handleMLHealthCheck,
+    handleRealTimePrediction,
+  } from "./routes/unified-ml-analytics.js";
+
+  app.post("/api/ml/analytics", handleUnifiedMLAnalytics);
+  app.get("/api/ml/analytics", handleUnifiedMLAnalytics);
+  app.get("/api/ml/predictions/:product_id/:store_id", handleGetMLPredictions);
+  app.get("/api/ml/dashboard", handleMLDashboard);
+  app.post("/api/ml/models", handleModelManagement);
+  app.get("/api/ml/health", handleMLHealthCheck);
+  app.post("/api/ml/predict", handleRealTimePrediction);
+
   // Real-time analytics endpoint
   app.get("/api/analytics/realtime", async (req, res) => {
     try {

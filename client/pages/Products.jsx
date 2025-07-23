@@ -115,8 +115,6 @@ export default function Products() {
     }
   };
 
-  const { logout } = useAuth();
-
   const handleLogout = async () => {
     await logout();
     navigate("/login");

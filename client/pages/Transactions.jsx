@@ -379,6 +379,7 @@ export default function Transactions() {
         type: "",
         productName: "",
         productId: "",
+        selectedProductDbId: "",
         category: "",
         quantity: "",
         unitPrice: "",

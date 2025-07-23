@@ -1,4 +1,3 @@
-import pool from "../db/database.js";
 import { createApiResponse, createApiError } from "../../shared/api.js";
 
 // Get demand predictions from real database
@@ -54,7 +53,7 @@ export const getDemandPredictions = async (req, res) => {
     query += " ORDER BY dp.prediction_date ASC, dp.predicted_demand DESC";
     query += " LIMIT 100"; // Limit for performance
 
-    const [rows] = await pool.execute(query, params);
+    const [rows] = await req.db.execute(query, params);
 
     // Parse JSON factors field
     const predictions = rows.map(row => ({

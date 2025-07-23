@@ -212,6 +212,7 @@ export default function Login() {
           const { getCurrentUser } = await import("aws-amplify/auth");
           const currentUser = await getCurrentUser();
           console.log("Current authenticated user:", currentUser.username);
+          await checkAuthState();
           navigate("/dashboard");
           return;
         } catch (getUserError) {

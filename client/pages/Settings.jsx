@@ -282,55 +282,86 @@ export default function Settings() {
           {/* Profile Settings */}
           <Card className="mt-6">
             <CardHeader>
-              <CardTitle>Profile Settings</CardTitle>
+              <CardTitle>Profile Information</CardTitle>
               <CardDescription>
-                Update your personal information and preferences
+                Your profile information from AWS Cognito. Some fields are managed by your administrator.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSaveProfile} className="space-y-4 max-w-md">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    value={profileData.name}
-                    onChange={(e) =>
-                      setProfileData({ ...profileData, name: e.target.value })
-                    }
-                    disabled={!isEditingProfile}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={profileData.email}
-                    onChange={(e) =>
-                      setProfileData({ ...profileData, email: e.target.value })
-                    }
-                    disabled={!isEditingProfile}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <div className="flex items-center gap-2">
-                    <RoleBadge role={profileData.role} />
-                    <span className="text-sm text-muted-foreground">
-                      {profileData.role}
-                    </span>
+              <form onSubmit={handleSaveProfile} className="space-y-6 max-w-2xl">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Display Name</Label>
+                    <Input
+                      id="name"
+                      value={profileData.name}
+                      onChange={(e) =>
+                        setProfileData({ ...profileData, name: e.target.value })
+                      }
+                      disabled={!isEditingProfile}
+                      placeholder="Enter your display name"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      This can be updated locally
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="email">Email Address</Label>
+                    <Input
+                      id="email"
+                      type="email"
+                      value={profileData.email}
+                      disabled={true}
+                      className="bg-gray-50"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Managed by AWS Cognito - contact admin to change
+                    </p>
                   </div>
                 </div>
-                <div className="space-y-2">
-                  <Label htmlFor="department">Department</Label>
-                  <div className="flex items-center gap-2">
-                    <DepartmentBadge department={profileData.department} />
-                    <span className="text-sm text-muted-foreground">
-                      {profileData.department}
-                    </span>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label>Role & Permissions</Label>
+                    <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg">
+                      <Badge className={getRoleBadgeColor(profileData.role)}>
+                        {profileData.role?.charAt(0).toUpperCase() + profileData.role?.slice(1)}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        Assigned by administrator
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label>Store Access</Label>
+                    <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg">
+                      <Badge className={getStoreAccessBadgeColor(profileData.storeAccess)}>
+                        {formatStoreAccess(profileData.storeAccess)}
+                      </Badge>
+                      <span className="text-sm text-muted-foreground">
+                        Managed by admin
+                      </span>
+                    </div>
                   </div>
                 </div>
-                <div className="flex gap-2">
+
+                <div className="border-t pt-4">
+                  <div className="space-y-2">
+                    <Label>User ID (AWS Cognito Sub)</Label>
+                    <Input
+                      value={profileData.userId}
+                      disabled={true}
+                      className="bg-gray-50 font-mono text-sm"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Unique identifier assigned by AWS Cognito
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-2 pt-4">
                   {isEditingProfile ? (
                     <>
                       <Button type="submit">Save Changes</Button>
@@ -350,6 +381,18 @@ export default function Settings() {
                       Edit Profile
                     </Button>
                   )}
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      navigator.clipboard.writeText(profileData.userId);
+                      alert('User ID copied to clipboard!');
+                    }}
+                    disabled={!profileData.userId}
+                  >
+                    Copy User ID
+                  </Button>
                 </div>
               </form>
             </CardContent>

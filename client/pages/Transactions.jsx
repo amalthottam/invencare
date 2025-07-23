@@ -682,7 +682,7 @@ export default function Transactions() {
                       </option>
                       {products?.map((product) => (
                         <option key={product.id} value={product.id}>
-                          {product.productName || product.name} - Stock: {product.stock || product.quantity || 0}
+                          {product.productName} (ID: {product.productId}) - Stock: {product.stock}
                         </option>
                       ))}
                     </select>

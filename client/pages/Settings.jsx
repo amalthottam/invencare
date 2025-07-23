@@ -37,13 +37,16 @@ export default function Settings() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 
   useEffect(() => {
-    // Check authentication
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
+    // Profile data is now populated from Cognito user context
+    if (user) {
+      setProfileData({
+        name: user.attributes?.given_name + " " + (user.attributes?.family_name || ""),
+        email: user.username,
+        role: user.attributes?.["custom:role"] || "Employee",
+        department: "Inventory", // Could be added as custom attribute
+      });
     }
-  }, [navigate]);
+  }, [user]);
 
   const handleLogout = () => {
     localStorage.removeItem("isAuthenticated");

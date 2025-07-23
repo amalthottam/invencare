@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
@@ -29,6 +29,7 @@ import {
 export default function Products() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [storeFilter, setStoreFilter] = useState("all");
@@ -55,11 +56,28 @@ export default function Products() {
   useEffect(() => {
     console.log("Products page - User authenticated:", user?.username);
 
+    // Initialize filters from URL parameters
+    const searchParam = searchParams.get("search");
+    const categoryParam = searchParams.get("category");
+    const filterParam = searchParams.get("filter");
+
+    if (searchParam) {
+      setSearchTerm(searchParam);
+    }
+
+    if (categoryParam) {
+      setCategoryFilter(categoryParam);
+    }
+
+    if (filterParam === "lowstock") {
+      setStatusFilter("Low Stock");
+    }
+
     // Fetch products, categories, and stores from API
     fetchProducts();
     fetchCategories();
     fetchStores();
-  }, []);
+  }, [searchParams]);
 
   const fetchCategories = async () => {
     try {

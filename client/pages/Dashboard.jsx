@@ -22,80 +22,17 @@ import {
   MapPin,
   Building,
 } from "lucide-react";
-import { fetchDashboardAnalytics } from "@/lib/api";
+import {
+  fetchDashboardAnalytics,
+  fetchStores,
+  fetchLowStockItems,
+  fetchRecentTransactions,
+} from "@/lib/api";
 import { logHealthCheck, testDashboardConnectivity } from "@/lib/health-check";
 
 // AWS Cognito and Lambda Integration
 // import { getCurrentUser, signOut } from 'aws-amplify/auth';
 // import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
-
-// Mock store data
-const stores = [
-  { id: "all", name: "All Stores", location: "Combined View" },
-  { id: "store_001", name: "Downtown Store", location: "123 Main St" },
-  { id: "store_002", name: "Mall Location", location: "456 Shopping Center" },
-  { id: "store_003", name: "Uptown Branch", location: "789 North Ave" },
-  { id: "store_004", name: "Westside Market", location: "321 West Blvd" },
-];
-
-// Mock analytics data by store
-const storeAnalytics = {
-  all: {
-    totalProducts: 3250,
-    lowStockItems: 47,
-    revenueThisMonth: 125430.5,
-    inventoryTurnover: 4.2,
-    topSellingCategories: [
-      { name: "Beverages", sales: 2150 },
-      { name: "Snacks", sales: 1820 },
-      { name: "Dairy", sales: 1650 },
-    ],
-  },
-  store_001: {
-    totalProducts: 850,
-    lowStockItems: 12,
-    revenueThisMonth: 32150.25,
-    inventoryTurnover: 4.5,
-    topSellingCategories: [
-      { name: "Beverages", sales: 580 },
-      { name: "Dairy", sales: 420 },
-      { name: "Snacks", sales: 385 },
-    ],
-  },
-  store_002: {
-    totalProducts: 920,
-    lowStockItems: 15,
-    revenueThisMonth: 38920.75,
-    inventoryTurnover: 4.1,
-    topSellingCategories: [
-      { name: "Snacks", sales: 680 },
-      { name: "Beverages", sales: 610 },
-      { name: "Dairy", sales: 450 },
-    ],
-  },
-  store_003: {
-    totalProducts: 780,
-    lowStockItems: 8,
-    revenueThisMonth: 28790.0,
-    inventoryTurnover: 3.9,
-    topSellingCategories: [
-      { name: "Dairy", sales: 520 },
-      { name: "Beverages", sales: 480 },
-      { name: "Bakery", sales: 380 },
-    ],
-  },
-  store_004: {
-    totalProducts: 700,
-    lowStockItems: 12,
-    revenueThisMonth: 25569.5,
-    inventoryTurnover: 4.3,
-    topSellingCategories: [
-      { name: "Beverages", sales: 480 },
-      { name: "Snacks", sales: 375 },
-      { name: "Meat & Poultry", sales: 320 },
-    ],
-  },
-};
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -104,14 +41,23 @@ export default function Dashboard() {
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [selectedStore, setSelectedStore] = useState("all");
+  const [stores, setStores] = useState([]);
+  const [lowStockItems, setLowStockItems] = useState([]);
+  const [recentTransactions, setRecentTransactions] = useState([]);
+
+  // Individual loading states for components
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
+  const [lowStockLoading, setLowStockLoading] = useState(false);
+  const [transactionsLoading, setTransactionsLoading] = useState(false);
 
   useEffect(() => {
     // Perform health check in development mode for debugging
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       logHealthCheck().catch(console.error);
     }
 
     checkAuthentication();
+    loadStores();
     fetchDashboardData();
 
     // Update time every minute
@@ -124,36 +70,90 @@ export default function Dashboard() {
 
   // Refetch data when store selection changes
   useEffect(() => {
-    if (!isLoading) {
+    if (!isLoading && stores.length > 0) {
       fetchDashboardData();
     }
   }, [selectedStore]);
 
+  // Helper function to find and navigate to specific product
+  const navigateToProduct = async (productName) => {
+    try {
+      // First try to find the product by searching
+      const response = await fetch("/api/products");
+      if (response.ok) {
+        const data = await response.json();
+        const product = data.products.find(
+          (p) =>
+            p.productName.toLowerCase() === productName.toLowerCase() ||
+            p.name?.toLowerCase() === productName.toLowerCase(),
+        );
+
+        if (product) {
+          // Navigate directly to the product detail page
+          navigate(`/products/${product.id}`);
+        } else {
+          // Fallback to search in products page
+          navigate(`/products?search=${encodeURIComponent(productName)}`);
+        }
+      } else {
+        // Fallback to search if API fails
+        navigate(`/products?search=${encodeURIComponent(productName)}`);
+      }
+    } catch (error) {
+      console.error("Error finding product:", error);
+      // Fallback to search
+      navigate(`/products?search=${encodeURIComponent(productName)}`);
+    }
+  };
+
+  const loadStores = async () => {
+    try {
+      const storesData = await fetchStores();
+      setStores(storesData);
+    } catch (error) {
+      console.error("Failed to load stores:", error);
+      // Set fallback stores
+      setStores([
+        { id: "all", name: "All Stores", location: "Combined View" },
+        { id: "store_001", name: "Downtown Store", location: "123 Main St" },
+        {
+          id: "store_002",
+          name: "Mall Location",
+          location: "456 Shopping Center",
+        },
+        { id: "store_003", name: "Uptown Branch", location: "789 North Ave" },
+        { id: "store_004", name: "Westside Market", location: "321 West Blvd" },
+      ]);
+    }
+  };
+
   const checkAuthentication = async () => {
     try {
       // AWS Cognito Authentication Check with Store-Based Access Control
-      const { getCurrentUser, fetchUserAttributes } = await import('aws-amplify/auth');
+      const { getCurrentUser, fetchUserAttributes } = await import(
+        "aws-amplify/auth"
+      );
       const currentUser = await getCurrentUser();
       const userAttributes = await fetchUserAttributes();
 
-      console.log('Dashboard - Current user:', currentUser);
-      console.log('Dashboard - User attributes:', userAttributes);
+      console.log("Dashboard - Current user:", currentUser);
+      console.log("Dashboard - User attributes:", userAttributes);
 
       // Check user's store access permissions
-      const userStoreAccess = userAttributes['custom:store_access']; // e.g., "all" or "store_001,store_002"
-      const userRole = userAttributes['custom:role']; // e.g., "admin", "manager", "employee"
-      const userStatus = userAttributes['custom:status']; // Check if account is active
+      const userStoreAccess = userAttributes["custom:store_access"]; // e.g., "all" or "store_001,store_002"
+      const userRole = userAttributes["custom:role"]; // e.g., "admin", "manager", "employee"
+      const userStatus = userAttributes["custom:status"]; // Check if account is active
 
       // Validate user status
-      if (userStatus === 'pending') {
-        const { signOut } = await import('aws-amplify/auth');
+      if (userStatus === "pending") {
+        const { signOut } = await import("aws-amplify/auth");
         await signOut();
         navigate("/login");
         return;
       }
 
-      if (userStatus === 'inactive' || userStatus === 'suspended') {
-        const { signOut } = await import('aws-amplify/auth');
+      if (userStatus === "inactive" || userStatus === "suspended") {
+        const { signOut } = await import("aws-amplify/auth");
         await signOut();
         navigate("/login");
         return;
@@ -161,14 +161,20 @@ export default function Dashboard() {
 
       // Set default store based on user permissions
       let defaultStore = "all";
-      if (userRole === "employee" && userStoreAccess && userStoreAccess !== "all") {
+      if (
+        userRole === "employee" &&
+        userStoreAccess &&
+        userStoreAccess !== "all"
+      ) {
         // Employees typically see only their assigned store(s)
-        const accessibleStores = userStoreAccess.split(',');
-        defaultStore = accessibleStores.length === 1 ? accessibleStores[0] : "all";
+        const accessibleStores = userStoreAccess.split(",");
+        defaultStore =
+          accessibleStores.length === 1 ? accessibleStores[0] : "all";
       } else if (userRole === "manager" && userStoreAccess !== "all") {
         // Managers might have access to specific stores
-        const accessibleStores = userStoreAccess.split(',');
-        defaultStore = accessibleStores.length === 1 ? accessibleStores[0] : "all";
+        const accessibleStores = userStoreAccess.split(",");
+        defaultStore =
+          accessibleStores.length === 1 ? accessibleStores[0] : "all";
       }
       // Admins get "all" by default
 
@@ -176,7 +182,8 @@ export default function Dashboard() {
       setUser({
         username: currentUser.username,
         attributes: {
-          given_name: userAttributes.given_name || userAttributes.name || "User",
+          given_name:
+            userAttributes.given_name || userAttributes.name || "User",
           family_name: userAttributes.family_name || "",
           "custom:role": userRole,
           "custom:store_access": userStoreAccess,
@@ -192,45 +199,83 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      setIsLoading(true);
       console.log(`Fetching dashboard data for store: ${selectedStore}`);
 
       // Quick connectivity test in development mode
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") {
         const connectivityTest = await testDashboardConnectivity(selectedStore);
         if (!connectivityTest.success) {
-          console.warn('Connectivity test failed, proceeding with fallback');
+          console.warn("Connectivity test failed, proceeding with fallback");
         }
       }
 
-      const data = await fetchDashboardAnalytics(selectedStore);
-      console.log("Successfully fetched dashboard data:", data);
+      // Set individual loading states
+      setAnalyticsLoading(true);
+      setLowStockLoading(true);
+      setTransactionsLoading(true);
 
-      setAnalyticsData({
-        totalProducts: data.totalProducts,
-        lowStockItems: data.lowStockItems,
-        revenueThisMonth: data.revenueThisMonth,
-        inventoryTurnover: data.inventoryTurnover,
-        topSellingCategories: data.topSellingCategories,
-      });
+      // Fetch all dashboard data in parallel but handle each individually
+      const fetchAnalytics = async () => {
+        try {
+          const data = await fetchDashboardAnalytics(selectedStore);
+          setAnalyticsData({
+            totalProducts: data.totalProducts,
+            lowStockItems: data.lowStockItems,
+            revenueThisMonth: data.revenueThisMonth,
+            inventoryTurnover: data.inventoryTurnover,
+            topSellingCategories: data.topSellingCategories,
+          });
+        } catch (error) {
+          console.error("Failed to fetch analytics:", error);
+          setAnalyticsData({
+            totalProducts: 0,
+            lowStockItems: 0,
+            topSellingCategories: [],
+            revenueThisMonth: 0,
+            inventoryTurnover: 0,
+          });
+        } finally {
+          setAnalyticsLoading(false);
+        }
+      };
+
+      const fetchLowStock = async () => {
+        try {
+          const data = await fetchLowStockItems(selectedStore);
+          setLowStockItems(data || []);
+        } catch (error) {
+          console.error("Failed to fetch low stock items:", error);
+          setLowStockItems([]);
+        } finally {
+          setLowStockLoading(false);
+        }
+      };
+
+      const fetchTransactions = async () => {
+        try {
+          const data = await fetchRecentTransactions(selectedStore);
+          setRecentTransactions(data || []);
+        } catch (error) {
+          console.error("Failed to fetch transactions:", error);
+          setRecentTransactions([]);
+        } finally {
+          setTransactionsLoading(false);
+        }
+      };
+
+      // Execute all fetches in parallel
+      await Promise.all([
+        fetchAnalytics(),
+        fetchLowStock(),
+        fetchTransactions(),
+      ]);
+
+      console.log("Successfully fetched all dashboard data");
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
-      console.log("Network error details:", {
-        message: error.message,
-        stack: error.stack,
-        origin: window.location.origin,
-        href: window.location.href
-      });
-
-      // Always provide fallback data to ensure the UI still works
-      console.log("Using mock data due to network error");
-      setAnalyticsData(storeAnalytics[selectedStore] || {
-        totalProducts: 0,
-        lowStockItems: 0,
-        topSellingCategories: [],
-        revenueThisMonth: 0,
-        inventoryTurnover: 0,
-      });
+      setAnalyticsLoading(false);
+      setLowStockLoading(false);
+      setTransactionsLoading(false);
     } finally {
       setIsLoading(false);
     }
@@ -239,7 +284,7 @@ export default function Dashboard() {
   const handleLogout = async () => {
     try {
       // AWS Cognito Sign Out
-      const { signOut } = await import('aws-amplify/auth');
+      const { signOut } = await import("aws-amplify/auth");
       await signOut();
 
       console.log("User signed out successfully");
@@ -255,10 +300,17 @@ export default function Dashboard() {
   // Show loading state
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading dashboard...</p>
+      <div className="min-h-screen bg-background">
+        <Navigation onLogout={handleLogout} />
+        <div className="lg:pl-64">
+          <main className="container mx-auto px-4 py-8">
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading dashboard...</p>
+              </div>
+            </div>
+          </main>
         </div>
       </div>
     );
@@ -298,194 +350,6 @@ export default function Dashboard() {
       trendUp: true,
     },
   ];
-
-  // Store-specific low stock data
-  const storeLowStockData = {
-    all: [
-      {
-        name: "Organic Bananas",
-        current: 15,
-        minimum: 30,
-        category: "Produce",
-        store: "Downtown",
-      },
-      {
-        name: "Whole Milk Gallon",
-        current: 8,
-        minimum: 20,
-        category: "Dairy",
-        store: "Mall",
-      },
-      {
-        name: "Coca Cola 12pk",
-        current: 12,
-        minimum: 25,
-        category: "Beverages",
-        store: "Uptown",
-      },
-      {
-        name: "Brown Bread",
-        current: 6,
-        minimum: 15,
-        category: "Bakery",
-        store: "Westside",
-      },
-    ],
-    store_001: [
-      { name: "Organic Bananas", current: 5, minimum: 10, category: "Produce" },
-      { name: "Fresh Apples", current: 3, minimum: 8, category: "Produce" },
-    ],
-    store_002: [
-      { name: "Whole Milk Gallon", current: 2, minimum: 5, category: "Dairy" },
-      { name: "Potato Chips", current: 4, minimum: 10, category: "Snacks" },
-      { name: "Energy Drinks", current: 3, minimum: 8, category: "Beverages" },
-    ],
-    store_003: [
-      { name: "Greek Yogurt", current: 4, minimum: 12, category: "Dairy" },
-    ],
-    store_004: [
-      {
-        name: "Ground Beef",
-        current: 2,
-        minimum: 8,
-        category: "Meat & Poultry",
-      },
-      { name: "Sandwich Bread", current: 3, minimum: 10, category: "Bakery" },
-    ],
-  };
-
-  const lowStockItems = storeLowStockData[selectedStore] || [];
-
-  // Store-specific recent transactions
-  const storeTransactions = {
-    all: [
-      {
-        id: "TXN-001",
-        type: "Sale",
-        product: "Lay's Potato Chips",
-        quantity: 45,
-        amount: 224.55,
-        time: "1 hour ago",
-        store: "All Stores",
-      },
-      {
-        id: "TXN-002",
-        type: "Restock",
-        product: "Wonder Bread",
-        quantity: 96,
-        amount: 239.04,
-        time: "3 hours ago",
-        store: "Multiple",
-      },
-      {
-        id: "TXN-003",
-        type: "Sale",
-        product: "Organic Bananas",
-        quantity: 32,
-        amount: 63.68,
-        time: "5 hours ago",
-        store: "All Stores",
-      },
-    ],
-    store_001: [
-      {
-        id: "TXN-101",
-        type: "Sale",
-        product: "Coffee Beans",
-        quantity: 5,
-        amount: 49.95,
-        time: "30 min ago",
-      },
-      {
-        id: "TXN-102",
-        type: "Sale",
-        product: "Fresh Milk",
-        quantity: 8,
-        amount: 31.92,
-        time: "1 hour ago",
-      },
-      {
-        id: "TXN-103",
-        type: "Restock",
-        product: "Organic Bananas",
-        quantity: 20,
-        amount: 39.8,
-        time: "3 hours ago",
-      },
-    ],
-    store_002: [
-      {
-        id: "TXN-201",
-        type: "Sale",
-        product: "Energy Drinks",
-        quantity: 12,
-        amount: 35.88,
-        time: "45 min ago",
-      },
-      {
-        id: "TXN-202",
-        type: "Sale",
-        product: "Potato Chips",
-        quantity: 6,
-        amount: 17.94,
-        time: "2 hours ago",
-      },
-      {
-        id: "TXN-203",
-        type: "Restock",
-        product: "Yogurt Cups",
-        quantity: 24,
-        amount: 71.76,
-        time: "4 hours ago",
-      },
-    ],
-    store_003: [
-      {
-        id: "TXN-301",
-        type: "Sale",
-        product: "Greek Yogurt",
-        quantity: 8,
-        amount: 31.92,
-        time: "1 hour ago",
-      },
-      {
-        id: "TXN-302",
-        type: "Sale",
-        product: "Artisan Bread",
-        quantity: 3,
-        amount: 14.97,
-        time: "2 hours ago",
-      },
-    ],
-    store_004: [
-      {
-        id: "TXN-401",
-        type: "Sale",
-        product: "Ground Beef",
-        quantity: 4,
-        amount: 35.96,
-        time: "20 min ago",
-      },
-      {
-        id: "TXN-402",
-        type: "Restock",
-        product: "Chicken Breast",
-        quantity: 15,
-        amount: 89.85,
-        time: "1 hour ago",
-      },
-      {
-        id: "TXN-403",
-        type: "Sale",
-        product: "Sandwich Bread",
-        quantity: 7,
-        amount: 17.43,
-        time: "3 hours ago",
-      },
-    ],
-  };
-
-  const recentTransactions = storeTransactions[selectedStore] || [];
 
   return (
     <div className="min-h-screen bg-background">
@@ -561,9 +425,18 @@ export default function Dashboard() {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {stats.map((stat, index) => (
-              <StatCard key={index} {...stat} />
-            ))}
+            {analyticsLoading
+              ? // Loading skeleton for stats
+                Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="bg-card rounded-lg border p-6">
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                      <div className="h-8 bg-muted rounded w-1/2 mb-2"></div>
+                      <div className="h-3 bg-muted rounded w-2/3"></div>
+                    </div>
+                  </div>
+                ))
+              : stats.map((stat, index) => <StatCard key={index} {...stat} />)}
           </div>
 
           {/* Dashboard Content */}
@@ -581,19 +454,39 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {lowStockItems.length > 0 ? (
+                  {lowStockLoading ? (
+                    // Loading skeleton for low stock items
+                    Array.from({ length: 3 }).map((_, index) => (
+                      <div key={index} className="p-3 bg-muted/50 rounded-lg">
+                        <div className="animate-pulse flex justify-between">
+                          <div className="flex-1">
+                            <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                            <div className="h-3 bg-muted rounded w-1/2"></div>
+                          </div>
+                          <div className="w-16">
+                            <div className="h-4 bg-muted rounded w-full mb-1"></div>
+                            <div className="h-3 bg-muted rounded w-full"></div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : lowStockItems.length > 0 ? (
                     lowStockItems.map((item, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                        onClick={() => navigateToProduct(item.name)}
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-muted/70 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                        title="Click to view product details"
                       >
                         <div>
-                          <p className="font-medium">{item.name}</p>
+                          <p className="font-medium hover:text-primary transition-colors">
+                            {item.name}
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             {item.category}
                             {selectedStore === "all" && item.store && (
                               <span className="ml-2 text-blue-600">
-                                • {item.store} Store
+                                • {item.store}
                               </span>
                             )}
                           </p>
@@ -634,33 +527,53 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentTransactions.map((transaction, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                    >
-                      <div>
-                        <p className="font-medium">{transaction.product}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {transaction.type} • {transaction.time}
-                          {selectedStore === "all" && transaction.store && (
-                            <span className="ml-2 text-blue-600">
-                              • {transaction.store}
-                            </span>
-                          )}
-                        </p>
-                      </div>
-                      <div className="text-right">
-                        <p className="font-medium">
-                          {transaction.type === "Sale" ? "-" : "+"}
-                          {transaction.quantity}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          ${transaction.amount.toFixed(2)}
-                        </p>
-                      </div>
-                    </div>
-                  ))}
+                  {transactionsLoading
+                    ? // Loading skeleton for transactions
+                      Array.from({ length: 3 }).map((_, index) => (
+                        <div key={index} className="p-3 bg-muted/50 rounded-lg">
+                          <div className="animate-pulse flex justify-between">
+                            <div className="flex-1">
+                              <div className="h-4 bg-muted rounded w-2/3 mb-2"></div>
+                              <div className="h-3 bg-muted rounded w-1/2"></div>
+                            </div>
+                            <div className="w-16">
+                              <div className="h-4 bg-muted rounded w-full mb-1"></div>
+                              <div className="h-3 bg-muted rounded w-full"></div>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    : recentTransactions.map((transaction, index) => (
+                        <div
+                          key={index}
+                          onClick={() => navigateToProduct(transaction.product)}
+                          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-muted/70 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                          title="Click to view product details"
+                        >
+                          <div>
+                            <p className="font-medium hover:text-primary transition-colors">
+                              {transaction.product}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {transaction.type} • {transaction.time}
+                              {selectedStore === "all" && transaction.store && (
+                                <span className="ml-2 text-blue-600">
+                                  • {transaction.store}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">
+                              {transaction.type === "Sale" ? "-" : "+"}
+                              {transaction.quantity}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              ${transaction.amount?.toFixed(2) || "0.00"}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                 </div>
                 <Button
                   variant="outline"
@@ -684,25 +597,49 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {analyticsData?.topSellingCategories?.map(
-                    (category, index) => (
+                  {analyticsLoading ? (
+                    // Loading skeleton for categories
+                    Array.from({ length: 3 }).map((_, index) => (
                       <div
                         key={index}
                         className="p-4 bg-muted/50 rounded-lg text-center"
                       >
-                        <p className="font-semibold text-lg">{category.name}</p>
-                        <p className="text-2xl font-bold text-primary">
-                          {category.sales}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          units sold
-                        </p>
+                        <div className="animate-pulse">
+                          <div className="h-5 bg-muted rounded w-3/4 mx-auto mb-3"></div>
+                          <div className="h-8 bg-muted rounded w-1/2 mx-auto mb-2"></div>
+                          <div className="h-3 bg-muted rounded w-2/3 mx-auto"></div>
+                        </div>
                       </div>
-                    ),
-                  ) || (
+                    ))
+                  ) : analyticsData?.topSellingCategories?.length > 0 ? (
+                    analyticsData.topSellingCategories.map(
+                      (category, index) => (
+                        <div
+                          key={index}
+                          onClick={() =>
+                            navigate(
+                              `/products?category=${encodeURIComponent(category.name)}`,
+                            )
+                          }
+                          className="p-4 bg-muted/50 rounded-lg text-center cursor-pointer transition-all duration-200 hover:bg-muted/70 hover:shadow-md hover:scale-[1.05] active:scale-[0.95]"
+                          title={`Click to view ${category.name} products`}
+                        >
+                          <p className="font-semibold text-lg hover:text-primary transition-colors">
+                            {category.name}
+                          </p>
+                          <p className="text-2xl font-bold text-primary">
+                            {category.sales}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            units sold
+                          </p>
+                        </div>
+                      ),
+                    )
+                  ) : (
                     <div className="col-span-3 text-center text-muted-foreground py-8">
                       <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>Analytics data will appear here</p>
+                      <p>No category data available</p>
                     </div>
                   )}
                 </div>

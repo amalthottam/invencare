@@ -12,7 +12,7 @@ import {
   getTransactions,
   getTransactionSummary,
   createTransaction,
-  getStores,
+  getStores as getStoresFromTransactions,
   getProducts,
 } from "./routes/transactions.js";
 import {
@@ -39,6 +39,9 @@ import { ProductAnalyticsService } from "./services/productAnalytics.js";
 import {
   getTopSellingCategories,
   getDashboardAnalytics,
+  getStores,
+  getLowStockItems,
+  getRecentTransactions,
 } from "./routes/dashboard.js";
 import { initializeDatabase, seedSampleData, query } from "./db/sqlite.js";
 import { cleanupDatabase } from "./db/cleanup.js";
@@ -767,7 +770,7 @@ export function createServer() {
   app.get("/api/transactions", getTransactionsWorking);
   app.get("/api/transactions/summary", getTransactionSummaryWorking);
   app.post("/api/transactions", createTransaction);
-  app.get("/api/stores", getStores);
+  app.get("/api/stores", getStoresFromTransactions);
   app.get("/api/products", getProducts);
 
   // Local database forecasting routes
@@ -795,6 +798,9 @@ export function createServer() {
   // Dashboard Analytics routes
   app.get("/api/dashboard/analytics", getDashboardAnalytics);
   app.get("/api/dashboard/categories", getTopSellingCategories);
+  app.get("/api/dashboard/stores", getStores);
+  app.get("/api/dashboard/low-stock", getLowStockItems);
+  app.get("/api/dashboard/transactions", getRecentTransactions);
 
   // Database cleanup endpoint
   app.post("/api/database/cleanup", async (req, res) => {

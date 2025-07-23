@@ -118,3 +118,64 @@ export async function fetchDashboardAnalytics(storeId = "all") {
     }
   }
 }
+
+/**
+ * Fetch stores list
+ * @returns {Promise<any>} - Stores data
+ */
+export async function fetchStores() {
+  try {
+    const result = await apiRequest("/api/dashboard/stores");
+    return result.data.stores;
+  } catch (error) {
+    console.error("Failed to fetch stores:", error);
+    // Return mock data as fallback
+    return [
+      { id: "all", name: "All Stores", location: "Combined View" },
+      { id: "store_001", name: "Downtown Store", location: "123 Main St" },
+      {
+        id: "store_002",
+        name: "Mall Location",
+        location: "456 Shopping Center",
+      },
+      { id: "store_003", name: "Uptown Branch", location: "789 North Ave" },
+      { id: "store_004", name: "Westside Market", location: "321 West Blvd" },
+    ];
+  }
+}
+
+/**
+ * Fetch low stock items
+ * @param {string} storeId - The store ID to filter by (or 'all')
+ * @returns {Promise<any>} - Low stock items data
+ */
+export async function fetchLowStockItems(storeId = "all") {
+  const storeParam = storeId !== "all" ? `?storeId=${storeId}` : "";
+  const endpoint = `/api/dashboard/low-stock${storeParam}`;
+
+  try {
+    const result = await apiRequest(endpoint);
+    return result.data.items;
+  } catch (error) {
+    console.error("Failed to fetch low stock items:", error);
+    return [];
+  }
+}
+
+/**
+ * Fetch recent transactions
+ * @param {string} storeId - The store ID to filter by (or 'all')
+ * @returns {Promise<any>} - Recent transactions data
+ */
+export async function fetchRecentTransactions(storeId = "all") {
+  const storeParam = storeId !== "all" ? `?storeId=${storeId}` : "";
+  const endpoint = `/api/dashboard/transactions${storeParam}`;
+
+  try {
+    const result = await apiRequest(endpoint);
+    return result.data.transactions;
+  } catch (error) {
+    console.error("Failed to fetch recent transactions:", error);
+    return [];
+  }
+}

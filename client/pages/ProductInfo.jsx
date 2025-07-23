@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "@/lib/auth-context";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,7 @@ export default function ProductInfo() {
   const { id } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { logout } = useAuth();
   const isEditMode = location.pathname.includes("/edit");
 
   const [product, setProduct] = useState(null);
@@ -38,6 +40,8 @@ export default function ProductInfo() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
+  const [tempPrice, setTempPrice] = useState("");
   const [formData, setFormData] = useState({
     productName: "",
     productId: "",
@@ -50,18 +54,11 @@ export default function ProductInfo() {
   });
 
   useEffect(() => {
-    // Check authentication
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-
     fetchProduct();
     if (isEditMode) {
       fetchCategories();
     }
-  }, [id, navigate, isEditMode]);
+  }, [id, isEditMode]);
 
   const fetchCategories = async () => {
     try {
@@ -112,8 +109,8 @@ export default function ProductInfo() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
@@ -149,6 +146,45 @@ export default function ProductInfo() {
 
   const handleCancel = () => {
     navigate(`/products/${id}`);
+  };
+
+  const handlePriceEdit = () => {
+    setTempPrice(product.price);
+    setIsEditingPrice(true);
+  };
+
+  const handlePriceSave = async () => {
+    try {
+      setSaving(true);
+      const response = await fetch(`/api/products/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          price: tempPrice,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Update the product data locally
+      setProduct({ ...product, price: tempPrice });
+      setIsEditingPrice(false);
+    } catch (err) {
+      console.error("Failed to update price:", err);
+      setError("Failed to update price. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePriceCancel = () => {
+    setTempPrice("");
+    setIsEditingPrice(false);
   };
 
   const getStockStatusIcon = (status) => {
@@ -440,9 +476,49 @@ export default function ProductInfo() {
                           <label className="text-sm font-medium text-muted-foreground">
                             Price
                           </label>
-                          <p className="text-lg font-semibold text-green-600">
-                            ${product.price}
-                          </p>
+                          {isEditingPrice ? (
+                            <div className="flex items-center gap-2 mt-1">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={tempPrice}
+                                onChange={(e) => setTempPrice(e.target.value)}
+                                className="w-24 h-8 text-sm"
+                                autoFocus
+                              />
+                              <Button
+                                size="sm"
+                                onClick={handlePriceSave}
+                                disabled={saving}
+                                className="h-8 px-2"
+                              >
+                                {saving ? "..." : "✓"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handlePriceCancel}
+                                className="h-8 px-2"
+                              >
+                                ✕
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-lg font-semibold text-green-600">
+                                ${product.price}
+                              </p>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handlePriceEdit}
+                                className="h-6 w-6 p-0 hover:bg-muted"
+                                title="Edit price"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
 

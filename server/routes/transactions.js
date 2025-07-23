@@ -207,16 +207,30 @@ export const createTransaction = async (req, res) => {
 
     // Update product inventory if product exists
     if (productId) {
-      // Check if product exists
+      console.log(
+        `Updating inventory for productId: ${productId}, storeId: ${storeId}, type: ${type}, quantity: ${quantity}`,
+      );
+
+      // productId is now the database ID from frontend
       const [productRows] = await req.db.execute(
-        "SELECT quantity FROM products WHERE id = ? AND store_id = ?",
+        "SELECT id, quantity, name FROM products WHERE id = ? AND store_id = ?",
         [productId, storeId],
       );
 
+      console.log(
+        `Found ${productRows.length} matching products for ID ${productId} in store ${storeId}`,
+      );
+
       if (productRows.length > 0) {
+        const product = productRows[0];
+        const currentQuantity = product.quantity;
+        console.log(
+          `Current product "${product.name}" quantity: ${currentQuantity}`,
+        );
+
         let stockChange = 0;
 
-        switch (type) {
+        switch (type.toLowerCase()) {
           case "sale":
           case "adjustment":
             stockChange = -Math.abs(quantity); // Negative for outbound
@@ -230,19 +244,71 @@ export const createTransaction = async (req, res) => {
             break;
         }
 
-        // Update source store stock
-        await req.db.execute(
-          "UPDATE products SET quantity = quantity + ? WHERE id = ? AND store_id = ?",
-          [stockChange, productId, storeId],
+        console.log(
+          `Applying stock change: ${stockChange} to product ${product.id} in store ${storeId}`,
         );
 
-        // If transfer, update destination store stock
-        if (type === "transfer" && transferToStoreId) {
-          await req.db.execute(
-            "UPDATE products SET quantity = quantity + ? WHERE id = ? AND store_id = ?",
-            [Math.abs(quantity), productId, transferToStoreId],
+        // Update source store stock using exact database ID and store ID
+        const [updateResult] = await req.db.execute(
+          "UPDATE products SET quantity = quantity + ? WHERE id = ? AND store_id = ? LIMIT 1",
+          [stockChange, product.id, storeId],
+        );
+
+        console.log(
+          `Product update result: affected rows = ${updateResult.affectedRows}`,
+        );
+
+        // Verify the update
+        const [verifyRows] = await req.db.execute(
+          "SELECT quantity FROM products WHERE id = ? AND store_id = ?",
+          [product.id, storeId],
+        );
+
+        if (verifyRows.length > 0) {
+          console.log(
+            `Product quantity after update: ${verifyRows[0].quantity}`,
           );
         }
+
+        // If transfer, update destination store stock
+        if (type.toLowerCase() === "transfer" && transferToStoreId) {
+          console.log(`Processing transfer to store ${transferToStoreId}`);
+
+          // For transfers, we need to find the corresponding product in the destination store
+          // This assumes products have the same name/category across stores
+          const [destProductRows] = await req.db.execute(
+            "SELECT id, quantity FROM products WHERE name = ? AND category = ? AND store_id = ? LIMIT 1",
+            [productName, category, transferToStoreId],
+          );
+
+          console.log(
+            `Found ${destProductRows.length} matching destination products`,
+          );
+
+          if (destProductRows.length > 0) {
+            const destProduct = destProductRows[0];
+            console.log(
+              `Destination product current quantity: ${destProduct.quantity}`,
+            );
+
+            const [destUpdateResult] = await req.db.execute(
+              "UPDATE products SET quantity = quantity + ? WHERE id = ? AND store_id = ? LIMIT 1",
+              [Math.abs(quantity), destProduct.id, transferToStoreId],
+            );
+
+            console.log(
+              `Destination update result: affected rows = ${destUpdateResult.affectedRows}`,
+            );
+          } else {
+            console.warn(
+              `No matching product found in destination store ${transferToStoreId} for "${productName}" in category "${category}"`,
+            );
+          }
+        }
+      } else {
+        console.warn(
+          `No product found with ID ${productId} in store ${storeId}`,
+        );
       }
     }
 

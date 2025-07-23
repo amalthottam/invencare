@@ -223,6 +223,7 @@ export const createTransaction = async (req, res) => {
       }
 
       if (productRows.length > 0) {
+        const actualProductId = productRows[0].id; // Use the actual database ID
         let stockChange = 0;
 
         switch (type) {
@@ -239,18 +240,26 @@ export const createTransaction = async (req, res) => {
             break;
         }
 
-        // Update source store stock
+        // Update source store stock using actual database ID
         await req.db.execute(
           "UPDATE products SET quantity = quantity + ? WHERE id = ? AND store_id = ?",
-          [stockChange, productId, storeId],
+          [stockChange, actualProductId, storeId],
         );
 
         // If transfer, update destination store stock
         if (type === "transfer" && transferToStoreId) {
-          await req.db.execute(
-            "UPDATE products SET quantity = quantity + ? WHERE id = ? AND store_id = ?",
-            [Math.abs(quantity), productId, transferToStoreId],
+          // Find the same product in the destination store
+          const [destProductRows] = await req.db.execute(
+            "SELECT id FROM products WHERE product_id = ? AND store_id = ?",
+            [productId, transferToStoreId],
           );
+
+          if (destProductRows.length > 0) {
+            await req.db.execute(
+              "UPDATE products SET quantity = quantity + ? WHERE id = ? AND store_id = ?",
+              [Math.abs(quantity), destProductRows[0].id, transferToStoreId],
+            );
+          }
         }
       }
     }

@@ -268,20 +268,30 @@ export default function Transactions() {
     }
   }, []);
 
-  const loadInitialData = async () => {
+  const loadInitialData = async (retryCount = 0) => {
     setIsLoading(true);
     setError(null);
 
-    // Load stores first
+    // Load stores first with retry logic
     try {
+      console.log(`Loading stores (attempt ${retryCount + 1})`);
       const storesResponse = await api.getStores();
       const storeData = [
         { id: "all", name: "All Stores", location: "Combined View" },
         ...(storesResponse?.data || storesResponse?.stores || []),
       ];
       setStores(storeData);
+      console.log(`Successfully loaded ${storeData.length} stores`);
     } catch (storeError) {
-      console.error("Failed to load stores:", storeError);
+      console.error("Failed to load stores:", storeError.message);
+
+      // Retry once if first attempt fails and error is network-related
+      if (retryCount === 0 && (storeError.message.includes('Failed to fetch') || storeError.message.includes('Network error'))) {
+        console.log('Retrying store loading after network error...');
+        setTimeout(() => loadInitialData(1), 2000);
+        return;
+      }
+
       // Provide fallback stores
       setStores([
         { id: "all", name: "All Stores", location: "Combined View" },

@@ -142,6 +142,10 @@ export default function Login() {
         errorMessage = "Too many sign-in attempts. Please try again later.";
       } else if (error.name === 'NetworkError') {
         errorMessage = "Network error. Please check your internet connection.";
+      } else if (error.message && error.message.includes('Unknown')) {
+        errorMessage = "Authentication service configuration issue. Please ensure the Cognito User Pool Client has SRP_AUTH enabled.";
+      } else if (error.message && error.message.includes('Invalid authentication flow')) {
+        errorMessage = "Authentication flow not supported. Please contact your administrator.";
       } else if (error.message) {
         errorMessage = error.message;
       }

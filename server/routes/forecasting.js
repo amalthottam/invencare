@@ -226,7 +226,7 @@ export const getStores = async (req, res) => {
 // Get products for filtering
 export const getProducts = async (req, res) => {
   try {
-    const [products] = await pool.execute(`
+    const [products] = await req.db.execute(`
       SELECT DISTINCT p.id, p.name, p.category
       FROM products p
       JOIN demand_predictions dp ON p.id = dp.product_id

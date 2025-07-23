@@ -534,7 +534,7 @@ export default function Dashboard() {
                     recentTransactions.map((transaction, index) => (
                       <div
                         key={index}
-                        onClick={() => navigate(`/products?search=${encodeURIComponent(transaction.product)}`)}
+                        onClick={() => navigateToProduct(transaction.product)}
                         className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-muted/70 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
                         title="Click to view product details"
                       >

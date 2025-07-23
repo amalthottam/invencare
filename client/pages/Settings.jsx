@@ -158,9 +158,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                       <span className="font-medium">User ID (Sub)</span>
                       <span className="text-sm text-muted-foreground font-mono">
-                        {profileData.userId
-                          ? `${profileData.userId.substring(0, 8)}...`
-                          : "Loading..."}
+                        {profileData.userId || "Loading..."}
                       </span>
                     </div>
 

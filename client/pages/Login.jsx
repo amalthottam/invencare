@@ -53,7 +53,7 @@ export default function Login() {
       console.log('Email:', formData.email);
 
       // Validate Cognito setup
-      const setupValidation = validateCognitoSetup();
+      const setupValidation = await validateCognitoSetup();
       if (!setupValidation.valid) {
         throw new Error(`Cognito setup error: ${setupValidation.error}`);
       }

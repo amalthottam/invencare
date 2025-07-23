@@ -86,6 +86,7 @@ const api = {
 
 export default function Transactions() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [selectedStore, setSelectedStore] = useState("all");
   const [stores, setStores] = useState([
     { id: "all", name: "All Stores", location: "Combined View" },

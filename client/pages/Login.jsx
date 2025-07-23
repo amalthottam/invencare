@@ -13,10 +13,19 @@ import {
 import { Package, Eye, EyeOff } from "lucide-react";
 
 // AWS Cognito Authentication
-import { signIn, signUp, confirmSignUp, resendSignUpCode, fetchUserAttributes } from 'aws-amplify/auth';
+import {
+  signIn,
+  signUp,
+  confirmSignUp,
+  resendSignUpCode,
+  fetchUserAttributes,
+} from "aws-amplify/auth";
 import { useToast } from "@/components/ui/use-toast";
 import { performPreAuthChecks } from "@/lib/network-check";
-import { testCognitoConnection, validateCognitoSetup } from "@/lib/cognito-test";
+import {
+  testCognitoConnection,
+  validateCognitoSetup,
+} from "@/lib/cognito-test";
 
 export default function Login() {
   const navigate = useNavigate();
@@ -38,17 +47,20 @@ export default function Login() {
   useEffect(() => {
     const checkExistingAuth = async () => {
       try {
-        const { getCurrentUser } = await import('aws-amplify/auth');
+        const { getCurrentUser } = await import("aws-amplify/auth");
         const existingUser = await getCurrentUser();
 
         if (existingUser) {
-          console.log('User already authenticated on login page:', existingUser.username);
-          console.log('Redirecting to dashboard...');
+          console.log(
+            "User already authenticated on login page:",
+            existingUser.username,
+          );
+          console.log("Redirecting to dashboard...");
           navigate("/dashboard", { replace: true });
         }
       } catch (error) {
         // No existing user, stay on login page
-        console.log('No existing authenticated user found');
+        console.log("No existing authenticated user found");
       }
     };
 
@@ -69,31 +81,35 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      console.log('🔐 Starting sign in process for:', formData.email);
+      console.log("🔐 Starting sign in process for:", formData.email);
 
       // First check if there's already a signed-in user
       try {
-        const { getCurrentUser } = await import('aws-amplify/auth');
+        const { getCurrentUser } = await import("aws-amplify/auth");
         const existingUser = await getCurrentUser();
 
         if (existingUser) {
-          console.log('User already signed in:', existingUser.username);
+          console.log("User already signed in:", existingUser.username);
 
           // Check if it's the same user trying to sign in
           if (existingUser.username === formData.email) {
-            console.log('Same user already authenticated, redirecting to dashboard');
+            console.log(
+              "Same user already authenticated, redirecting to dashboard",
+            );
             navigate("/dashboard");
             return;
           } else {
             // Different user trying to sign in, sign out the current user first
-            console.log('Different user attempting to sign in, signing out current user');
-            const { signOut } = await import('aws-amplify/auth');
+            console.log(
+              "Different user attempting to sign in, signing out current user",
+            );
+            const { signOut } = await import("aws-amplify/auth");
             await signOut();
           }
         }
       } catch (getUserError) {
         // No existing user or error getting current user, proceed with sign in
-        console.log('No existing user found, proceeding with sign in');
+        console.log("No existing user found, proceeding with sign in");
       }
 
       // AWS Cognito Sign In Implementation with Store Access Validation
@@ -102,47 +118,53 @@ export default function Login() {
         password: formData.password,
       });
 
-      console.log('Sign in result:', { isSignedIn, nextStep });
+      console.log("Sign in result:", { isSignedIn, nextStep });
 
       if (isSignedIn) {
         // After successful sign-in, fetch user attributes to validate store access
         const userAttributes = await fetchUserAttributes();
-        const userStatus = userAttributes['custom:status'];
-        const storeAccess = userAttributes['custom:store_access'];
-        const userRole = userAttributes['custom:role'];
+        const userStatus = userAttributes["custom:status"];
+        const storeAccess = userAttributes["custom:store_access"];
+        const userRole = userAttributes["custom:role"];
 
-        console.log('User attributes:', userAttributes);
+        console.log("User attributes:", userAttributes);
 
         // Validate user account status
-        if (userStatus === 'inactive' || userStatus === 'suspended') {
-          const { signOut } = await import('aws-amplify/auth');
+        if (userStatus === "inactive" || userStatus === "suspended") {
+          const { signOut } = await import("aws-amplify/auth");
           await signOut();
           toast({
             title: "Account Inactive",
-            description: "Your account has been deactivated. Please contact your administrator.",
+            description:
+              "Your account has been deactivated. Please contact your administrator.",
             variant: "destructive",
           });
           return;
         }
 
-        if (userStatus === 'pending') {
-          const { signOut } = await import('aws-amplify/auth');
+        if (userStatus === "pending") {
+          const { signOut } = await import("aws-amplify/auth");
           await signOut();
           toast({
             title: "Account Pending Approval",
-            description: "Your account is pending admin approval. Please wait for activation.",
+            description:
+              "Your account is pending admin approval. Please wait for activation.",
             variant: "destructive",
           });
           return;
         }
 
         // Validate store access
-        if (!storeAccess || (storeAccess !== 'all' && !storeAccess.includes('store_'))) {
-          const { signOut } = await import('aws-amplify/auth');
+        if (
+          !storeAccess ||
+          (storeAccess !== "all" && !storeAccess.includes("store_"))
+        ) {
+          const { signOut } = await import("aws-amplify/auth");
           await signOut();
           toast({
             title: "No Store Access",
-            description: "You don't have access to any stores. Please contact your administrator.",
+            description:
+              "You don't have access to any stores. Please contact your administrator.",
             variant: "destructive",
           });
           return;
@@ -150,7 +172,7 @@ export default function Login() {
 
         toast({
           title: "Success",
-          description: `Welcome back! You have ${storeAccess === 'all' ? 'full' : 'limited'} store access.`,
+          description: `Welcome back! You have ${storeAccess === "all" ? "full" : "limited"} store access.`,
           variant: "success",
         });
 
@@ -159,7 +181,7 @@ export default function Login() {
         navigate("/dashboard");
       } else {
         // Handle MFA or other next steps
-        console.log('Sign in next step:', nextStep);
+        console.log("Sign in next step:", nextStep);
         toast({
           title: "Additional verification required",
           description: "Please complete the additional authentication step.",
@@ -178,37 +200,42 @@ export default function Login() {
       let errorMessage = "Failed to sign in";
 
       // Handle specific Cognito errors
-      if (error.name === 'UserAlreadyAuthenticatedException') {
-        console.log('User already authenticated, attempting to redirect...');
+      if (error.name === "UserAlreadyAuthenticatedException") {
+        console.log("User already authenticated, attempting to redirect...");
         try {
           // Try to get the current user and redirect
-          const { getCurrentUser } = await import('aws-amplify/auth');
+          const { getCurrentUser } = await import("aws-amplify/auth");
           const currentUser = await getCurrentUser();
-          console.log('Current authenticated user:', currentUser.username);
+          console.log("Current authenticated user:", currentUser.username);
           navigate("/dashboard");
           return;
         } catch (getUserError) {
           // If we can't get the current user, sign out and reload
-          console.warn('Could not get current user, signing out...');
-          const { signOut } = await import('aws-amplify/auth');
+          console.warn("Could not get current user, signing out...");
+          const { signOut } = await import("aws-amplify/auth");
           await signOut();
           window.location.reload();
           return;
         }
-      } else if (error.name === 'UserNotFoundException') {
+      } else if (error.name === "UserNotFoundException") {
         errorMessage = "User not found. Please check your email address.";
-      } else if (error.name === 'NotAuthorizedException') {
+      } else if (error.name === "NotAuthorizedException") {
         errorMessage = "Incorrect email or password.";
-      } else if (error.name === 'UserNotConfirmedException') {
+      } else if (error.name === "UserNotConfirmedException") {
         errorMessage = "Please confirm your email address before signing in.";
-      } else if (error.name === 'TooManyRequestsException') {
+      } else if (error.name === "TooManyRequestsException") {
         errorMessage = "Too many sign-in attempts. Please try again later.";
-      } else if (error.name === 'NetworkError') {
+      } else if (error.name === "NetworkError") {
         errorMessage = "Network error. Please check your internet connection.";
-      } else if (error.message && error.message.includes('Unknown')) {
-        errorMessage = "Authentication service configuration issue. Please ensure the Cognito User Pool Client has SRP_AUTH enabled.";
-      } else if (error.message && error.message.includes('Invalid authentication flow')) {
-        errorMessage = "Authentication flow not supported. Please contact your administrator.";
+      } else if (error.message && error.message.includes("Unknown")) {
+        errorMessage =
+          "Authentication service configuration issue. Please ensure the Cognito User Pool Client has SRP_AUTH enabled.";
+      } else if (
+        error.message &&
+        error.message.includes("Invalid authentication flow")
+      ) {
+        errorMessage =
+          "Authentication flow not supported. Please contact your administrator.";
       } else if (error.message) {
         errorMessage = error.message;
       }
@@ -246,11 +273,11 @@ export default function Login() {
         options: {
           userAttributes: {
             email: formData.email,
-            given_name: formData.firstName || '',
-            family_name: formData.lastName || '',
-            'custom:role': 'employee', // Default role for new signups
-            'custom:store_access': 'store_001', // Initial access to store_001 only
-            'custom:status': 'pending' // Account needs admin approval
+            given_name: formData.firstName || "",
+            family_name: formData.lastName || "",
+            "custom:role": "employee", // Default role for new signups
+            "custom:store_access": "store_001", // Initial access to store_001 only
+            "custom:status": "pending", // Account needs admin approval
           },
         },
       });
@@ -258,11 +285,12 @@ export default function Login() {
       // Note: In production, new employee accounts should require admin approval
       // before gaining access to store systems and inventory data
 
-      if (nextStep.signUpStep === 'CONFIRM_SIGN_UP') {
+      if (nextStep.signUpStep === "CONFIRM_SIGN_UP") {
         setConfirmationStep(true);
         toast({
           title: "Confirmation Required",
-          description: "Please check your email for confirmation code. Admin approval may be required.",
+          description:
+            "Please check your email for confirmation code. Admin approval may be required.",
           variant: "success",
         });
       }
@@ -293,7 +321,8 @@ export default function Login() {
       if (isSignUpComplete) {
         toast({
           title: "Success",
-          description: "Account confirmed! Please sign in. Your account is pending admin approval.",
+          description:
+            "Account confirmed! Please sign in. Your account is pending admin approval.",
           variant: "success",
         });
         setIsSignUp(false);
@@ -530,16 +559,18 @@ export default function Login() {
               </p>
 
               <div className="flex gap-2 mt-2">
-                {process.env.NODE_ENV === 'development' && (
+                {process.env.NODE_ENV === "development" && (
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={async () => {
                       const test = await testCognitoConnection();
-                      console.log('Connection test result:', test);
+                      console.log("Connection test result:", test);
                       toast({
-                        title: test.success ? "Connection Test Passed" : "Connection Test Failed",
+                        title: test.success
+                          ? "Connection Test Passed"
+                          : "Connection Test Failed",
                         description: test.message || test.error,
                         variant: test.success ? "success" : "destructive",
                       });
@@ -555,16 +586,17 @@ export default function Login() {
                   size="sm"
                   onClick={async () => {
                     try {
-                      const { signOut } = await import('aws-amplify/auth');
+                      const { signOut } = await import("aws-amplify/auth");
                       await signOut();
                       toast({
                         title: "Signed Out",
-                        description: "Previous session cleared. You can now sign in with different credentials.",
+                        description:
+                          "Previous session cleared. You can now sign in with different credentials.",
                         variant: "success",
                       });
                       window.location.reload();
                     } catch (error) {
-                      console.warn('Sign out error:', error);
+                      console.warn("Sign out error:", error);
                       toast({
                         title: "Session Cleared",
                         description: "Previous session cleared.",

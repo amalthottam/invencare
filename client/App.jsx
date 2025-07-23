@@ -18,25 +18,25 @@ import { AuthProvider } from "@/lib/auth-context";
 import ProtectedRoute from "./components/ProtectedRoute";
 
 // AWS Cognito Integration
-import { Amplify } from 'aws-amplify';
-import { getCurrentUser } from 'aws-amplify/auth';
+import { Amplify } from "aws-amplify";
+import { getCurrentUser } from "aws-amplify/auth";
 
 Amplify.configure({
   Auth: {
     Cognito: {
-      userPoolId: 'us-east-1_FW7AOCFuJ',
-      userPoolClientId: '2l941887qehovv1b3i24a42rib',
-      region: 'us-east-1',
-      signUpVerificationMethod: 'code',
+      userPoolId: "us-east-1_FW7AOCFuJ",
+      userPoolClientId: "2l941887qehovv1b3i24a42rib",
+      region: "us-east-1",
+      signUpVerificationMethod: "code",
       loginWith: {
         email: true,
         username: false,
-        phone: false
+        phone: false,
       },
       userAttributes: {
         email: {
-          required: true
-        }
+          required: true,
+        },
       },
       allowGuestAccess: true,
       passwordFormat: {
@@ -44,10 +44,10 @@ Amplify.configure({
         requireLowercase: true,
         requireUppercase: true,
         requireNumbers: true,
-        requireSpecialCharacters: true
-      }
-    }
-  }
+        requireSpecialCharacters: true,
+      },
+    },
+  },
 });
 
 const queryClient = new QueryClient();
@@ -65,9 +65,9 @@ const App = () => {
     try {
       const currentUser = await getCurrentUser();
       setUser(currentUser);
-      console.log('Current user found:', currentUser);
+      console.log("Current user found:", currentUser);
     } catch (error) {
-      console.log('No authenticated user found');
+      console.log("No authenticated user found");
       setUser(null);
     } finally {
       setIsLoading(false);
@@ -81,15 +81,71 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-            <Route path="/products/:id" element={<ProtectedRoute><ProductInfo /></ProtectedRoute>} />
-            <Route path="/products/:id/edit" element={<ProtectedRoute><ProductInfo /></ProtectedRoute>} />
-            <Route path="/forecasting" element={<ProtectedRoute><Forecasting /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
-            <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/products"
+              element={
+                <ProtectedRoute>
+                  <Products />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/products/:id"
+              element={
+                <ProtectedRoute>
+                  <ProductInfo />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/products/:id/edit"
+              element={
+                <ProtectedRoute>
+                  <ProductInfo />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/forecasting"
+              element={
+                <ProtectedRoute>
+                  <Forecasting />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/transactions"
+              element={
+                <ProtectedRoute>
+                  <Transactions />
+                </ProtectedRoute>
+              }
+            />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
+            <Route
+              path="*"
+              element={
+                <ProtectedRoute>
+                  <NotFound />
+                </ProtectedRoute>
+              }
+            />
           </Routes>
           <Toaster />
         </BrowserRouter>

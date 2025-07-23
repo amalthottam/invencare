@@ -43,10 +43,11 @@ export default function Settings() {
     if (user && user.attributes) {
       console.log("User attributes:", user.attributes);
       setProfileData({
-        name: user.attributes?.name ||
-              (user.attributes?.given_name ?
-                `${user.attributes.given_name} ${user.attributes.family_name || ''}`.trim() :
-                "User"),
+        name:
+          user.attributes?.name ||
+          (user.attributes?.given_name
+            ? `${user.attributes.given_name} ${user.attributes.family_name || ""}`.trim()
+            : "User"),
         email: user.attributes?.email || user.username,
         role: user.attributes?.["custom:role"] || "employee",
         storeAccess: user.attributes?.["custom:store_access"] || "none",
@@ -82,37 +83,39 @@ export default function Settings() {
   const handleSaveProfile = (e) => {
     e.preventDefault();
     setIsEditingProfile(false);
-    alert("Profile saved successfully! Note: Some fields are managed by AWS Cognito and cannot be changed here.");
+    alert(
+      "Profile saved successfully! Note: Some fields are managed by AWS Cognito and cannot be changed here.",
+    );
   };
 
   const getRoleBadgeColor = (role) => {
     switch (role?.toLowerCase()) {
-      case 'admin':
-        return 'bg-red-100 text-red-800 border-red-200';
-      case 'manager':
-        return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'employee':
-        return 'bg-green-100 text-green-800 border-green-200';
+      case "admin":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "manager":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      case "employee":
+        return "bg-green-100 text-green-800 border-green-200";
       default:
-        return 'bg-gray-100 text-gray-800 border-gray-200';
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
   const getStoreAccessBadgeColor = (access) => {
-    if (access === 'all') {
-      return 'bg-purple-100 text-purple-800 border-purple-200';
-    } else if (access?.includes('store_')) {
-      return 'bg-blue-100 text-blue-800 border-blue-200';
+    if (access === "all") {
+      return "bg-purple-100 text-purple-800 border-purple-200";
+    } else if (access?.includes("store_")) {
+      return "bg-blue-100 text-blue-800 border-blue-200";
     }
-    return 'bg-gray-100 text-gray-800 border-gray-200';
+    return "bg-gray-100 text-gray-800 border-gray-200";
   };
 
   const formatStoreAccess = (access) => {
-    if (access === 'all') return 'All Stores';
-    if (access?.includes('store_')) {
-      return access.split(',').join(', ');
+    if (access === "all") return "All Stores";
+    if (access?.includes("store_")) {
+      return access.split(",").join(", ");
     }
-    return 'No Access';
+    return "No Access";
   };
 
   return (
@@ -145,7 +148,8 @@ export default function Settings() {
                   AWS Cognito Account Information
                 </CardTitle>
                 <CardDescription>
-                  Your authentication and authorization details managed by AWS Cognito
+                  Your authentication and authorization details managed by AWS
+                  Cognito
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -154,7 +158,9 @@ export default function Settings() {
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                       <span className="font-medium">User ID (Sub)</span>
                       <span className="text-sm text-muted-foreground font-mono">
-                        {profileData.userId ? `${profileData.userId.substring(0, 8)}...` : 'Loading...'}
+                        {profileData.userId
+                          ? `${profileData.userId.substring(0, 8)}...`
+                          : "Loading..."}
                       </span>
                     </div>
 
@@ -162,9 +168,13 @@ export default function Settings() {
                       <span className="font-medium">Email Status</span>
                       <div className="flex items-center gap-2">
                         {profileData.emailVerified ? (
-                          <Badge className="bg-green-100 text-green-800">Verified</Badge>
+                          <Badge className="bg-green-100 text-green-800">
+                            Verified
+                          </Badge>
                         ) : (
-                          <Badge className="bg-yellow-100 text-yellow-800">Not Verified</Badge>
+                          <Badge className="bg-yellow-100 text-yellow-800">
+                            Not Verified
+                          </Badge>
                         )}
                       </div>
                     </div>
@@ -172,7 +182,8 @@ export default function Settings() {
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                       <span className="font-medium">Role</span>
                       <Badge className={getRoleBadgeColor(profileData.role)}>
-                        {profileData.role?.charAt(0).toUpperCase() + profileData.role?.slice(1)}
+                        {profileData.role?.charAt(0).toUpperCase() +
+                          profileData.role?.slice(1)}
                       </Badge>
                     </div>
                   </div>
@@ -180,14 +191,22 @@ export default function Settings() {
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                       <span className="font-medium">Store Access</span>
-                      <Badge className={getStoreAccessBadgeColor(profileData.storeAccess)}>
+                      <Badge
+                        className={getStoreAccessBadgeColor(
+                          profileData.storeAccess,
+                        )}
+                      >
                         {formatStoreAccess(profileData.storeAccess)}
                       </Badge>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <span className="font-medium">Authentication Provider</span>
-                      <span className="text-sm text-muted-foreground">AWS Cognito</span>
+                      <span className="font-medium">
+                        Authentication Provider
+                      </span>
+                      <span className="text-sm text-muted-foreground">
+                        AWS Cognito
+                      </span>
                     </div>
 
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
@@ -228,12 +247,14 @@ export default function Settings() {
                     className="w-full"
                     size="sm"
                     onClick={handleManageUsers}
-                    disabled={profileData.role !== 'admin'}
+                    disabled={profileData.role !== "admin"}
                   >
                     Manage Users
                   </Button>
-                  {profileData.role !== 'admin' && (
-                    <p className="text-xs text-muted-foreground">Admin access required</p>
+                  {profileData.role !== "admin" && (
+                    <p className="text-xs text-muted-foreground">
+                      Admin access required
+                    </p>
                   )}
                 </div>
               </CardContent>
@@ -267,12 +288,14 @@ export default function Settings() {
                     className="w-full"
                     size="sm"
                     onClick={handleSystemSettings}
-                    disabled={profileData.role !== 'admin'}
+                    disabled={profileData.role !== "admin"}
                   >
                     System Settings
                   </Button>
-                  {profileData.role !== 'admin' && (
-                    <p className="text-xs text-muted-foreground">Admin access required</p>
+                  {profileData.role !== "admin" && (
+                    <p className="text-xs text-muted-foreground">
+                      Admin access required
+                    </p>
                   )}
                 </div>
               </CardContent>
@@ -284,11 +307,15 @@ export default function Settings() {
             <CardHeader>
               <CardTitle>Profile Information</CardTitle>
               <CardDescription>
-                Your profile information from AWS Cognito. Some fields are managed by your administrator.
+                Your profile information from AWS Cognito. Some fields are
+                managed by your administrator.
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <form onSubmit={handleSaveProfile} className="space-y-6 max-w-2xl">
+              <form
+                onSubmit={handleSaveProfile}
+                className="space-y-6 max-w-2xl"
+              >
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-2">
                     <Label htmlFor="name">Display Name</Label>
@@ -326,7 +353,8 @@ export default function Settings() {
                     <Label>Role & Permissions</Label>
                     <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg">
                       <Badge className={getRoleBadgeColor(profileData.role)}>
-                        {profileData.role?.charAt(0).toUpperCase() + profileData.role?.slice(1)}
+                        {profileData.role?.charAt(0).toUpperCase() +
+                          profileData.role?.slice(1)}
                       </Badge>
                       <span className="text-sm text-muted-foreground">
                         Assigned by administrator
@@ -337,7 +365,11 @@ export default function Settings() {
                   <div className="space-y-2">
                     <Label>Store Access</Label>
                     <div className="flex items-center gap-2 p-3 bg-slate-50 rounded-lg">
-                      <Badge className={getStoreAccessBadgeColor(profileData.storeAccess)}>
+                      <Badge
+                        className={getStoreAccessBadgeColor(
+                          profileData.storeAccess,
+                        )}
+                      >
                         {formatStoreAccess(profileData.storeAccess)}
                       </Badge>
                       <span className="text-sm text-muted-foreground">
@@ -387,7 +419,7 @@ export default function Settings() {
                     variant="outline"
                     onClick={() => {
                       navigator.clipboard.writeText(profileData.userId);
-                      alert('User ID copied to clipboard!');
+                      alert("User ID copied to clipboard!");
                     }}
                     disabled={!profileData.userId}
                   >

@@ -61,18 +61,27 @@ export default function Login() {
       // AWS Cognito Sign In Implementation with Store Access Validation
       console.log('Attempting signIn...');
 
-      // Try with explicit options to handle potential auth flow issues
-      const signInOptions = {
-        username: formData.email,
-        password: formData.password,
-        options: {
-          authFlowType: 'USER_SRP_AUTH' // Explicitly specify auth flow
-        }
-      };
+      // Try simplified sign-in first
+      let signInResult;
+      try {
+        signInResult = await signIn({
+          username: formData.email,
+          password: formData.password
+        });
+      } catch (authError) {
+        console.warn('Standard auth failed, trying with explicit flow type:', authError);
 
-      console.log('Sign in options:', signInOptions);
-      const { isSignedIn, nextStep } = await signIn(signInOptions);
+        // Fallback: try with different auth flow
+        signInResult = await signIn({
+          username: formData.email,
+          password: formData.password,
+          options: {
+            authFlowType: 'USER_PASSWORD_AUTH' // Alternative flow
+          }
+        });
+      }
 
+      const { isSignedIn, nextStep } = signInResult;
       console.log('Sign in result:', { isSignedIn, nextStep });
 
       if (isSignedIn) {

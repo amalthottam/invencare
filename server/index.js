@@ -770,7 +770,7 @@ export function createServer() {
   app.get("/api/transactions", getTransactionsWorking);
   app.get("/api/transactions/summary", getTransactionSummaryWorking);
   app.post("/api/transactions", createTransaction);
-  app.get("/api/stores", getStores);
+  app.get("/api/stores", getStoresFromTransactions);
   app.get("/api/products", getProducts);
 
   // Local database forecasting routes

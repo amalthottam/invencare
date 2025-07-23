@@ -30,11 +30,66 @@ import {
   Filter,
 } from "lucide-react";
 
-// Simple, reliable API helper using XMLHttpRequest as fallback
+// Detect FullStory or analytics interference more aggressively
+const detectAnalyticsInterference = () => {
+  return !!(
+    window.FS ||
+    window._fs_debug ||
+    window.FSRecorder ||
+    window.fullstory ||
+    document.querySelector('script[src*="fullstory"]') ||
+    document.querySelector('script[src*="fs.js"]') ||
+    // Check if fetch has been wrapped/modified
+    (window.fetch && window.fetch.toString().includes('native') === false)
+  );
+};
+
+// Simple, reliable API helper using XMLHttpRequest when analytics detected
 const makeApiRequest = async (url, options = {}) => {
   console.log(`Making API request to: ${url}`);
 
-  // First try with fetch, then fallback to XMLHttpRequest
+  const hasAnalyticsInterference = detectAnalyticsInterference();
+
+  // Use XMLHttpRequest directly if analytics interference detected
+  if (hasAnalyticsInterference) {
+    console.warn(`Analytics interference detected, using XMLHttpRequest for: ${url}`);
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open(options.method || 'GET', url);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            console.log(`XMLHttpRequest successful for ${url}`);
+            resolve(data);
+          } catch (parseError) {
+            reject(new Error(`Invalid JSON response: ${parseError.message}`));
+          }
+        } else {
+          reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error(`Network error - unable to connect to server`));
+      };
+
+      xhr.timeout = 15000; // 15 second timeout
+      xhr.ontimeout = () => {
+        reject(new Error(`Request timeout - server took too long to respond`));
+      };
+
+      if (options.body) {
+        xhr.send(options.body);
+      } else {
+        xhr.send();
+      }
+    });
+  }
+
+  // Try fetch if no analytics interference detected
   try {
     const response = await fetch(url, {
       headers: {
@@ -62,7 +117,7 @@ const makeApiRequest = async (url, options = {}) => {
         if (xhr.status >= 200 && xhr.status < 300) {
           try {
             const data = JSON.parse(xhr.responseText);
-            console.log(`XMLHttpRequest successful for ${url}`);
+            console.log(`XMLHttpRequest fallback successful for ${url}`);
             resolve(data);
           } catch (parseError) {
             reject(new Error(`Invalid JSON response: ${parseError.message}`));
@@ -76,7 +131,7 @@ const makeApiRequest = async (url, options = {}) => {
         reject(new Error(`Network error - unable to connect to server`));
       };
 
-      xhr.timeout = 10000; // 10 second timeout
+      xhr.timeout = 15000; // 15 second timeout
       xhr.ontimeout = () => {
         reject(new Error(`Request timeout - server took too long to respond`));
       };

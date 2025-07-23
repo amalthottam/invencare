@@ -52,11 +52,16 @@ export default function Login() {
       console.log('🔐 Starting sign in process...');
       console.log('Email:', formData.email);
 
-      // Run pre-authentication diagnostics
-      const diagnostics = await performPreAuthChecks();
+      // Validate Cognito setup
+      const setupValidation = validateCognitoSetup();
+      if (!setupValidation.valid) {
+        throw new Error(`Cognito setup error: ${setupValidation.error}`);
+      }
 
-      if (!diagnostics.config.valid) {
-        throw new Error(`Configuration error: ${diagnostics.config.missing?.join(', ') || diagnostics.config.error}`);
+      // Test Cognito connection
+      const connectionTest = await testCognitoConnection();
+      if (!connectionTest.success) {
+        throw new Error(`Cognito connection failed: ${connectionTest.error}`);
       }
 
       // AWS Cognito Sign In Implementation with Store Access Validation

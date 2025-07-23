@@ -176,50 +176,18 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
+      console.log(`Fetching dashboard data for store: ${selectedStore}`);
 
-      // Fetch real dashboard analytics data
-      const storeParam =
-        selectedStore !== "all" ? `?storeId=${selectedStore}` : "";
+      const data = await fetchDashboardAnalytics(selectedStore);
+      console.log("Successfully fetched dashboard data:", data);
 
-      console.log(`Attempting to fetch dashboard data from: /api/dashboard/analytics${storeParam}`);
-      console.log(`Current window.location.origin: ${window.location.origin}`);
-
-      const response = await fetch(`/api/dashboard/analytics${storeParam}`);
-
-      if (response.ok) {
-        const result = await response.json();
-        console.log("Dashboard API response:", result);
-        const data = result.data;
-        setAnalyticsData({
-          totalProducts: data.totalProducts,
-          lowStockItems: data.lowStockItems,
-          revenueThisMonth: data.revenueThisMonth,
-          inventoryTurnover: data.inventoryTurnover,
-          topSellingCategories: data.topSellingCategories,
-        });
-      } else {
-        console.warn(`Dashboard API failed with status: ${response.status}`);
-        console.log("Falling back to inventory-db endpoint");
-
-        // Fallback to basic inventory data if dashboard API fails
-        const fallbackResponse = await fetch("/api/analytics/inventory-db");
-        if (fallbackResponse.ok) {
-          const data = await fallbackResponse.json();
-          console.log("Fallback inventory data:", data);
-          setAnalyticsData({
-            totalProducts: data.totalProducts,
-            lowStockItems: data.lowStockItems.length,
-            revenueThisMonth: data.totalValue,
-            inventoryTurnover: 0,
-            topSellingCategories: [],
-          });
-        } else {
-          console.warn(`Fallback API also failed with status: ${fallbackResponse.status}`);
-          console.log("Using mock data as final fallback");
-          // Final fallback to mock data
-          setAnalyticsData(storeAnalytics[selectedStore]);
-        }
-      }
+      setAnalyticsData({
+        totalProducts: data.totalProducts,
+        lowStockItems: data.lowStockItems,
+        revenueThisMonth: data.revenueThisMonth,
+        inventoryTurnover: data.inventoryTurnover,
+        topSellingCategories: data.topSellingCategories,
+      });
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
       console.log("Network error details:", {

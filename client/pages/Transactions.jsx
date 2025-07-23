@@ -442,7 +442,10 @@ export default function Transactions() {
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-orange-600" />
-                <p className="text-muted-foreground">Loading transactions...</p>
+                <p className="text-muted-foreground mb-2">Loading transactions...</p>
+                <p className="text-sm text-muted-foreground">
+                  {isConnected ? "Fetching data from server..." : "Checking connection..."}
+                </p>
               </div>
             </div>
           </main>

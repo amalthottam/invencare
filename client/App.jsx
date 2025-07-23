@@ -15,37 +15,37 @@ import Transactions from "./pages/Transactions";
 import NotFound from "./pages/NotFound";
 
 // AWS Cognito Integration
-// import { Amplify } from 'aws-amplify';
-// import { getCurrentUser } from 'aws-amplify/auth';
-//
-// Amplify.configure({
-//   Auth: {
-//     Cognito: {
-//       userPoolId: 'us-east-1_XXXXXXXXX',
-//       userPoolClientId: 'xxxxxxxxxxxxxxxxxxxxxxxxxx',
-//       region: 'us-east-1',
-//       signUpVerificationMethod: 'code',
-//       loginWith: {
-//         email: true,
-//         username: false,
-//         phone: false
-//       },
-//       userAttributes: {
-//         email: {
-//           required: true
-//         }
-//       },
-//       allowGuestAccess: true,
-//       passwordFormat: {
-//         minLength: 8,
-//         requireLowercase: true,
-//         requireUppercase: true,
-//         requireNumbers: true,
-//         requireSpecialCharacters: true
-//       }
-//     }
-//   }
-// });
+import { Amplify } from 'aws-amplify';
+import { getCurrentUser } from 'aws-amplify/auth';
+
+Amplify.configure({
+  Auth: {
+    Cognito: {
+      userPoolId: 'us-east-1_FW7AOCFuJ',
+      userPoolClientId: '2l941887qehovv1b3i24a42rib',
+      region: 'us-east-1',
+      signUpVerificationMethod: 'code',
+      loginWith: {
+        email: true,
+        username: false,
+        phone: false
+      },
+      userAttributes: {
+        email: {
+          required: true
+        }
+      },
+      allowGuestAccess: true,
+      passwordFormat: {
+        minLength: 8,
+        requireLowercase: true,
+        requireUppercase: true,
+        requireNumbers: true,
+        requireSpecialCharacters: true
+      }
+    }
+  }
+});
 
 const queryClient = new QueryClient();
 

@@ -40,7 +40,7 @@ const detectAnalyticsInterference = () => {
     document.querySelector('script[src*="fullstory"]') ||
     document.querySelector('script[src*="fs.js"]') ||
     // Check if fetch has been wrapped/modified
-    (window.fetch && window.fetch.toString().includes('native') === false)
+    (window.fetch && window.fetch.toString().includes("native") === false)
   );
 };
 
@@ -52,11 +52,13 @@ const makeApiRequest = async (url, options = {}) => {
 
   // Use XMLHttpRequest directly if analytics interference detected
   if (hasAnalyticsInterference) {
-    console.warn(`Analytics interference detected, using XMLHttpRequest for: ${url}`);
+    console.warn(
+      `Analytics interference detected, using XMLHttpRequest for: ${url}`,
+    );
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open(options.method || 'GET', url);
-      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.open(options.method || "GET", url);
+      xhr.setRequestHeader("Content-Type", "application/json");
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
@@ -105,13 +107,16 @@ const makeApiRequest = async (url, options = {}) => {
 
     return await response.json();
   } catch (fetchError) {
-    console.warn(`Fetch failed for ${url}, trying XMLHttpRequest fallback:`, fetchError.message);
+    console.warn(
+      `Fetch failed for ${url}, trying XMLHttpRequest fallback:`,
+      fetchError.message,
+    );
 
     // Fallback to XMLHttpRequest
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
-      xhr.open(options.method || 'GET', url);
-      xhr.setRequestHeader('Content-Type', 'application/json');
+      xhr.open(options.method || "GET", url);
+      xhr.setRequestHeader("Content-Type", "application/json");
 
       xhr.onload = () => {
         if (xhr.status >= 200 && xhr.status < 300) {
@@ -226,7 +231,7 @@ export default function Transactions() {
       store_name: "Demo Store",
       user_name: "Demo User",
       created_at: new Date().toISOString(),
-    }
+    },
   ];
 
   const mockProducts = [
@@ -238,7 +243,7 @@ export default function Transactions() {
       price: "5.99",
       stock: 50,
       storeId: "store_001",
-    }
+    },
   ];
 
   const [formData, setFormData] = useState({
@@ -260,7 +265,9 @@ export default function Transactions() {
     const hasAnalyticsInterference = detectAnalyticsInterference();
 
     if (hasAnalyticsInterference) {
-      console.warn('Analytics interference detected, using XMLHttpRequest and delayed loading');
+      console.warn(
+        "Analytics interference detected, using XMLHttpRequest and delayed loading",
+      );
       // Use a delay to avoid conflicts with analytics scripts
       setTimeout(loadInitialData, 1000);
     } else {
@@ -286,8 +293,12 @@ export default function Transactions() {
       console.error("Failed to load stores:", storeError.message);
 
       // Retry once if first attempt fails and error is network-related
-      if (retryCount === 0 && (storeError.message.includes('Failed to fetch') || storeError.message.includes('Network error'))) {
-        console.log('Retrying store loading after network error...');
+      if (
+        retryCount === 0 &&
+        (storeError.message.includes("Failed to fetch") ||
+          storeError.message.includes("Network error"))
+      ) {
+        console.log("Retrying store loading after network error...");
         setTimeout(() => loadInitialData(1), 2000);
         return;
       }
@@ -296,7 +307,11 @@ export default function Transactions() {
       setStores([
         { id: "all", name: "All Stores", location: "Combined View" },
         { id: "store_001", name: "Downtown Store", location: "123 Main St" },
-        { id: "store_002", name: "Mall Location", location: "456 Shopping Center" },
+        {
+          id: "store_002",
+          name: "Mall Location",
+          location: "456 Shopping Center",
+        },
         { id: "store_003", name: "Uptown Branch", location: "789 North Ave" },
         { id: "store_004", name: "Westside Market", location: "321 West Blvd" },
       ]);
@@ -346,19 +361,25 @@ export default function Transactions() {
       ]);
 
       // Handle transactions result
-      if (transactionsResult.status === 'fulfilled') {
-        const transactionsData = transactionsResult.value?.data?.transactions ||
-                                transactionsResult.value?.transactions || [];
+      if (transactionsResult.status === "fulfilled") {
+        const transactionsData =
+          transactionsResult.value?.data?.transactions ||
+          transactionsResult.value?.transactions ||
+          [];
         setTransactions(transactionsData);
       } else {
-        console.error("Failed to load transactions:", transactionsResult.reason);
+        console.error(
+          "Failed to load transactions:",
+          transactionsResult.reason,
+        );
         setTransactions([]);
         setError("Failed to load transactions. Showing empty list.");
       }
 
       // Handle summary result
-      if (summaryResult.status === 'fulfilled') {
-        const summaryData = summaryResult.value?.data || summaryResult.value || {};
+      if (summaryResult.status === "fulfilled") {
+        const summaryData =
+          summaryResult.value?.data || summaryResult.value || {};
         setSummaryStats({
           totalTransactions: summaryData.total_transactions || 0,
           totalSales: summaryData.total_sales || 0,
@@ -480,7 +501,9 @@ export default function Transactions() {
   const loadProductsForStore = async (storeId) => {
     if (storeId && storeId !== "all") {
       // Filter products by selected store
-      const storeProducts = allProducts.filter(product => product.storeId === storeId);
+      const storeProducts = allProducts.filter(
+        (product) => product.storeId === storeId,
+      );
       setProducts(storeProducts);
     } else {
       setProducts([]);
@@ -545,9 +568,13 @@ export default function Transactions() {
             <div className="flex items-center justify-center h-64">
               <div className="text-center">
                 <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-orange-600" />
-                <p className="text-muted-foreground mb-2">Loading transactions...</p>
+                <p className="text-muted-foreground mb-2">
+                  Loading transactions...
+                </p>
                 <p className="text-sm text-muted-foreground">
-                  {isConnected ? "Fetching data from server..." : "Checking connection..."}
+                  {isConnected
+                    ? "Fetching data from server..."
+                    : "Checking connection..."}
                 </p>
               </div>
             </div>
@@ -793,19 +820,27 @@ export default function Transactions() {
                             </div>
                           </td>
                           <td className="p-4">
-                            <div className="text-sm">{transaction.user_name}</div>
+                            <div className="text-sm">
+                              {transaction.user_name}
+                            </div>
                           </td>
                           <td className="p-4">
                             <div className="text-sm">
-                              {formatDateTime(transaction.created_at || transaction.timestamp)}
+                              {formatDateTime(
+                                transaction.created_at || transaction.timestamp,
+                              )}
                             </div>
                           </td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="9" className="p-8 text-center text-muted-foreground">
-                          No transactions found. Try adjusting your filters or add a new transaction.
+                        <td
+                          colSpan="9"
+                          className="p-8 text-center text-muted-foreground"
+                        >
+                          No transactions found. Try adjusting your filters or
+                          add a new transaction.
                         </td>
                       </tr>
                     )}
@@ -866,7 +901,7 @@ export default function Transactions() {
                             productId: "",
                             productName: "",
                             category: "",
-                            unitPrice: ""
+                            unitPrice: "",
                           });
                           loadProductsForStore(newStoreId);
                         }}
@@ -899,9 +934,13 @@ export default function Transactions() {
                             ...formData,
                             selectedProductDbId: selectedProduct.id.toString(), // Store DB ID for dropdown
                             productId: selectedProduct.id.toString(), // Send database ID to API
-                            productName: selectedProduct.productName || selectedProduct.name,
+                            productName:
+                              selectedProduct.productName ||
+                              selectedProduct.name,
                             category: selectedProduct.category,
-                            unitPrice: selectedProduct.price || selectedProduct.unit_price,
+                            unitPrice:
+                              selectedProduct.price ||
+                              selectedProduct.unit_price,
                           });
                         } else {
                           // Clear fields if no product selected
@@ -920,11 +959,14 @@ export default function Transactions() {
                       disabled={!formData.storeId}
                     >
                       <option value="">
-                        {!formData.storeId ? "Select a store first" : "Select product"}
+                        {!formData.storeId
+                          ? "Select a store first"
+                          : "Select product"}
                       </option>
                       {products?.map((product) => (
                         <option key={product.id} value={product.id}>
-                          {product.productName} (ID: {product.productId}) - Stock: {product.stock}
+                          {product.productName} (ID: {product.productId}) -
+                          Stock: {product.stock}
                         </option>
                       ))}
                     </select>
@@ -939,17 +981,21 @@ export default function Transactions() {
                   {formData.selectedProductDbId && formData.productName && (
                     <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
                       <div>
-                        <Label className="text-sm font-medium text-muted-foreground">Product Name</Label>
-                        <p className="text-sm font-medium">{formData.productName}</p>
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          Product Name
+                        </Label>
+                        <p className="text-sm font-medium">
+                          {formData.productName}
+                        </p>
                       </div>
                       <div>
-                        <Label className="text-sm font-medium text-muted-foreground">Category</Label>
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          Category
+                        </Label>
                         <p className="text-sm">{formData.category}</p>
                       </div>
                     </div>
                   )}
-
-
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -970,7 +1016,9 @@ export default function Transactions() {
                     </div>
 
                     <div>
-                      <Label htmlFor="unitPrice">Unit Price (Auto-filled)</Label>
+                      <Label htmlFor="unitPrice">
+                        Unit Price (Auto-filled)
+                      </Label>
                       <Input
                         id="unitPrice"
                         type="number"
@@ -987,7 +1035,9 @@ export default function Transactions() {
                         required
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        {formData.selectedProductDbId ? "From selected product" : "Select a product first"}
+                        {formData.selectedProductDbId
+                          ? "From selected product"
+                          : "Select a product first"}
                       </p>
                     </div>
                   </div>

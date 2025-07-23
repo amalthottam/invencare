@@ -22,16 +22,17 @@ import {
   MapPin,
   Building,
 } from "lucide-react";
-import { fetchDashboardAnalytics, fetchStores, fetchLowStockItems, fetchRecentTransactions } from "@/lib/api";
+import {
+  fetchDashboardAnalytics,
+  fetchStores,
+  fetchLowStockItems,
+  fetchRecentTransactions,
+} from "@/lib/api";
 import { logHealthCheck, testDashboardConnectivity } from "@/lib/health-check";
 
 // AWS Cognito and Lambda Integration
 // import { getCurrentUser, signOut } from 'aws-amplify/auth';
 // import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
-
-
-
-
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -51,7 +52,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     // Perform health check in development mode for debugging
-    if (process.env.NODE_ENV === 'development') {
+    if (process.env.NODE_ENV === "development") {
       logHealthCheck().catch(console.error);
     }
 
@@ -78,12 +79,13 @@ export default function Dashboard() {
   const navigateToProduct = async (productName) => {
     try {
       // First try to find the product by searching
-      const response = await fetch('/api/products');
+      const response = await fetch("/api/products");
       if (response.ok) {
         const data = await response.json();
-        const product = data.products.find(p =>
-          p.productName.toLowerCase() === productName.toLowerCase() ||
-          p.name?.toLowerCase() === productName.toLowerCase()
+        const product = data.products.find(
+          (p) =>
+            p.productName.toLowerCase() === productName.toLowerCase() ||
+            p.name?.toLowerCase() === productName.toLowerCase(),
         );
 
         if (product) {
@@ -98,7 +100,7 @@ export default function Dashboard() {
         navigate(`/products?search=${encodeURIComponent(productName)}`);
       }
     } catch (error) {
-      console.error('Error finding product:', error);
+      console.error("Error finding product:", error);
       // Fallback to search
       navigate(`/products?search=${encodeURIComponent(productName)}`);
     }
@@ -114,7 +116,11 @@ export default function Dashboard() {
       setStores([
         { id: "all", name: "All Stores", location: "Combined View" },
         { id: "store_001", name: "Downtown Store", location: "123 Main St" },
-        { id: "store_002", name: "Mall Location", location: "456 Shopping Center" },
+        {
+          id: "store_002",
+          name: "Mall Location",
+          location: "456 Shopping Center",
+        },
         { id: "store_003", name: "Uptown Branch", location: "789 North Ave" },
         { id: "store_004", name: "Westside Market", location: "321 West Blvd" },
       ]);
@@ -124,28 +130,30 @@ export default function Dashboard() {
   const checkAuthentication = async () => {
     try {
       // AWS Cognito Authentication Check with Store-Based Access Control
-      const { getCurrentUser, fetchUserAttributes } = await import('aws-amplify/auth');
+      const { getCurrentUser, fetchUserAttributes } = await import(
+        "aws-amplify/auth"
+      );
       const currentUser = await getCurrentUser();
       const userAttributes = await fetchUserAttributes();
 
-      console.log('Dashboard - Current user:', currentUser);
-      console.log('Dashboard - User attributes:', userAttributes);
+      console.log("Dashboard - Current user:", currentUser);
+      console.log("Dashboard - User attributes:", userAttributes);
 
       // Check user's store access permissions
-      const userStoreAccess = userAttributes['custom:store_access']; // e.g., "all" or "store_001,store_002"
-      const userRole = userAttributes['custom:role']; // e.g., "admin", "manager", "employee"
-      const userStatus = userAttributes['custom:status']; // Check if account is active
+      const userStoreAccess = userAttributes["custom:store_access"]; // e.g., "all" or "store_001,store_002"
+      const userRole = userAttributes["custom:role"]; // e.g., "admin", "manager", "employee"
+      const userStatus = userAttributes["custom:status"]; // Check if account is active
 
       // Validate user status
-      if (userStatus === 'pending') {
-        const { signOut } = await import('aws-amplify/auth');
+      if (userStatus === "pending") {
+        const { signOut } = await import("aws-amplify/auth");
         await signOut();
         navigate("/login");
         return;
       }
 
-      if (userStatus === 'inactive' || userStatus === 'suspended') {
-        const { signOut } = await import('aws-amplify/auth');
+      if (userStatus === "inactive" || userStatus === "suspended") {
+        const { signOut } = await import("aws-amplify/auth");
         await signOut();
         navigate("/login");
         return;
@@ -153,14 +161,20 @@ export default function Dashboard() {
 
       // Set default store based on user permissions
       let defaultStore = "all";
-      if (userRole === "employee" && userStoreAccess && userStoreAccess !== "all") {
+      if (
+        userRole === "employee" &&
+        userStoreAccess &&
+        userStoreAccess !== "all"
+      ) {
         // Employees typically see only their assigned store(s)
-        const accessibleStores = userStoreAccess.split(',');
-        defaultStore = accessibleStores.length === 1 ? accessibleStores[0] : "all";
+        const accessibleStores = userStoreAccess.split(",");
+        defaultStore =
+          accessibleStores.length === 1 ? accessibleStores[0] : "all";
       } else if (userRole === "manager" && userStoreAccess !== "all") {
         // Managers might have access to specific stores
-        const accessibleStores = userStoreAccess.split(',');
-        defaultStore = accessibleStores.length === 1 ? accessibleStores[0] : "all";
+        const accessibleStores = userStoreAccess.split(",");
+        defaultStore =
+          accessibleStores.length === 1 ? accessibleStores[0] : "all";
       }
       // Admins get "all" by default
 
@@ -168,7 +182,8 @@ export default function Dashboard() {
       setUser({
         username: currentUser.username,
         attributes: {
-          given_name: userAttributes.given_name || userAttributes.name || "User",
+          given_name:
+            userAttributes.given_name || userAttributes.name || "User",
           family_name: userAttributes.family_name || "",
           "custom:role": userRole,
           "custom:store_access": userStoreAccess,
@@ -187,10 +202,10 @@ export default function Dashboard() {
       console.log(`Fetching dashboard data for store: ${selectedStore}`);
 
       // Quick connectivity test in development mode
-      if (process.env.NODE_ENV === 'development') {
+      if (process.env.NODE_ENV === "development") {
         const connectivityTest = await testDashboardConnectivity(selectedStore);
         if (!connectivityTest.success) {
-          console.warn('Connectivity test failed, proceeding with fallback');
+          console.warn("Connectivity test failed, proceeding with fallback");
         }
       }
 
@@ -249,7 +264,11 @@ export default function Dashboard() {
       };
 
       // Execute all fetches in parallel
-      await Promise.all([fetchAnalytics(), fetchLowStock(), fetchTransactions()]);
+      await Promise.all([
+        fetchAnalytics(),
+        fetchLowStock(),
+        fetchTransactions(),
+      ]);
 
       console.log("Successfully fetched all dashboard data");
     } catch (error) {
@@ -265,7 +284,7 @@ export default function Dashboard() {
   const handleLogout = async () => {
     try {
       // AWS Cognito Sign Out
-      const { signOut } = await import('aws-amplify/auth');
+      const { signOut } = await import("aws-amplify/auth");
       await signOut();
 
       console.log("User signed out successfully");
@@ -331,10 +350,6 @@ export default function Dashboard() {
       trendUp: true,
     },
   ];
-
-
-
-
 
   return (
     <div className="min-h-screen bg-background">
@@ -410,22 +425,18 @@ export default function Dashboard() {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {analyticsLoading ? (
-              // Loading skeleton for stats
-              Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="bg-card rounded-lg border p-6">
-                  <div className="animate-pulse">
-                    <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
-                    <div className="h-8 bg-muted rounded w-1/2 mb-2"></div>
-                    <div className="h-3 bg-muted rounded w-2/3"></div>
+            {analyticsLoading
+              ? // Loading skeleton for stats
+                Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="bg-card rounded-lg border p-6">
+                    <div className="animate-pulse">
+                      <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                      <div className="h-8 bg-muted rounded w-1/2 mb-2"></div>
+                      <div className="h-3 bg-muted rounded w-2/3"></div>
+                    </div>
                   </div>
-                </div>
-              ))
-            ) : (
-              stats.map((stat, index) => (
-                <StatCard key={index} {...stat} />
-              ))
-            )}
+                ))
+              : stats.map((stat, index) => <StatCard key={index} {...stat} />)}
           </div>
 
           {/* Dashboard Content */}
@@ -468,7 +479,9 @@ export default function Dashboard() {
                         title="Click to view product details"
                       >
                         <div>
-                          <p className="font-medium hover:text-primary transition-colors">{item.name}</p>
+                          <p className="font-medium hover:text-primary transition-colors">
+                            {item.name}
+                          </p>
                           <p className="text-sm text-muted-foreground">
                             {item.category}
                             {selectedStore === "all" && item.store && (
@@ -514,53 +527,53 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {transactionsLoading ? (
-                    // Loading skeleton for transactions
-                    Array.from({ length: 3 }).map((_, index) => (
-                      <div key={index} className="p-3 bg-muted/50 rounded-lg">
-                        <div className="animate-pulse flex justify-between">
-                          <div className="flex-1">
-                            <div className="h-4 bg-muted rounded w-2/3 mb-2"></div>
-                            <div className="h-3 bg-muted rounded w-1/2"></div>
+                  {transactionsLoading
+                    ? // Loading skeleton for transactions
+                      Array.from({ length: 3 }).map((_, index) => (
+                        <div key={index} className="p-3 bg-muted/50 rounded-lg">
+                          <div className="animate-pulse flex justify-between">
+                            <div className="flex-1">
+                              <div className="h-4 bg-muted rounded w-2/3 mb-2"></div>
+                              <div className="h-3 bg-muted rounded w-1/2"></div>
+                            </div>
+                            <div className="w-16">
+                              <div className="h-4 bg-muted rounded w-full mb-1"></div>
+                              <div className="h-3 bg-muted rounded w-full"></div>
+                            </div>
                           </div>
-                          <div className="w-16">
-                            <div className="h-4 bg-muted rounded w-full mb-1"></div>
-                            <div className="h-3 bg-muted rounded w-full"></div>
+                        </div>
+                      ))
+                    : recentTransactions.map((transaction, index) => (
+                        <div
+                          key={index}
+                          onClick={() => navigateToProduct(transaction.product)}
+                          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-muted/70 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                          title="Click to view product details"
+                        >
+                          <div>
+                            <p className="font-medium hover:text-primary transition-colors">
+                              {transaction.product}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              {transaction.type} • {transaction.time}
+                              {selectedStore === "all" && transaction.store && (
+                                <span className="ml-2 text-blue-600">
+                                  • {transaction.store}
+                                </span>
+                              )}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="font-medium">
+                              {transaction.type === "Sale" ? "-" : "+"}
+                              {transaction.quantity}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              ${transaction.amount?.toFixed(2) || "0.00"}
+                            </p>
                           </div>
                         </div>
-                      </div>
-                    ))
-                  ) : (
-                    recentTransactions.map((transaction, index) => (
-                      <div
-                        key={index}
-                        onClick={() => navigateToProduct(transaction.product)}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-muted/70 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
-                        title="Click to view product details"
-                      >
-                        <div>
-                          <p className="font-medium hover:text-primary transition-colors">{transaction.product}</p>
-                          <p className="text-sm text-muted-foreground">
-                            {transaction.type} • {transaction.time}
-                            {selectedStore === "all" && transaction.store && (
-                              <span className="ml-2 text-blue-600">
-                                • {transaction.store}
-                              </span>
-                            )}
-                          </p>
-                        </div>
-                        <div className="text-right">
-                          <p className="font-medium">
-                            {transaction.type === "Sale" ? "-" : "+"}
-                            {transaction.quantity}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            ${transaction.amount?.toFixed(2) || "0.00"}
-                          </p>
-                        </div>
-                      </div>
-                    ))
-                  )}
+                      ))}
                 </div>
                 <Button
                   variant="outline"
@@ -587,7 +600,10 @@ export default function Dashboard() {
                   {analyticsLoading ? (
                     // Loading skeleton for categories
                     Array.from({ length: 3 }).map((_, index) => (
-                      <div key={index} className="p-4 bg-muted/50 rounded-lg text-center">
+                      <div
+                        key={index}
+                        className="p-4 bg-muted/50 rounded-lg text-center"
+                      >
                         <div className="animate-pulse">
                           <div className="h-5 bg-muted rounded w-3/4 mx-auto mb-3"></div>
                           <div className="h-8 bg-muted rounded w-1/2 mx-auto mb-2"></div>
@@ -596,22 +612,30 @@ export default function Dashboard() {
                       </div>
                     ))
                   ) : analyticsData?.topSellingCategories?.length > 0 ? (
-                    analyticsData.topSellingCategories.map((category, index) => (
-                      <div
-                        key={index}
-                        onClick={() => navigate(`/products?category=${encodeURIComponent(category.name)}`)}
-                        className="p-4 bg-muted/50 rounded-lg text-center cursor-pointer transition-all duration-200 hover:bg-muted/70 hover:shadow-md hover:scale-[1.05] active:scale-[0.95]"
-                        title={`Click to view ${category.name} products`}
-                      >
-                        <p className="font-semibold text-lg hover:text-primary transition-colors">{category.name}</p>
-                        <p className="text-2xl font-bold text-primary">
-                          {category.sales}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          units sold
-                        </p>
-                      </div>
-                    ))
+                    analyticsData.topSellingCategories.map(
+                      (category, index) => (
+                        <div
+                          key={index}
+                          onClick={() =>
+                            navigate(
+                              `/products?category=${encodeURIComponent(category.name)}`,
+                            )
+                          }
+                          className="p-4 bg-muted/50 rounded-lg text-center cursor-pointer transition-all duration-200 hover:bg-muted/70 hover:shadow-md hover:scale-[1.05] active:scale-[0.95]"
+                          title={`Click to view ${category.name} products`}
+                        >
+                          <p className="font-semibold text-lg hover:text-primary transition-colors">
+                            {category.name}
+                          </p>
+                          <p className="text-2xl font-bold text-primary">
+                            {category.sales}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            units sold
+                          </p>
+                        </div>
+                      ),
+                    )
                   ) : (
                     <div className="col-span-3 text-center text-muted-foreground py-8">
                       <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />

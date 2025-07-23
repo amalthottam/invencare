@@ -133,7 +133,11 @@ export async function fetchStores() {
     return [
       { id: "all", name: "All Stores", location: "Combined View" },
       { id: "store_001", name: "Downtown Store", location: "123 Main St" },
-      { id: "store_002", name: "Mall Location", location: "456 Shopping Center" },
+      {
+        id: "store_002",
+        name: "Mall Location",
+        location: "456 Shopping Center",
+      },
       { id: "store_003", name: "Uptown Branch", location: "789 North Ave" },
       { id: "store_004", name: "Westside Market", location: "321 West Blvd" },
     ];

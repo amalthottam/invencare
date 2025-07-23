@@ -57,9 +57,9 @@ export default function Products() {
     console.log("Products page - User authenticated:", user?.username);
 
     // Initialize filters from URL parameters
-    const searchParam = searchParams.get('search');
-    const categoryParam = searchParams.get('category');
-    const filterParam = searchParams.get('filter');
+    const searchParam = searchParams.get("search");
+    const categoryParam = searchParams.get("category");
+    const filterParam = searchParams.get("filter");
 
     if (searchParam) {
       setSearchTerm(searchParam);
@@ -69,8 +69,8 @@ export default function Products() {
       setCategoryFilter(categoryParam);
     }
 
-    if (filterParam === 'lowstock') {
-      setStatusFilter('Low Stock');
+    if (filterParam === "lowstock") {
+      setStatusFilter("Low Stock");
     }
 
     // Fetch products, categories, and stores from API

@@ -4,19 +4,22 @@ import { createApiResponse, createApiError } from "../../shared/api.js";
 export const getStores = async (req, res) => {
   try {
     const [rows] = await req.db.execute(
-      "SELECT id, name, address, city, state FROM stores WHERE status = 'active' ORDER BY name"
+      "SELECT id, name, address, city, state FROM stores WHERE status = 'active' ORDER BY name",
     );
 
     const stores = [
       { id: "all", name: "All Stores", location: "Combined View" },
-      ...rows.map(row => ({
+      ...rows.map((row) => ({
         id: row.id,
         name: row.name,
-        location: `${row.address}, ${row.city}, ${row.state}` || row.address || "N/A"
-      }))
+        location:
+          `${row.address}, ${row.city}, ${row.state}` || row.address || "N/A",
+      })),
     ];
 
-    res.status(200).json(createApiResponse({ stores }, "Stores retrieved successfully"));
+    res
+      .status(200)
+      .json(createApiResponse({ stores }, "Stores retrieved successfully"));
   } catch (error) {
     console.error("Get stores error:", error);
     res.status(500).json(createApiError(error));
@@ -105,7 +108,14 @@ export const getLowStockItems = async (req, res) => {
 
     const [rows] = await req.db.execute(sql, params);
 
-    res.status(200).json(createApiResponse({ items: rows }, "Low stock items retrieved successfully"));
+    res
+      .status(200)
+      .json(
+        createApiResponse(
+          { items: rows },
+          "Low stock items retrieved successfully",
+        ),
+      );
   } catch (error) {
     console.error("Get low stock items error:", error);
     res.status(500).json(createApiError(error));
@@ -148,17 +158,24 @@ export const getRecentTransactions = async (req, res) => {
 
     const [rows] = await req.db.execute(sql, params);
 
-    const transactions = rows.map(row => ({
+    const transactions = rows.map((row) => ({
       id: row.id,
       type: row.type.charAt(0).toUpperCase() + row.type.slice(1),
       product: row.product,
       quantity: Math.abs(row.quantity),
       amount: Math.abs(parseFloat(row.amount || 0)),
       time: row.time,
-      store: row.store
+      store: row.store,
     }));
 
-    res.status(200).json(createApiResponse({ transactions }, "Recent transactions retrieved successfully"));
+    res
+      .status(200)
+      .json(
+        createApiResponse(
+          { transactions },
+          "Recent transactions retrieved successfully",
+        ),
+      );
   } catch (error) {
     console.error("Get recent transactions error:", error);
     res.status(500).json(createApiError(error));
@@ -250,7 +267,7 @@ export const getDashboardAnalytics = async (req, res) => {
     const inventory = inventoryData[0] || {};
     const totalStock = inventory.total_stock || 1;
     const totalSold = turnoverData[0]?.total_sold || 0;
-    const inventoryTurnover = totalSold / totalStock * 12; // Annualized
+    const inventoryTurnover = (totalSold / totalStock) * 12; // Annualized
 
     // Format response
     const dashboardData = {

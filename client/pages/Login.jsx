@@ -26,10 +26,12 @@ import {
   testCognitoConnection,
   validateCognitoSetup,
 } from "@/lib/cognito-test";
+import { useAuth } from "@/lib/auth-context";
 
 export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { checkAuthState } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -178,6 +180,9 @@ export default function Login() {
 
         // Remove demo authentication
         localStorage.removeItem("isAuthenticated");
+
+        // Update auth context state and then navigate
+        await checkAuthState();
         navigate("/dashboard");
       } else {
         // Handle MFA or other next steps
@@ -207,6 +212,7 @@ export default function Login() {
           const { getCurrentUser } = await import("aws-amplify/auth");
           const currentUser = await getCurrentUser();
           console.log("Current authenticated user:", currentUser.username);
+          await checkAuthState();
           navigate("/dashboard");
           return;
         } catch (getUserError) {

@@ -27,7 +27,7 @@ import {
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, userAttributes, logout } = useAuth();
   const [profileData, setProfileData] = useState({
     name: "Loading...",
     email: "Loading...",
@@ -40,22 +40,22 @@ export default function Settings() {
 
   useEffect(() => {
     // Profile data is now populated from Cognito user context
-    if (user && user.attributes) {
-      console.log("User attributes:", user.attributes);
+    if (user && userAttributes) {
+      console.log("User attributes:", userAttributes);
       setProfileData({
         name:
-          user.attributes?.name ||
-          (user.attributes?.given_name
-            ? `${user.attributes.given_name} ${user.attributes.family_name || ""}`.trim()
+          userAttributes?.name ||
+          (userAttributes?.given_name
+            ? `${userAttributes.given_name} ${userAttributes.family_name || ""}`.trim()
             : "User"),
-        email: user.attributes?.email || user.username,
-        role: user.attributes?.["custom:role"] || "employee",
-        storeAccess: user.attributes?.["custom:store_access"] || "none",
-        userId: user.attributes?.sub || user.username,
-        emailVerified: user.attributes?.email_verified === "true",
+        email: userAttributes?.email || user.username,
+        role: userAttributes?.["custom:role"] || "employee",
+        storeAccess: userAttributes?.["custom:store_access"] || "none",
+        userId: userAttributes?.sub || user.username,
+        emailVerified: userAttributes?.email_verified === "true",
       });
     }
-  }, [user]);
+  }, [user, userAttributes]);
 
   const handleLogout = async () => {
     await logout();
@@ -158,9 +158,7 @@ export default function Settings() {
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
                       <span className="font-medium">User ID (Sub)</span>
                       <span className="text-sm text-muted-foreground font-mono">
-                        {profileData.userId
-                          ? `${profileData.userId.substring(0, 8)}...`
-                          : "Loading..."}
+                        {profileData.userId || "Loading..."}
                       </span>
                     </div>
 

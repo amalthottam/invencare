@@ -50,6 +50,31 @@ export default function Login() {
     try {
       console.log('🔐 Starting sign in process for:', formData.email);
 
+      // First check if there's already a signed-in user
+      try {
+        const { getCurrentUser } = await import('aws-amplify/auth');
+        const existingUser = await getCurrentUser();
+
+        if (existingUser) {
+          console.log('User already signed in:', existingUser.username);
+
+          // Check if it's the same user trying to sign in
+          if (existingUser.username === formData.email) {
+            console.log('Same user already authenticated, redirecting to dashboard');
+            navigate("/dashboard");
+            return;
+          } else {
+            // Different user trying to sign in, sign out the current user first
+            console.log('Different user attempting to sign in, signing out current user');
+            const { signOut } = await import('aws-amplify/auth');
+            await signOut();
+          }
+        }
+      } catch (getUserError) {
+        // No existing user or error getting current user, proceed with sign in
+        console.log('No existing user found, proceeding with sign in');
+      }
+
       // AWS Cognito Sign In Implementation with Store Access Validation
       const { isSignedIn, nextStep } = await signIn({
         username: formData.email,

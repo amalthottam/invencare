@@ -15,6 +15,7 @@ import { Package, Eye, EyeOff } from "lucide-react";
 // AWS Cognito Authentication
 import { signIn, signUp, confirmSignUp, resendSignUpCode, fetchUserAttributes } from 'aws-amplify/auth';
 import { useToast } from "@/components/ui/use-toast";
+import { performPreAuthChecks } from "@/lib/network-check";
 
 export default function Login() {
   const navigate = useNavigate();

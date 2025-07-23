@@ -25,6 +25,9 @@ import { testParams } from "./routes/test-params.js";
 import {
   getDemandPredictions,
   getForecastingDashboard,
+  getStores as getForecastingStores,
+  getProducts as getForecastingProducts,
+  getCategoryInsights,
 } from "./routes/forecasting.js";
 import {
   getProductPerformance,

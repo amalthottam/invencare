@@ -644,6 +644,11 @@ export default function Transactions() {
               <CardTitle>Transaction History</CardTitle>
               <CardDescription>
                 Showing {filteredTransactions?.length || 0} transactions
+                {transactions === mockTransactions && (
+                  <Badge variant="secondary" className="ml-2">
+                    Demo Data
+                  </Badge>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>

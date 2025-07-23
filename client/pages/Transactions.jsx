@@ -195,8 +195,8 @@ export default function Transactions() {
     setFilteredTransactions(transactions);
   }, [transactions]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 

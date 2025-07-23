@@ -42,10 +42,7 @@ export default function Forecasting() {
 
   useEffect(() => {
     fetchForecastingData();
-    fetchStores();
-    fetchProducts();
-    fetchCategoryInsights();
-  }, [selectedTimeframe, selectedStore, selectedProduct]);
+  }, []);
 
   const fetchForecastingData = async () => {
     try {

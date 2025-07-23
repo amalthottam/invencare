@@ -39,6 +39,9 @@ import { ProductAnalyticsService } from "./services/productAnalytics.js";
 import {
   getTopSellingCategories,
   getDashboardAnalytics,
+  getStores,
+  getLowStockItems,
+  getRecentTransactions,
 } from "./routes/dashboard.js";
 import { initializeDatabase, seedSampleData, query } from "./db/sqlite.js";
 import { cleanupDatabase } from "./db/cleanup.js";

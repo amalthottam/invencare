@@ -44,9 +44,9 @@ export const testCognitoConnection = async () => {
   }
 };
 
-export const validateCognitoSetup = () => {
+export const validateCognitoSetup = async () => {
   try {
-    const { Amplify } = require('aws-amplify');
+    const { Amplify } = await import('aws-amplify');
     const config = Amplify.getConfig();
     
     const requiredConfig = {

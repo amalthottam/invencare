@@ -249,7 +249,8 @@ export default function Transactions() {
       await loadAllProducts();
     } catch (err) {
       console.error("Failed to load products:", err);
-      // Don't show error for products as it's not critical for viewing transactions
+      // Use mock data as fallback for product selection
+      setAllProducts(mockProducts);
     }
 
     setIsLoading(false);

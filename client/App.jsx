@@ -15,6 +15,7 @@ import Transactions from "./pages/Transactions";
 import NotFound from "./pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/lib/auth-context";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // AWS Cognito Integration
 import { Amplify } from 'aws-amplify';

@@ -180,6 +180,9 @@ export default function Login() {
 
         // Remove demo authentication
         localStorage.removeItem("isAuthenticated");
+
+        // Update auth context state and then navigate
+        await checkAuthState();
         navigate("/dashboard");
       } else {
         // Handle MFA or other next steps

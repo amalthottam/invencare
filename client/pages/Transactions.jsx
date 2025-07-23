@@ -233,7 +233,15 @@ export default function Transactions() {
       await loadTransactions();
     } catch (err) {
       console.error("Failed to load transactions:", err);
-      setError("Failed to load transactions. Please check your connection and try again.");
+      setError("Failed to load transactions. Showing demo data.");
+      // Use mock data as fallback
+      setTransactions(mockTransactions);
+      setSummaryStats({
+        totalTransactions: 1,
+        totalSales: 25.99,
+        totalRestocks: 0,
+        totalTransfers: 0,
+      });
     }
 
     // Load products last

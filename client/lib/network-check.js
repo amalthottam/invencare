@@ -82,11 +82,11 @@ export const debugCognitoConfig = async () => {
 
 export const performPreAuthChecks = async () => {
   console.group('🔬 Pre-Authentication Diagnostics');
-  
+
   const results = {
     network: await checkNetworkConnectivity(),
     cognitoEndpoint: await checkCognitoEndpoint(),
-    config: debugCognitoConfig()
+    config: await debugCognitoConfig()
   };
   
   console.log('Diagnostic Results:', results);

@@ -279,6 +279,37 @@ export default function Login() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {!confirmationStep && (
                 <>
+                  {isSignUp && (
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="firstName">First Name</Label>
+                        <Input
+                          id="firstName"
+                          name="firstName"
+                          type="text"
+                          placeholder="First name"
+                          value={formData.firstName}
+                          onChange={handleInputChange}
+                          required
+                          className="h-11"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="lastName">Last Name</Label>
+                        <Input
+                          id="lastName"
+                          name="lastName"
+                          type="text"
+                          placeholder="Last name"
+                          value={formData.lastName}
+                          onChange={handleInputChange}
+                          required
+                          className="h-11"
+                        />
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-2">
                     <Label htmlFor="email">Email</Label>
                     <Input

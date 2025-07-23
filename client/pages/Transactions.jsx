@@ -318,10 +318,13 @@ export default function Transactions() {
   const loadAllProducts = async () => {
     try {
       const response = await api.getProducts(); // Load all products from all stores
-      setAllProducts(response?.products || []);
+      const products = response?.products || response?.data || [];
+      setAllProducts(products);
+      console.log(`Loaded ${products.length} products successfully`);
     } catch (err) {
       console.error("Failed to load products:", err);
       setAllProducts([]);
+      // Don't set error here as it's handled in loadInitialData
     }
   };
 

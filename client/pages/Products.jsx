@@ -53,23 +53,13 @@ export default function Products() {
   });
 
   useEffect(() => {
-    // Wait for auth loading to complete
-    if (authLoading) return;
-
-    // Check authentication
-    if (!isAuthenticated) {
-      console.log("User not authenticated, redirecting to login");
-      navigate("/login");
-      return;
-    }
-
-    console.log("User authenticated:", user?.username);
+    console.log("Products page - User authenticated:", user?.username);
 
     // Fetch products, categories, and stores from API
     fetchProducts();
     fetchCategories();
     fetchStores();
-  }, [navigate, isAuthenticated, authLoading, user]);
+  }, []);
 
   const fetchCategories = async () => {
     try {

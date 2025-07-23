@@ -476,9 +476,49 @@ export default function ProductInfo() {
                           <label className="text-sm font-medium text-muted-foreground">
                             Price
                           </label>
-                          <p className="text-lg font-semibold text-green-600">
-                            ${product.price}
-                          </p>
+                          {isEditingPrice ? (
+                            <div className="flex items-center gap-2 mt-1">
+                              <Input
+                                type="number"
+                                step="0.01"
+                                value={tempPrice}
+                                onChange={(e) => setTempPrice(e.target.value)}
+                                className="w-24 h-8 text-sm"
+                                autoFocus
+                              />
+                              <Button
+                                size="sm"
+                                onClick={handlePriceSave}
+                                disabled={saving}
+                                className="h-8 px-2"
+                              >
+                                {saving ? "..." : "✓"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                onClick={handlePriceCancel}
+                                className="h-8 px-2"
+                              >
+                                ✕
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className="flex items-center gap-2 mt-1">
+                              <p className="text-lg font-semibold text-green-600">
+                                ${product.price}
+                              </p>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={handlePriceEdit}
+                                className="h-6 w-6 p-0 hover:bg-muted"
+                                title="Edit price"
+                              >
+                                <Edit className="h-3 w-3" />
+                              </Button>
+                            </div>
+                          )}
                         </div>
                       </div>
 

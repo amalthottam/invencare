@@ -157,7 +157,24 @@ export default function Login() {
       let errorMessage = "Failed to sign in";
 
       // Handle specific Cognito errors
-      if (error.name === 'UserNotFoundException') {
+      if (error.name === 'UserAlreadyAuthenticatedException') {
+        console.log('User already authenticated, attempting to redirect...');
+        try {
+          // Try to get the current user and redirect
+          const { getCurrentUser } = await import('aws-amplify/auth');
+          const currentUser = await getCurrentUser();
+          console.log('Current authenticated user:', currentUser.username);
+          navigate("/dashboard");
+          return;
+        } catch (getUserError) {
+          // If we can't get the current user, sign out and reload
+          console.warn('Could not get current user, signing out...');
+          const { signOut } = await import('aws-amplify/auth');
+          await signOut();
+          window.location.reload();
+          return;
+        }
+      } else if (error.name === 'UserNotFoundException') {
         errorMessage = "User not found. Please check your email address.";
       } else if (error.name === 'NotAuthorizedException') {
         errorMessage = "Incorrect email or password.";

@@ -133,7 +133,7 @@ export default function Transactions() {
       const storesResponse = await api.getStores();
       const storeData = [
         { id: "all", name: "All Stores", location: "Combined View" },
-        ...storesResponse.data,
+        ...(storesResponse?.data || []),
       ];
       setStores(storeData);
 

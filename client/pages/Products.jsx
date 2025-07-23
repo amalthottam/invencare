@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "@/lib/auth-context";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,350 +26,105 @@ import {
   X,
 } from "lucide-react";
 
-// Comprehensive Sample Product Data for Multi-Store Inventory System
-const products = [
-  // Downtown Store Products
-  {
-    id: "1",
-    productName: "Organic Bananas",
-    productId: "FV-BAN-001",
-    category: "Fruits & Vegetables",
-    stock: 120,
-    price: 1.99,
-    storeName: "Downtown Store",
-    storeId: "store_001",
-    unit: "kg",
-    status: "Available",
-    minimumStock: 20,
-    supplier: "Fresh Farm Co",
-    lastUpdated: "2024-01-15",
-    barcode: "123456789012",
-    location: "Aisle 1-A",
-  },
-  {
-    id: "2",
-    productName: "Red Apples",
-    productId: "FV-APP-002",
-    category: "Fruits & Vegetables",
-    stock: 85,
-    price: 2.49,
-    storeName: "Downtown Store",
-    storeId: "store_001",
-    unit: "kg",
-    status: "Available",
-    minimumStock: 15,
-    supplier: "Fresh Farm Co",
-    lastUpdated: "2024-01-15",
-    barcode: "123456789013",
-    location: "Aisle 1-A",
-  },
-  {
-    id: "3",
-    productName: "Whole Milk",
-    productId: "DA-MLK-003",
-    category: "Dairy",
-    stock: 42,
-    price: 3.79,
-    storeName: "Downtown Store",
-    storeId: "store_001",
-    unit: "liter",
-    status: "Available",
-    minimumStock: 10,
-    supplier: "Pure Dairy Ltd",
-    lastUpdated: "2024-01-15",
-    barcode: "123456789014",
-    location: "Aisle 3-B",
-  },
-  {
-    id: "4",
-    productName: "Cheddar Cheese",
-    productId: "DA-CHE-004",
-    category: "Dairy",
-    stock: 7,
-    price: 5.99,
-    storeName: "Downtown Store",
-    storeId: "store_001",
-    unit: "pack",
-    status: "Low Stock",
-    minimumStock: 8,
-    supplier: "Pure Dairy Ltd",
-    lastUpdated: "2024-01-14",
-    barcode: "123456789015",
-    location: "Aisle 3-B",
-  },
-  {
-    id: "5",
-    productName: "Brown Bread",
-    productId: "BK-BRD-005",
-    category: "Bakery",
-    stock: 24,
-    price: 2.49,
-    storeName: "Downtown Store",
-    storeId: "store_001",
-    unit: "loaf",
-    status: "Available",
-    minimumStock: 5,
-    supplier: "City Bakery",
-    lastUpdated: "2024-01-15",
-    barcode: "123456789016",
-    location: "Aisle 2-C",
-  },
-
-  // Mall Location Products
-  {
-    id: "6",
-    productName: "Organic Carrots",
-    productId: "FV-CAR-006",
-    category: "Fruits & Vegetables",
-    stock: 65,
-    price: 1.89,
-    storeName: "Mall Location",
-    storeId: "store_002",
-    unit: "kg",
-    status: "Available",
-    minimumStock: 20,
-    supplier: "Fresh Farm Co",
-    lastUpdated: "2024-01-15",
-    barcode: "123456789017",
-    location: "Aisle 1-A",
-  },
-  {
-    id: "7",
-    productName: "Greek Yogurt",
-    productId: "DA-YOG-007",
-    category: "Dairy",
-    stock: 8,
-    price: 4.99,
-    storeName: "Mall Location",
-    storeId: "store_002",
-    unit: "pack",
-    status: "Low Stock",
-    minimumStock: 10,
-    supplier: "Pure Dairy Ltd",
-    lastUpdated: "2024-01-14",
-    barcode: "123456789018",
-    location: "Aisle 3-B",
-  },
-  {
-    id: "8",
-    productName: "Chicken Breast",
-    productId: "MP-CHI-008",
-    category: "Meat & Poultry",
-    stock: 15,
-    price: 12.99,
-    storeName: "Mall Location",
-    storeId: "store_002",
-    unit: "kg",
-    status: "Available",
-    minimumStock: 5,
-    supplier: "Premium Meats",
-    lastUpdated: "2024-01-15",
-    barcode: "123456789019",
-    location: "Aisle 4-D",
-  },
-  {
-    id: "9",
-    productName: "Ground Coffee",
-    productId: "BV-COF-009",
-    category: "Beverages",
-    stock: 32,
-    price: 8.99,
-    storeName: "Mall Location",
-    storeId: "store_002",
-    unit: "pack",
-    status: "Available",
-    minimumStock: 8,
-    supplier: "Coffee Roasters Inc",
-    lastUpdated: "2024-01-15",
-    barcode: "123456789020",
-    location: "Aisle 5-E",
-  },
-
-  // Uptown Branch Products
-  {
-    id: "10",
-    productName: "Fresh Salmon",
-    productId: "SF-SAL-010",
-    category: "Seafood",
-    stock: 0,
-    price: 18.99,
-    storeName: "Uptown Branch",
-    storeId: "store_003",
-    unit: "kg",
-    status: "Out of Stock",
-    minimumStock: 3,
-    supplier: "Ocean Fresh Co",
-    lastUpdated: "2024-01-13",
-    barcode: "123456789021",
-    location: "Aisle 4-F",
-  },
-  {
-    id: "11",
-    productName: "Orange Juice",
-    productId: "BV-JUI-011",
-    category: "Beverages",
-    stock: 28,
-    price: 4.49,
-    storeName: "Uptown Branch",
-    storeId: "store_003",
-    unit: "liter",
-    status: "Available",
-    minimumStock: 12,
-    supplier: "Fresh Juice Co",
-    lastUpdated: "2024-01-15",
-    barcode: "123456789022",
-    location: "Aisle 5-E",
-  },
-  {
-    id: "12",
-    productName: "Potato Chips",
-    productId: "SN-CHI-012",
-    category: "Snacks",
-    stock: 156,
-    price: 3.99,
-    storeName: "Uptown Branch",
-    storeId: "store_003",
-    unit: "bag",
-    status: "Available",
-    minimumStock: 25,
-    supplier: "Snack Masters",
-    lastUpdated: "2024-01-15",
-    barcode: "123456789023",
-    location: "Aisle 6-G",
-  },
-  {
-    id: "13",
-    productName: "Croissants",
-    productId: "BK-CRO-013",
-    category: "Bakery",
-    stock: 5,
-    price: 1.99,
-    storeName: "Uptown Branch",
-    storeId: "store_003",
-    unit: "piece",
-    status: "Low Stock",
-    minimumStock: 10,
-    supplier: "French Bakery",
-    lastUpdated: "2024-01-14",
-    barcode: "123456789024",
-    location: "Aisle 2-C",
-  },
-
-  // Westside Market Products
-  {
-    id: "14",
-    productName: "Beef Steak",
-    productId: "MP-STE-014",
-    category: "Meat & Poultry",
-    stock: 12,
-    price: 24.99,
-    storeName: "Westside Market",
-    storeId: "store_004",
-    unit: "kg",
-    status: "Available",
-    minimumStock: 3,
-    supplier: "Premium Meats",
-    lastUpdated: "2024-01-15",
-    barcode: "123456789025",
-    location: "Aisle 4-D",
-  },
-  {
-    id: "15",
-    productName: "Energy Drinks",
-    productId: "BV-ENE-015",
-    category: "Beverages",
-    stock: 48,
-    price: 2.99,
-    storeName: "Westside Market",
-    storeId: "store_004",
-    unit: "can",
-    status: "Available",
-    minimumStock: 20,
-    supplier: "Energy Corp",
-    lastUpdated: "2024-01-15",
-    barcode: "123456789026",
-    location: "Aisle 5-E",
-  },
-  {
-    id: "16",
-    productName: "Ice Cream",
-    productId: "DA-ICE-016",
-    category: "Dairy",
-    stock: 22,
-    price: 6.99,
-    storeName: "Westside Market",
-    storeId: "store_004",
-    unit: "tub",
-    status: "Available",
-    minimumStock: 8,
-    supplier: "Cool Treats Ltd",
-    lastUpdated: "2024-01-15",
-    barcode: "123456789027",
-    location: "Freezer A-1",
-  },
-  {
-    id: "17",
-    productName: "Mixed Nuts",
-    productId: "SN-NUT-017",
-    category: "Snacks",
-    stock: 3,
-    price: 7.99,
-    storeName: "Westside Market",
-    storeId: "store_004",
-    unit: "pack",
-    status: "Low Stock",
-    minimumStock: 5,
-    supplier: "Nut Company",
-    lastUpdated: "2024-01-13",
-    barcode: "123456789028",
-    location: "Aisle 6-G",
-  },
-  {
-    id: "18",
-    productName: "Pasta",
-    productId: "GR-PAS-018",
-    category: "Grains",
-    stock: 67,
-    price: 1.79,
-    storeName: "Westside Market",
-    storeId: "store_004",
-    unit: "pack",
-    status: "Available",
-    minimumStock: 15,
-    supplier: "Italian Foods",
-    lastUpdated: "2024-01-15",
-    barcode: "123456789029",
-    location: "Aisle 7-H",
-  },
-];
-
 export default function Products() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
-  const [filteredProducts, setFilteredProducts] = useState(products);
-  const [allProducts, setAllProducts] = useState(products);
+  const [storeFilter, setStoreFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [filteredProducts, setFilteredProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [stores, setStores] = useState([]);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   const [formData, setFormData] = useState({
     productName: "",
     productId: "",
-    category: "",
+    category_id: "",
     storeName: "",
     stock: "",
     unit: "",
+    description: "",
   });
 
   useEffect(() => {
-    // Check authentication
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-  }, [navigate]);
+    console.log("Products page - User authenticated:", user?.username);
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
+    // Initialize filters from URL parameters
+    const searchParam = searchParams.get("search");
+    const categoryParam = searchParams.get("category");
+    const filterParam = searchParams.get("filter");
+
+    if (searchParam) {
+      setSearchTerm(searchParam);
+    }
+
+    if (categoryParam) {
+      setCategoryFilter(categoryParam);
+    }
+
+    if (filterParam === "lowstock") {
+      setStatusFilter("Low Stock");
+    }
+
+    // Fetch products, categories, and stores from API
+    fetchProducts();
+    fetchCategories();
+    fetchStores();
+  }, [searchParams]);
+
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch("/api/categories");
+      if (response.ok) {
+        const data = await response.json();
+        setCategories(data.categories || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch categories:", err);
+    }
+  };
+
+  const fetchStores = async () => {
+    try {
+      const response = await fetch("/api/stores");
+      if (response.ok) {
+        const data = await response.json();
+        setStores(data.data || []);
+      }
+    } catch (err) {
+      console.error("Failed to fetch stores:", err);
+    }
+  };
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("/api/products");
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+      setAllProducts(data.products || []);
+      setError(null);
+    } catch (err) {
+      console.error("Failed to fetch products:", err);
+      setError("Failed to load products. Please try again.");
+      // Fallback to empty array if API fails
+      setAllProducts([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
@@ -380,46 +136,81 @@ export default function Products() {
         product.storeName.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesCategory =
         categoryFilter === "all" || product.category === categoryFilter;
-      return matchesSearch && matchesCategory;
+      const matchesStore =
+        storeFilter === "all" || product.storeName === storeFilter;
+      const matchesStatus =
+        statusFilter === "all" || product.status === statusFilter;
+      return matchesSearch && matchesCategory && matchesStore && matchesStatus;
     });
     setFilteredProducts(filtered);
-  }, [searchTerm, categoryFilter, allProducts]);
+  }, [searchTerm, categoryFilter, storeFilter, statusFilter, allProducts]);
 
-  const categories = [...new Set(allProducts.map((p) => p.category))];
+  const productCategories = [...new Set(allProducts.map((p) => p.category))];
 
-  const handleAddProduct = (e) => {
+  const handleAddProduct = async (e) => {
     e.preventDefault();
-    const newProduct = {
-      id: Date.now().toString(),
-      productName: formData.productName,
-      productId: formData.productId,
-      category: formData.category,
-      storeName: formData.storeName,
-      stock: parseInt(formData.stock),
-      unit: formData.unit,
-      status:
-        parseInt(formData.stock) === 0
-          ? "Out of Stock"
-          : parseInt(formData.stock) < 10
-            ? "Low Stock"
-            : "Available",
-      lastUpdated: new Date().toISOString().split("T")[0],
-    };
+    try {
+      const response = await fetch("/api/products", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(formData),
+      });
 
-    setAllProducts([...allProducts, newProduct]);
-    setFormData({
-      productName: "",
-      productId: "",
-      category: "",
-      storeName: "",
-      stock: "",
-      unit: "",
-    });
-    setIsAddModalOpen(false);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Refresh products list
+      await fetchProducts();
+
+      setFormData({
+        productName: "",
+        productId: "",
+        category_id: "",
+        storeName: "",
+        stock: "",
+        unit: "",
+        description: "",
+      });
+      setIsAddModalOpen(false);
+    } catch (err) {
+      console.error("Failed to add product:", err);
+      setError("Failed to add product. Please try again.");
+    }
   };
 
-  const handleDeleteProduct = (id) => {
-    setAllProducts(allProducts.filter((p) => p.id !== id));
+  const handleDeleteProduct = (product) => {
+    setProductToDelete(product);
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+
+    try {
+      const response = await fetch(`/api/products/${productToDelete.id}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Refresh products list
+      await fetchProducts();
+      setDeleteConfirmOpen(false);
+      setProductToDelete(null);
+    } catch (err) {
+      console.error("Failed to delete product:", err);
+      setError("Failed to delete product. Please try again.");
+    }
+  };
+
+  const cancelDelete = () => {
+    setDeleteConfirmOpen(false);
+    setProductToDelete(null);
   };
 
   return (
@@ -455,149 +246,340 @@ export default function Products() {
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid gap-4 md:grid-cols-4 mb-6">
-            <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0">
-              <CardContent className="p-6">
-                <div className="text-2xl font-bold">
-                  {
-                    filteredProducts.filter((p) => p.status === "Available")
-                      .length
-                  }
-                </div>
-                <div className="text-green-100">Available Products</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-r from-yellow-500 to-orange-600 text-white border-0">
-              <CardContent className="p-6">
-                <div className="text-2xl font-bold">
-                  {
-                    filteredProducts.filter((p) => p.status === "Low Stock")
-                      .length
-                  }
-                </div>
-                <div className="text-yellow-100">Low Stock Items</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-r from-red-500 to-pink-600 text-white border-0">
-              <CardContent className="p-6">
-                <div className="text-2xl font-bold">
-                  {
-                    filteredProducts.filter((p) => p.status === "Out of Stock")
-                      .length
-                  }
-                </div>
-                <div className="text-red-100">Out of Stock</div>
-              </CardContent>
-            </Card>
-            <Card className="bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0">
-              <CardContent className="p-6">
-                <div className="text-2xl font-bold">
-                  {filteredProducts.length}
-                </div>
-                <div className="text-blue-100">Total Products</div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Search and Filter */}
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input
-                placeholder="Search products, store names, or IDs..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-9"
-              />
-            </div>
-            <div className="flex gap-2">
-              <select
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-                className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+          {/* Error Message */}
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+              <p className="text-red-600">{error}</p>
+              <Button
+                onClick={fetchProducts}
+                variant="outline"
+                size="sm"
+                className="mt-2"
               >
-                <option value="all">All Categories</option>
-                {categories.map((category) => (
-                  <option key={category} value={category}>
-                    {category}
-                  </option>
-                ))}
-              </select>
+                Retry
+              </Button>
             </div>
-          </div>
+          )}
 
-          {/* Products Table */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Products Inventory</CardTitle>
-              <CardDescription>
-                Complete list of products in your inventory
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-4 font-semibold">
-                        Product Name
-                      </th>
-                      <th className="text-left p-4 font-semibold">
-                        Product ID
-                      </th>
-                      <th className="text-left p-4 font-semibold">Category</th>
-                      <th className="text-left p-4 font-semibold">
-                        Store Name
-                      </th>
-                      <th className="text-left p-4 font-semibold">Stock</th>
-                      <th className="text-left p-4 font-semibold">Unit</th>
-                      <th className="text-left p-4 font-semibold">Status</th>
-                      <th className="text-left p-4 font-semibold">
-                        Last Updated
-                      </th>
-                      <th className="text-left p-4 font-semibold">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {filteredProducts.map((product) => (
-                      <tr
-                        key={product.id}
-                        className="border-b hover:bg-slate-50/50"
-                      >
-                        <td className="p-4 font-medium">
-                          {product.productName}
-                        </td>
-                        <td className="p-4 font-mono text-sm text-blue-600">
-                          {product.productId}
-                        </td>
-                        <td className="p-4">
-                          <CategoryBadge category={product.category} />
-                        </td>
-                        <td className="p-4">{product.storeName}</td>
-                        <td className="p-4 font-semibold">{product.stock}</td>
-                        <td className="p-4">{product.unit}</td>
-                        <td className="p-4">
-                          <StatusBadge status={product.status} />
-                        </td>
-                        <td className="p-4">{product.lastUpdated}</td>
-                        <td className="p-4">
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => handleDeleteProduct(product.id)}
-                            className="text-red-600 hover:text-red-700"
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+          {/* Loading State */}
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-muted-foreground">Loading products...</p>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          ) : (
+            <>
+              {/* Stats Cards */}
+              <div className="grid gap-4 md:grid-cols-4 mb-6">
+                <Card
+                  className={`bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "Available" ? "ring-4 ring-white" : ""}`}
+                  onClick={() =>
+                    setStatusFilter(
+                      statusFilter === "Available" ? "all" : "Available",
+                    )
+                  }
+                >
+                  <CardContent className="p-6">
+                    <div className="text-2xl font-bold">
+                      {
+                        allProducts.filter((p) => p.status === "Available")
+                          .length
+                      }
+                    </div>
+                    <div className="text-green-100">Available Products</div>
+                  </CardContent>
+                </Card>
+                <Card
+                  className={`bg-gradient-to-r from-yellow-500 to-orange-600 text-white border-0 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "Low Stock" ? "ring-4 ring-white" : ""}`}
+                  onClick={() =>
+                    setStatusFilter(
+                      statusFilter === "Low Stock" ? "all" : "Low Stock",
+                    )
+                  }
+                >
+                  <CardContent className="p-6">
+                    <div className="text-2xl font-bold">
+                      {
+                        allProducts.filter((p) => p.status === "Low Stock")
+                          .length
+                      }
+                    </div>
+                    <div className="text-yellow-100">Low Stock Items</div>
+                  </CardContent>
+                </Card>
+                <Card
+                  className={`bg-gradient-to-r from-red-500 to-pink-600 text-white border-0 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "Out of Stock" ? "ring-4 ring-white" : ""}`}
+                  onClick={() =>
+                    setStatusFilter(
+                      statusFilter === "Out of Stock" ? "all" : "Out of Stock",
+                    )
+                  }
+                >
+                  <CardContent className="p-6">
+                    <div className="text-2xl font-bold">
+                      {
+                        allProducts.filter((p) => p.status === "Out of Stock")
+                          .length
+                      }
+                    </div>
+                    <div className="text-red-100">Out of Stock</div>
+                  </CardContent>
+                </Card>
+                <Card
+                  className={`bg-gradient-to-r from-blue-500 to-indigo-600 text-white border-0 cursor-pointer transition-transform hover:scale-105 ${statusFilter === "all" ? "ring-4 ring-white" : ""}`}
+                  onClick={() => setStatusFilter("all")}
+                >
+                  <CardContent className="p-6">
+                    <div className="text-2xl font-bold">
+                      {allProducts.length}
+                    </div>
+                    <div className="text-blue-100">Total Products</div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Search and Filter */}
+              <div className="flex flex-col sm:flex-row gap-4 mb-6">
+                <div className="relative flex-1">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                  <Input
+                    placeholder="Search products, store names, or IDs..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-9"
+                  />
+                </div>
+                <div className="flex gap-2 flex-wrap">
+                  <select
+                    value={categoryFilter}
+                    onChange={(e) => setCategoryFilter(e.target.value)}
+                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="all">All Categories</option>
+                    {productCategories.map((category) => (
+                      <option key={category} value={category}>
+                        {category}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={storeFilter}
+                    onChange={(e) => setStoreFilter(e.target.value)}
+                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="all">All Stores</option>
+                    {stores.map((store) => (
+                      <option key={store.id} value={store.name}>
+                        {store.name}
+                      </option>
+                    ))}
+                  </select>
+                  <select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="Available">Available</option>
+                    <option value="Low Stock">Low Stock</option>
+                    <option value="Out of Stock">Out of Stock</option>
+                  </select>
+                  {(statusFilter !== "all" ||
+                    storeFilter !== "all" ||
+                    categoryFilter !== "all") && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setStatusFilter("all");
+                        setStoreFilter("all");
+                        setCategoryFilter("all");
+                        setSearchTerm("");
+                      }}
+                      className="h-10"
+                    >
+                      <X className="h-4 w-4 mr-1" />
+                      Clear
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* Products Table */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Products Inventory</CardTitle>
+                  <CardDescription>
+                    Complete list of products in your inventory
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left p-4 font-semibold">
+                            Product Name
+                          </th>
+                          <th className="text-left p-4 font-semibold">
+                            Product ID
+                          </th>
+                          <th className="text-left p-4 font-semibold">
+                            Category
+                          </th>
+                          <th className="text-left p-4 font-semibold">
+                            Store Name
+                          </th>
+                          <th className="text-left p-4 font-semibold">Stock</th>
+                          <th className="text-left p-4 font-semibold">Unit</th>
+                          <th className="text-left p-4 font-semibold">
+                            Status
+                          </th>
+                          <th className="text-left p-4 font-semibold">
+                            Last Updated
+                          </th>
+                          <th className="text-left p-4 font-semibold">
+                            Actions
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {filteredProducts.map((product) => (
+                          <tr
+                            key={product.id}
+                            className="border-b hover:bg-slate-50/50"
+                          >
+                            <td className="p-4 font-medium">
+                              <button
+                                onClick={() =>
+                                  navigate(`/products/${product.id}`)
+                                }
+                                className="text-blue-600 hover:text-blue-800 hover:underline text-left"
+                              >
+                                {product.productName}
+                              </button>
+                            </td>
+                            <td className="p-4 font-mono text-sm text-blue-600">
+                              {product.productId}
+                            </td>
+                            <td className="p-4">
+                              <CategoryBadge category={product.category} />
+                            </td>
+                            <td className="p-4">{product.storeName}</td>
+                            <td className="p-4 font-semibold">
+                              {product.stock}
+                            </td>
+                            <td className="p-4">{product.unit}</td>
+                            <td className="p-4">
+                              <StatusBadge status={product.status} />
+                            </td>
+                            <td className="p-4">{product.lastUpdated}</td>
+                            <td className="p-4">
+                              <div className="flex gap-1">
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    navigate(`/products/${product.id}`)
+                                  }
+                                  className="text-blue-600 hover:text-blue-700"
+                                  title="View Product Info"
+                                >
+                                  <Eye className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() =>
+                                    navigate(`/products/${product.id}/edit`)
+                                  }
+                                  className="text-green-600 hover:text-green-700"
+                                  title="Edit Product"
+                                >
+                                  <Edit className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={() => handleDeleteProduct(product)}
+                                  className="text-red-600 hover:text-red-700"
+                                  title="Delete Product"
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </Button>
+                              </div>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </CardContent>
+              </Card>
+            </>
+          )}
+
+          {/* Delete Confirmation Modal */}
+          {deleteConfirmOpen && productToDelete && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+              <div className="bg-white rounded-lg p-6 w-full max-w-md mx-4">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="h-10 w-10 rounded-full bg-red-100 flex items-center justify-center">
+                    <Trash2 className="h-5 w-5 text-red-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">
+                      Delete Product
+                    </h2>
+                    <p className="text-sm text-muted-foreground">
+                      This action cannot be undone
+                    </p>
+                  </div>
+                </div>
+
+                <div className="mb-6">
+                  <p className="text-gray-700">
+                    Are you sure you want to delete{" "}
+                    <span className="font-semibold text-gray-900">
+                      {productToDelete.productName}
+                    </span>
+                    ? This will permanently remove the product from your
+                    inventory.
+                  </p>
+                  <div className="mt-3 p-3 bg-gray-50 rounded-md">
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Product ID:</span>{" "}
+                      {productToDelete.productId}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      <span className="font-medium">Current Stock:</span>{" "}
+                      {productToDelete.stock} {productToDelete.unit}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex gap-3">
+                  <Button
+                    variant="outline"
+                    onClick={cancelDelete}
+                    className="flex-1"
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={confirmDelete}
+                    className="flex-1"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Product
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Add Product Modal */}
           {isAddModalOpen && (
@@ -646,23 +628,22 @@ export default function Products() {
                     <Label htmlFor="category">Category</Label>
                     <select
                       id="category"
-                      value={formData.category}
+                      value={formData.category_id}
                       onChange={(e) =>
-                        setFormData({ ...formData, category: e.target.value })
+                        setFormData({
+                          ...formData,
+                          category_id: e.target.value,
+                        })
                       }
                       className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                       required
                     >
                       <option value="">Select category</option>
-                      <option value="Fruits & Vegetables">
-                        Fruits & Vegetables
-                      </option>
-                      <option value="Dairy">Dairy</option>
-                      <option value="Bakery">Bakery</option>
-                      <option value="Meat & Poultry">Meat & Poultry</option>
-                      <option value="Seafood">Seafood</option>
-                      <option value="Beverages">Beverages</option>
-                      <option value="Snacks">Snacks</option>
+                      {categories.map((category) => (
+                        <option key={category.id} value={category.id}>
+                          {category.name}
+                        </option>
+                      ))}
                     </select>
                   </div>
 
@@ -683,6 +664,21 @@ export default function Products() {
                       <option value="Uptown Branch">Uptown Branch</option>
                       <option value="Westside Market">Westside Market</option>
                     </select>
+                  </div>
+
+                  <div>
+                    <Label htmlFor="description">Description (Optional)</Label>
+                    <Input
+                      id="description"
+                      value={formData.description}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          description: e.target.value,
+                        })
+                      }
+                      placeholder="Enter product description"
+                    />
                   </div>
 
                   <div className="grid grid-cols-2 gap-2">

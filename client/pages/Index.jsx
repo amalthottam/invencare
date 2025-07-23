@@ -14,25 +14,18 @@ export default function Index() {
   const checkAuthentication = async () => {
     try {
       // AWS Cognito Authentication Check
-      // const user = await getCurrentUser();
-      // if (user) {
-      //   navigate("/dashboard");
-      // } else {
-      //   navigate("/login");
-      // }
-
-      // Demo authentication check (remove when implementing Cognito)
-      const isAuthenticated = localStorage.getItem("isAuthenticated");
-
-      if (isAuthenticated) {
-        // Redirect to dashboard if already logged in
+      const { getCurrentUser } = await import('aws-amplify/auth');
+      const user = await getCurrentUser();
+      if (user) {
+        console.log("User is authenticated, redirecting to dashboard");
         navigate("/dashboard");
       } else {
-        // Redirect to login if not authenticated
         navigate("/login");
       }
     } catch (error) {
-      console.log("No authenticated user found");
+      console.log("No authenticated user found, redirecting to login");
+      // Remove any demo authentication remnants
+      localStorage.removeItem("isAuthenticated");
       navigate("/login");
     }
   };

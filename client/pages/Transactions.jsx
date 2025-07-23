@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/auth-context";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,405 +30,227 @@ import {
   Filter,
 } from "lucide-react";
 
-// Mock store data (consistent with Dashboard)
-const stores = [
-  { id: "all", name: "All Stores", location: "Combined View" },
-  { id: "store_001", name: "Downtown Store", location: "123 Main St" },
-  { id: "store_002", name: "Mall Location", location: "456 Shopping Center" },
-  { id: "store_003", name: "Uptown Branch", location: "789 North Ave" },
-  { id: "store_004", name: "Westside Market", location: "321 West Blvd" },
-];
+// Detect FullStory or analytics interference more aggressively
+const detectAnalyticsInterference = () => {
+  return !!(
+    window.FS ||
+    window._fs_debug ||
+    window.FSRecorder ||
+    window.fullstory ||
+    document.querySelector('script[src*="fullstory"]') ||
+    document.querySelector('script[src*="fs.js"]') ||
+    // Check if fetch has been wrapped/modified
+    (window.fetch && window.fetch.toString().includes("native") === false)
+  );
+};
 
-// Comprehensive Sample Transaction Data for Multi-Store Inventory System
-const mockTransactions = [
-  // Recent Sales - January 15, 2024
-  {
-    id: "TXN-2024-001",
-    type: "Sale",
-    productName: "Organic Bananas",
-    productId: "FV-BAN-001",
-    category: "Fruits & Vegetables",
-    quantity: 15,
-    unitPrice: 1.99,
-    totalAmount: 29.85,
-    storeId: "store_001",
-    storeName: "Downtown Store",
-    userId: "emp_001",
-    userName: "John Smith",
-    timestamp: "2024-01-15T14:30:00Z",
-    referenceNumber: "SALE-2024-001",
-    notes: "Regular customer purchase",
-  },
-  {
-    id: "TXN-2024-002",
-    type: "Sale",
-    productName: "Whole Milk",
-    productId: "DA-MLK-003",
-    category: "Dairy",
-    quantity: 4,
-    unitPrice: 3.79,
-    totalAmount: 15.16,
-    storeId: "store_001",
-    storeName: "Downtown Store",
-    userId: "emp_001",
-    userName: "John Smith",
-    timestamp: "2024-01-15T14:32:00Z",
-    referenceNumber: "SALE-2024-002",
-    notes: "Family weekly shopping",
-  },
-  {
-    id: "TXN-2024-003",
-    type: "Sale",
-    productName: "Chicken Breast",
-    productId: "MP-CHI-008",
-    category: "Meat & Poultry",
-    quantity: 2,
-    unitPrice: 12.99,
-    totalAmount: 25.98,
-    storeId: "store_002",
-    storeName: "Mall Location",
-    userId: "emp_002",
-    userName: "Sarah Johnson",
-    timestamp: "2024-01-15T15:45:00Z",
-    referenceNumber: "SALE-2024-003",
-    notes: "Premium meat selection",
-  },
-  {
-    id: "TXN-2024-004",
-    type: "Sale",
-    productName: "Energy Drinks",
-    productId: "BV-ENE-015",
-    category: "Beverages",
-    quantity: 6,
-    unitPrice: 2.99,
-    totalAmount: 17.94,
-    storeId: "store_004",
-    storeName: "Westside Market",
-    userId: "emp_004",
-    userName: "Tom Brown",
-    timestamp: "2024-01-15T13:10:00Z",
-    referenceNumber: "SALE-2024-004",
-    notes: "Bulk purchase discount applied",
-  },
-  {
-    id: "TXN-2024-005",
-    type: "Sale",
-    productName: "Potato Chips",
-    productId: "SN-CHI-012",
-    category: "Snacks",
-    quantity: 8,
-    unitPrice: 3.99,
-    totalAmount: 31.92,
-    storeId: "store_003",
-    storeName: "Uptown Branch",
-    userId: "emp_003",
-    userName: "Emma Wilson",
-    timestamp: "2024-01-15T16:20:00Z",
-    referenceNumber: "SALE-2024-005",
-    notes: "Party supplies purchase",
-  },
+// Simple, reliable API helper using XMLHttpRequest when analytics detected
+const makeApiRequest = async (url, options = {}) => {
+  console.log(`Making API request to: ${url}`);
 
-  // Restocks - January 15, 2024
-  {
-    id: "TXN-2024-006",
-    type: "Restock",
-    productName: "Organic Bananas",
-    productId: "FV-BAN-001",
-    category: "Fruits & Vegetables",
-    quantity: 50,
-    unitPrice: 1.2,
-    totalAmount: 60.0,
-    storeId: "store_001",
-    storeName: "Downtown Store",
-    userId: "mgr_001",
-    userName: "Lisa Davis",
-    timestamp: "2024-01-15T08:00:00Z",
-    referenceNumber: "RST-2024-006",
-    notes: "Weekly delivery from Fresh Farm Co",
-  },
-  {
-    id: "TXN-2024-007",
-    type: "Restock",
-    productName: "Whole Milk",
-    productId: "DA-MLK-003",
-    category: "Dairy",
-    quantity: 48,
-    unitPrice: 2.8,
-    totalAmount: 134.4,
-    storeId: "store_001",
-    storeName: "Downtown Store",
-    userId: "mgr_001",
-    userName: "Lisa Davis",
-    timestamp: "2024-01-15T08:30:00Z",
-    referenceNumber: "RST-2024-007",
-    notes: "Dairy delivery from Pure Dairy Ltd",
-  },
-  {
-    id: "TXN-2024-008",
-    type: "Restock",
-    productName: "Ground Coffee",
-    productId: "BV-COF-009",
-    category: "Beverages",
-    quantity: 24,
-    unitPrice: 6.5,
-    totalAmount: 156.0,
-    storeId: "store_002",
-    storeName: "Mall Location",
-    userId: "mgr_002",
-    userName: "Mike Wilson",
-    timestamp: "2024-01-15T09:15:00Z",
-    referenceNumber: "RST-2024-008",
-    notes: "Premium coffee restock",
-  },
-  {
-    id: "TXN-2024-009",
-    type: "Restock",
-    productName: "Energy Drinks",
-    productId: "BV-ENE-015",
-    category: "Beverages",
-    quantity: 72,
-    unitPrice: 1.8,
-    totalAmount: 129.6,
-    storeId: "store_004",
-    storeName: "Westside Market",
-    userId: "mgr_004",
-    userName: "David Chen",
-    timestamp: "2024-01-15T10:00:00Z",
-    referenceNumber: "RST-2024-009",
-    notes: "High demand product restock",
+  const hasAnalyticsInterference = detectAnalyticsInterference();
+
+  // Use XMLHttpRequest directly if analytics interference detected
+  if (hasAnalyticsInterference) {
+    console.warn(
+      `Analytics interference detected, using XMLHttpRequest for: ${url}`,
+    );
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open(options.method || "GET", url);
+      xhr.setRequestHeader("Content-Type", "application/json");
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            console.log(`XMLHttpRequest successful for ${url}`);
+            resolve(data);
+          } catch (parseError) {
+            reject(new Error(`Invalid JSON response: ${parseError.message}`));
+          }
+        } else {
+          reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error(`Network error - unable to connect to server`));
+      };
+
+      xhr.timeout = 15000; // 15 second timeout
+      xhr.ontimeout = () => {
+        reject(new Error(`Request timeout - server took too long to respond`));
+      };
+
+      if (options.body) {
+        xhr.send(options.body);
+      } else {
+        xhr.send();
+      }
+    });
+  }
+
+  // Try fetch if no analytics interference detected
+  try {
+    const response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+        ...options.headers,
+      },
+      ...options,
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    return await response.json();
+  } catch (fetchError) {
+    console.warn(
+      `Fetch failed for ${url}, trying XMLHttpRequest fallback:`,
+      fetchError.message,
+    );
+
+    // Fallback to XMLHttpRequest
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open(options.method || "GET", url);
+      xhr.setRequestHeader("Content-Type", "application/json");
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            console.log(`XMLHttpRequest fallback successful for ${url}`);
+            resolve(data);
+          } catch (parseError) {
+            reject(new Error(`Invalid JSON response: ${parseError.message}`));
+          }
+        } else {
+          reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error(`Network error - unable to connect to server`));
+      };
+
+      xhr.timeout = 15000; // 15 second timeout
+      xhr.ontimeout = () => {
+        reject(new Error(`Request timeout - server took too long to respond`));
+      };
+
+      if (options.body) {
+        xhr.send(options.body);
+      } else {
+        xhr.send();
+      }
+    });
+  }
+};
+
+const api = {
+  async getTransactions(params = {}) {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        queryParams.append(key, value);
+      }
+    });
+
+    const url = `/api/transactions?${queryParams}`;
+    return makeApiRequest(url);
   },
 
-  // Transfers - January 15, 2024
-  {
-    id: "TXN-2024-010",
-    type: "Transfer",
-    productName: "Cheddar Cheese",
-    productId: "DA-CHE-004",
-    category: "Dairy",
-    quantity: 12,
-    unitPrice: 5.99,
-    totalAmount: 71.88,
-    storeId: "store_002",
-    storeName: "Mall Location",
-    transferToStoreId: "store_001",
-    transferToStoreName: "Downtown Store",
-    userId: "mgr_002",
-    userName: "Mike Wilson",
-    timestamp: "2024-01-15T11:20:00Z",
-    referenceNumber: "TRF-2024-010",
-    notes: "Low stock transfer to high-demand location",
-  },
-  {
-    id: "TXN-2024-011",
-    type: "Transfer",
-    productName: "Orange Juice",
-    productId: "BV-JUI-011",
-    category: "Beverages",
-    quantity: 15,
-    unitPrice: 4.49,
-    totalAmount: 67.35,
-    storeId: "store_003",
-    storeName: "Uptown Branch",
-    transferToStoreId: "store_004",
-    transferToStoreName: "Westside Market",
-    userId: "mgr_003",
-    userName: "Anna Garcia",
-    timestamp: "2024-01-15T12:00:00Z",
-    referenceNumber: "TRF-2024-011",
-    notes: "Excess inventory redistribution",
+  async getTransactionSummary(params = {}) {
+    const queryParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      if (value !== undefined && value !== null && value !== "") {
+        queryParams.append(key, value);
+      }
+    });
+
+    const url = `/api/transactions/summary?${queryParams}`;
+    return makeApiRequest(url);
   },
 
-  // Adjustments - January 14-15, 2024
-  {
-    id: "TXN-2024-012",
-    type: "Adjustment",
-    productName: "Fresh Salmon",
-    productId: "SF-SAL-010",
-    category: "Seafood",
-    quantity: -3,
-    unitPrice: 18.99,
-    totalAmount: -56.97,
-    storeId: "store_003",
-    storeName: "Uptown Branch",
-    userId: "mgr_003",
-    userName: "Anna Garcia",
-    timestamp: "2024-01-14T18:00:00Z",
-    referenceNumber: "ADJ-2024-012",
-    notes: "Expired seafood disposal",
-  },
-  {
-    id: "TXN-2024-013",
-    type: "Adjustment",
-    productName: "Croissants",
-    productId: "BK-CRO-013",
-    category: "Bakery",
-    quantity: -2,
-    unitPrice: 1.99,
-    totalAmount: -3.98,
-    storeId: "store_003",
-    storeName: "Uptown Branch",
-    userId: "emp_003",
-    userName: "Emma Wilson",
-    timestamp: "2024-01-14T19:30:00Z",
-    referenceNumber: "ADJ-2024-013",
-    notes: "Day-old bakery items removed",
-  },
-  {
-    id: "TXN-2024-014",
-    type: "Adjustment",
-    productName: "Mixed Nuts",
-    productId: "SN-NUT-017",
-    category: "Snacks",
-    quantity: -1,
-    unitPrice: 7.99,
-    totalAmount: -7.99,
-    storeId: "store_004",
-    storeName: "Westside Market",
-    userId: "emp_004",
-    userName: "Tom Brown",
-    timestamp: "2024-01-14T17:15:00Z",
-    referenceNumber: "ADJ-2024-014",
-    notes: "Damaged packaging - customer return",
+  async createTransaction(transactionData) {
+    return makeApiRequest("/api/transactions", {
+      method: "POST",
+      body: JSON.stringify(transactionData),
+    });
   },
 
-  // Additional Sales from Previous Days
-  {
-    id: "TXN-2024-015",
-    type: "Sale",
-    productName: "Red Apples",
-    productId: "FV-APP-002",
-    category: "Fruits & Vegetables",
-    quantity: 10,
-    unitPrice: 2.49,
-    totalAmount: 24.9,
-    storeId: "store_001",
-    storeName: "Downtown Store",
-    userId: "emp_001",
-    userName: "John Smith",
-    timestamp: "2024-01-14T16:45:00Z",
-    referenceNumber: "SALE-2024-015",
-    notes: "Healthy fruit selection",
-  },
-  {
-    id: "TXN-2024-016",
-    type: "Sale",
-    productName: "Greek Yogurt",
-    productId: "DA-YOG-007",
-    category: "Dairy",
-    quantity: 3,
-    unitPrice: 4.99,
-    totalAmount: 14.97,
-    storeId: "store_002",
-    storeName: "Mall Location",
-    userId: "emp_002",
-    userName: "Sarah Johnson",
-    timestamp: "2024-01-14T14:20:00Z",
-    referenceNumber: "SALE-2024-016",
-    notes: "Health-conscious customer",
-  },
-  {
-    id: "TXN-2024-017",
-    type: "Sale",
-    productName: "Beef Steak",
-    productId: "MP-STE-014",
-    category: "Meat & Poultry",
-    quantity: 1.5,
-    unitPrice: 24.99,
-    totalAmount: 37.49,
-    storeId: "store_004",
-    storeName: "Westside Market",
-    userId: "emp_004",
-    userName: "Tom Brown",
-    timestamp: "2024-01-14T17:30:00Z",
-    referenceNumber: "SALE-2024-017",
-    notes: "Premium cut for dinner",
-  },
-  {
-    id: "TXN-2024-018",
-    type: "Sale",
-    productName: "Ice Cream",
-    productId: "DA-ICE-016",
-    category: "Dairy",
-    quantity: 2,
-    unitPrice: 6.99,
-    totalAmount: 13.98,
-    storeId: "store_004",
-    storeName: "Westside Market",
-    userId: "emp_004",
-    userName: "Tom Brown",
-    timestamp: "2024-01-14T15:00:00Z",
-    referenceNumber: "SALE-2024-018",
-    notes: "Family dessert purchase",
+  async getStores() {
+    return makeApiRequest("/api/stores");
   },
 
-  // More Restocks from Previous Week
-  {
-    id: "TXN-2024-019",
-    type: "Restock",
-    productName: "Potato Chips",
-    productId: "SN-CHI-012",
-    category: "Snacks",
-    quantity: 100,
-    unitPrice: 2.5,
-    totalAmount: 250.0,
-    storeId: "store_003",
-    storeName: "Uptown Branch",
-    userId: "mgr_003",
-    userName: "Anna Garcia",
-    timestamp: "2024-01-13T09:00:00Z",
-    referenceNumber: "RST-2024-019",
-    notes: "Large shipment from Snack Masters",
+  async getProducts(storeId) {
+    const queryParams = storeId ? `?storeId=${storeId}` : "";
+    const url = `/api/products${queryParams}`;
+    return makeApiRequest(url);
   },
-  {
-    id: "TXN-2024-020",
-    type: "Restock",
-    productName: "Pasta",
-    productId: "GR-PAS-018",
-    category: "Grains",
-    quantity: 60,
-    unitPrice: 1.2,
-    totalAmount: 72.0,
-    storeId: "store_004",
-    storeName: "Westside Market",
-    userId: "mgr_004",
-    userName: "David Chen",
-    timestamp: "2024-01-13T10:30:00Z",
-    referenceNumber: "RST-2024-020",
-    notes: "Italian Foods weekly delivery",
-  },
-];
+};
 
 export default function Transactions() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [selectedStore, setSelectedStore] = useState("all");
-  const [transactions, setTransactions] = useState(mockTransactions);
-  const [filteredTransactions, setFilteredTransactions] =
-    useState(mockTransactions);
+  const [stores, setStores] = useState([
+    { id: "all", name: "All Stores", location: "Combined View" },
+  ]);
+  const [transactions, setTransactions] = useState([]);
+  const [filteredTransactions, setFilteredTransactions] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedType, setSelectedType] = useState("all");
-  const [selectedDateRange, setSelectedDateRange] = useState("today");
+
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [summaryStats, setSummaryStats] = useState({
+    totalTransactions: 0,
+    totalSales: 0,
+    totalRestocks: 0,
+    totalTransfers: 0,
+  });
+  const [products, setProducts] = useState([]);
+  const [allProducts, setAllProducts] = useState([]);
+  const [error, setError] = useState(null);
+  const [isConnected, setIsConnected] = useState(true);
 
-  // AWS Cognito Authentication & Store Access Control
-  // Upon component mount, verify user authentication via Cognito JWT token
-  // Extract user attributes: sub (user ID), custom:role, custom:store_access
-  // Validate user's permission to view transactions for selected store(s)
-  // Store managers can only view transactions for their assigned stores
-  // Admin users have access to all stores and cross-store analytics
+  // Fallback data for when API is unavailable
+  const mockTransactions = [
+    {
+      id: 1,
+      reference_number: "DEMO-001",
+      type: "sale",
+      product_name: "Sample Product",
+      category: "Demo",
+      quantity: 5,
+      total_amount: 25.99,
+      store_name: "Demo Store",
+      user_name: "Demo User",
+      created_at: new Date().toISOString(),
+    },
+  ];
 
-  // AWS Lambda Analytics Integration
-  // Real-time transaction analytics powered by Lambda functions:
-  // - Lambda function: 'invencare-transaction-analytics'
-  // - Processes transaction data from RDS 'inventory_transactions' table
-  // - Calculates store-specific metrics: sales volume, restock frequency, transfer patterns
-  // - Generates automated alerts for unusual transaction patterns
-  // - Cross-store comparison analytics for multi-location insights
+  const mockProducts = [
+    {
+      id: 1,
+      productName: "Sample Product",
+      productId: "DEMO-001",
+      category: "Demo",
+      price: "5.99",
+      stock: 50,
+      storeId: "store_001",
+    },
+  ];
 
   const [formData, setFormData] = useState({
     type: "",
     productName: "",
     productId: "",
+    selectedProductDbId: "", // For dropdown value tracking
     category: "",
     quantity: "",
     unitPrice: "",
@@ -436,129 +259,213 @@ export default function Transactions() {
     notes: "",
   });
 
+  // Load initial data
   useEffect(() => {
-    // Check authentication
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-  }, [navigate]);
+    // Use improved analytics detection
+    const hasAnalyticsInterference = detectAnalyticsInterference();
 
-  // Filter transactions based on store, search, type, and date
-  useEffect(() => {
-    let filtered = transactions;
-
-    // Filter by store
-    if (selectedStore !== "all") {
-      filtered = filtered.filter((txn) => txn.storeId === selectedStore);
-    }
-
-    // Filter by search term
-    if (searchTerm) {
-      filtered = filtered.filter(
-        (txn) =>
-          txn.productName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          txn.productId.toLowerCase().includes(searchTerm.toLowerCase()) ||
-          txn.referenceNumber
-            .toLowerCase()
-            .includes(searchTerm.toLowerCase()) ||
-          txn.userName.toLowerCase().includes(searchTerm.toLowerCase()),
+    if (hasAnalyticsInterference) {
+      console.warn(
+        "Analytics interference detected, using XMLHttpRequest and delayed loading",
       );
+      // Use a delay to avoid conflicts with analytics scripts
+      setTimeout(loadInitialData, 1000);
+    } else {
+      loadInitialData();
     }
+  }, []);
 
-    // Filter by transaction type
-    if (selectedType !== "all") {
-      filtered = filtered.filter((txn) => txn.type === selectedType);
-    }
+  const loadInitialData = async (retryCount = 0) => {
+    setIsLoading(true);
+    setError(null);
 
-    // Filter by date range
-    const now = new Date();
-    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    // Load stores first with retry logic
+    try {
+      console.log(`Loading stores (attempt ${retryCount + 1})`);
+      const storesResponse = await api.getStores();
+      const storeData = [
+        { id: "all", name: "All Stores", location: "Combined View" },
+        ...(storesResponse?.data || storesResponse?.stores || []),
+      ];
+      setStores(storeData);
+      console.log(`Successfully loaded ${storeData.length} stores`);
+    } catch (storeError) {
+      console.error("Failed to load stores:", storeError.message);
 
-    filtered = filtered.filter((txn) => {
-      const txnDate = new Date(txn.timestamp);
-
-      switch (selectedDateRange) {
-        case "today":
-          return txnDate >= today;
-        case "week":
-          const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
-          return txnDate >= weekAgo;
-        case "month":
-          const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
-          return txnDate >= monthAgo;
-        default:
-          return true;
+      // Retry once if first attempt fails and error is network-related
+      if (
+        retryCount === 0 &&
+        (storeError.message.includes("Failed to fetch") ||
+          storeError.message.includes("Network error"))
+      ) {
+        console.log("Retrying store loading after network error...");
+        setTimeout(() => loadInitialData(1), 2000);
+        return;
       }
-    });
 
-    setFilteredTransactions(filtered);
-  }, [
-    transactions,
-    selectedStore,
-    searchTerm,
-    selectedType,
-    selectedDateRange,
-  ]);
+      // Provide fallback stores
+      setStores([
+        { id: "all", name: "All Stores", location: "Combined View" },
+        { id: "store_001", name: "Downtown Store", location: "123 Main St" },
+        {
+          id: "store_002",
+          name: "Mall Location",
+          location: "456 Shopping Center",
+        },
+        { id: "store_003", name: "Uptown Branch", location: "789 North Ave" },
+        { id: "store_004", name: "Westside Market", location: "321 West Blvd" },
+      ]);
+    }
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
+    // Load transactions sequentially
+    try {
+      await loadTransactions();
+    } catch (err) {
+      console.error("Failed to load transactions:", err);
+      setError("Failed to load transactions. Showing demo data.");
+      // Use mock data as fallback
+      setTransactions(mockTransactions);
+      setSummaryStats({
+        totalTransactions: 1,
+        totalSales: 25.99,
+        totalRestocks: 0,
+        totalTransfers: 0,
+      });
+    }
+
+    // Load products last
+    try {
+      await loadAllProducts();
+    } catch (err) {
+      console.error("Failed to load products:", err);
+      // Use mock data as fallback for product selection
+      setAllProducts(mockProducts);
+    }
+
+    setIsLoading(false);
+  };
+
+  const loadTransactions = async () => {
+    try {
+      const params = {
+        storeId: selectedStore !== "all" ? selectedStore : undefined,
+        type: selectedType !== "all" ? selectedType : undefined,
+        search: searchTerm || undefined,
+        limit: 100,
+      };
+
+      // Load transactions and summary independently
+      const [transactionsResult, summaryResult] = await Promise.allSettled([
+        api.getTransactions(params),
+        api.getTransactionSummary(params),
+      ]);
+
+      // Handle transactions result
+      if (transactionsResult.status === "fulfilled") {
+        const transactionsData =
+          transactionsResult.value?.data?.transactions ||
+          transactionsResult.value?.transactions ||
+          [];
+        setTransactions(transactionsData);
+      } else {
+        console.error(
+          "Failed to load transactions:",
+          transactionsResult.reason,
+        );
+        setTransactions([]);
+        setError("Failed to load transactions. Showing empty list.");
+      }
+
+      // Handle summary result
+      if (summaryResult.status === "fulfilled") {
+        const summaryData =
+          summaryResult.value?.data || summaryResult.value || {};
+        setSummaryStats({
+          totalTransactions: summaryData.total_transactions || 0,
+          totalSales: summaryData.total_sales || 0,
+          totalRestocks: summaryData.total_restocks || 0,
+          totalTransfers: summaryData.total_transfers || 0,
+        });
+      } else {
+        console.error("Failed to load summary:", summaryResult.reason);
+        setSummaryStats({
+          totalTransactions: 0,
+          totalSales: 0,
+          totalRestocks: 0,
+          totalTransfers: 0,
+        });
+      }
+    } catch (err) {
+      console.error("Failed to load transactions:", err);
+      setError("Failed to load transactions.");
+      setTransactions([]);
+      setSummaryStats({
+        totalTransactions: 0,
+        totalSales: 0,
+        totalRestocks: 0,
+        totalTransfers: 0,
+      });
+    }
+  };
+
+  // Reload transactions when filters change
+  useEffect(() => {
+    if (
+      transactions.length > 0 ||
+      selectedStore ||
+      selectedType ||
+      searchTerm
+    ) {
+      const timeoutId = setTimeout(() => {
+        loadTransactions();
+      }, 300); // Debounce API calls
+
+      return () => clearTimeout(timeoutId);
+    }
+  }, [selectedStore, selectedType, searchTerm]);
+
+  // Set filtered transactions to all transactions since filtering is done server-side
+  useEffect(() => {
+    setFilteredTransactions(transactions);
+  }, [transactions]);
+
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 
-  const handleAddTransaction = (e) => {
+  const handleAddTransaction = async (e) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
 
-    // AWS Cognito User Validation
-    // Verify user has permission to create transactions for selected store
-    // Extract userId from Cognito JWT token stored in localStorage
-    // Validate user role permissions:
-    // - Employees: Can only create transactions for their assigned store
-    // - Managers: Can create transactions for stores they manage
-    // - Admins: Can create transactions for any store
+    try {
+      const transactionData = {
+        type: formData.type,
+        productId: formData.productId,
+        productName: formData.productName,
+        category: formData.category,
+        quantity: parseInt(formData.quantity),
+        unitPrice: parseFloat(formData.unitPrice),
+        storeId: formData.storeId,
+        storeName: stores.find((s) => s.id === formData.storeId)?.name || "",
+        transferToStoreId: formData.transferToStoreId || null,
+        transferToStoreName: formData.transferToStoreId
+          ? stores.find((s) => s.id === formData.transferToStoreId)?.name
+          : null,
+        userId: "current_user", // In production: Extract from authentication
+        userName: "Current User", // In production: Get from user session
+        notes: formData.notes,
+      };
 
-    // AWS Lambda Transaction Processing
-    // Invoke Lambda function: 'invencare-transaction-processor'
-    // Lambda will:
-    // 1. Validate transaction data and business rules
-    // 2. Update RDS inventory_transactions table
-    // 3. Update product quantities in RDS products table
-    // 4. Handle store-to-store transfers (update both stores)
-    // 5. Trigger automatic reorder alerts if stock falls below minimum
-    // 6. Send real-time notifications via SNS for critical stock levels
+      await api.createTransaction(transactionData);
 
-    const newTransaction = {
-      id: `TXN-2024-${Date.now()}`,
-      type: formData.type,
-      productName: formData.productName,
-      productId: formData.productId,
-      category: formData.category,
-      quantity: parseInt(formData.quantity),
-      unitPrice: parseFloat(formData.unitPrice),
-      totalAmount: parseInt(formData.quantity) * parseFloat(formData.unitPrice),
-      storeId: formData.storeId,
-      storeName: stores.find((s) => s.id === formData.storeId)?.name || "",
-      transferToStoreId: formData.transferToStoreId || null,
-      transferToStoreName: formData.transferToStoreId
-        ? stores.find((s) => s.id === formData.transferToStoreId)?.name
-        : null,
-      userId: "current_user", // In production: Extract from Cognito JWT
-      userName: "Current User", // In production: Get from Cognito user attributes
-      timestamp: new Date().toISOString(),
-      referenceNumber: `${formData.type.toUpperCase().substring(0, 3)}-2024-${Date.now()}`,
-      notes: formData.notes,
-    };
-
-    // In production, replace setTimeout with actual Lambda invocation:
-    // await invoke('invencare-transaction-processor', { transaction: newTransaction })
-    setTimeout(() => {
-      setTransactions([newTransaction, ...transactions]);
+      // Reset form and close modal
       setFormData({
         type: "",
         productName: "",
         productId: "",
+        selectedProductDbId: "",
         category: "",
         quantity: "",
         unitPrice: "",
@@ -567,8 +474,40 @@ export default function Transactions() {
         notes: "",
       });
       setIsAddModalOpen(false);
+
+      // Reload transactions to show the new one
+      await loadTransactions();
+    } catch (err) {
+      console.error("Failed to create transaction:", err);
+      setError("Failed to create transaction. Please try again.");
+    } finally {
       setIsLoading(false);
-    }, 1000);
+    }
+  };
+
+  const loadAllProducts = async () => {
+    try {
+      const response = await api.getProducts(); // Load all products from all stores
+      const products = response?.products || response?.data || [];
+      setAllProducts(products);
+      console.log(`Loaded ${products.length} products successfully`);
+    } catch (err) {
+      console.error("Failed to load products:", err);
+      setAllProducts([]);
+      // Don't set error here as it's handled in loadInitialData
+    }
+  };
+
+  const loadProductsForStore = async (storeId) => {
+    if (storeId && storeId !== "all") {
+      // Filter products by selected store
+      const storeProducts = allProducts.filter(
+        (product) => product.storeId === storeId,
+      );
+      setProducts(storeProducts);
+    } else {
+      setProducts([]);
+    }
   };
 
   const getTransactionTypeIcon = (type) => {
@@ -604,26 +543,46 @@ export default function Transactions() {
   };
 
   const formatDateTime = (timestamp) => {
-    return new Date(timestamp).toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    try {
+      if (!timestamp) return "N/A";
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) return "Invalid Date";
+      return date.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "N/A";
+    }
   };
 
-  // Calculate summary stats
-  const summaryStats = {
-    totalTransactions: filteredTransactions.length,
-    totalSales: filteredTransactions
-      .filter((txn) => txn.type === "Sale")
-      .reduce((sum, txn) => sum + txn.totalAmount, 0),
-    totalRestocks: filteredTransactions.filter((txn) => txn.type === "Restock")
-      .length,
-    totalTransfers: filteredTransactions.filter(
-      (txn) => txn.type === "Transfer",
-    ).length,
-  };
+  if (isLoading && transactions.length === 0) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
+        <Navigation onLogout={handleLogout} />
+        <div className="lg:pl-64">
+          <main className="p-6 lg:p-8">
+            <div className="flex items-center justify-center h-64">
+              <div className="text-center">
+                <RefreshCw className="h-8 w-8 animate-spin mx-auto mb-4 text-orange-600" />
+                <p className="text-muted-foreground mb-2">
+                  Loading transactions...
+                </p>
+                <p className="text-sm text-muted-foreground">
+                  {isConnected
+                    ? "Fetching data from server..."
+                    : "Checking connection..."}
+                </p>
+              </div>
+            </div>
+          </main>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 to-red-50">
@@ -645,6 +604,26 @@ export default function Transactions() {
               <p className="text-muted-foreground">
                 Track all inventory movements and sales across your stores
               </p>
+              {error && (
+                <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded mt-4 flex justify-between items-center">
+                  <div>
+                    <div className="font-medium mb-1">Demo Mode Active</div>
+                    <div className="text-sm">{error}</div>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setError(null);
+                      loadInitialData();
+                    }}
+                    className="ml-4"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Retry Connection
+                  </Button>
+                </div>
+              )}
 
               {/* Store Selector */}
               <div className="mt-4">
@@ -751,16 +730,6 @@ export default function Transactions() {
               <option value="Adjustment">Adjustments</option>
               <option value="Transfer">Transfers</option>
             </select>
-            <select
-              value={selectedDateRange}
-              onChange={(e) => setSelectedDateRange(e.target.value)}
-              className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-            >
-              <option value="today">Today</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="all">All Time</option>
-            </select>
           </div>
 
           {/* Transactions Table */}
@@ -768,7 +737,12 @@ export default function Transactions() {
             <CardHeader>
               <CardTitle>Transaction History</CardTitle>
               <CardDescription>
-                Showing {filteredTransactions.length} transactions
+                Showing {filteredTransactions?.length || 0} transactions
+                {transactions === mockTransactions && (
+                  <Badge variant="secondary" className="ml-2">
+                    Demo Data
+                  </Badge>
+                )}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -788,72 +762,88 @@ export default function Transactions() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredTransactions.map((transaction) => (
-                      <tr
-                        key={transaction.id}
-                        className="border-b hover:bg-slate-50/50"
-                      >
-                        <td className="p-4">
-                          <div className="font-mono text-sm text-blue-600">
-                            {transaction.referenceNumber}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            {getTransactionTypeIcon(transaction.type)}
-                            {getTransactionTypeBadge(transaction.type)}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div>
-                            <div className="font-medium">
-                              {transaction.productName}
+                    {filteredTransactions?.length > 0 ? (
+                      filteredTransactions.map((transaction) => (
+                        <tr
+                          key={transaction.id}
+                          className="border-b hover:bg-slate-50/50"
+                        >
+                          <td className="p-4">
+                            <div className="font-mono text-sm text-blue-600">
+                              {transaction.reference_number}
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              {transaction.productId}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              {getTransactionTypeIcon(transaction.type)}
+                              {getTransactionTypeBadge(transaction.type)}
                             </div>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <CategoryBadge category={transaction.category} />
-                        </td>
-                        <td className="p-4">
-                          <span
-                            className={`font-semibold ${
-                              transaction.quantity > 0
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }`}
-                          >
-                            {transaction.quantity > 0 ? "+" : ""}
-                            {transaction.quantity}
-                          </span>
-                        </td>
-                        <td className="p-4 font-semibold">
-                          {formatCurrency(transaction.totalAmount)}
-                        </td>
-                        <td className="p-4">
-                          <div>
-                            <div className="text-sm font-medium">
-                              {transaction.storeName}
-                            </div>
-                            {transaction.transferToStoreName && (
-                              <div className="text-xs text-muted-foreground">
-                                → {transaction.transferToStoreName}
+                          </td>
+                          <td className="p-4">
+                            <div>
+                              <div className="font-medium">
+                                {transaction.product_name}
                               </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="text-sm">{transaction.userName}</div>
-                        </td>
-                        <td className="p-4">
-                          <div className="text-sm">
-                            {formatDateTime(transaction.timestamp)}
-                          </div>
+                              <div className="text-sm text-muted-foreground">
+                                {transaction.product_id}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <CategoryBadge category={transaction.category} />
+                          </td>
+                          <td className="p-4">
+                            <span
+                              className={`font-semibold ${
+                                transaction.quantity > 0
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {transaction.quantity > 0 ? "+" : ""}
+                              {transaction.quantity}
+                            </span>
+                          </td>
+                          <td className="p-4 font-semibold">
+                            {formatCurrency(transaction.total_amount)}
+                          </td>
+                          <td className="p-4">
+                            <div>
+                              <div className="text-sm font-medium">
+                                {transaction.store_name}
+                              </div>
+                              {transaction.transfer_to_store_name && (
+                                <div className="text-xs text-muted-foreground">
+                                  → {transaction.transfer_to_store_name}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-sm">
+                              {transaction.user_name}
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-sm">
+                              {formatDateTime(
+                                transaction.created_at || transaction.timestamp,
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td
+                          colSpan="9"
+                          className="p-8 text-center text-muted-foreground"
+                        >
+                          No transactions found. Try adjusting your filters or
+                          add a new transaction.
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>
@@ -901,9 +891,20 @@ export default function Transactions() {
                       <select
                         id="storeId"
                         value={formData.storeId}
-                        onChange={(e) =>
-                          setFormData({ ...formData, storeId: e.target.value })
-                        }
+                        onChange={(e) => {
+                          const newStoreId = e.target.value;
+                          setFormData({
+                            ...formData,
+                            storeId: newStoreId,
+                            // Clear product selection when store changes
+                            selectedProductDbId: "",
+                            productId: "",
+                            productName: "",
+                            category: "",
+                            unitPrice: "",
+                          });
+                          loadProductsForStore(newStoreId);
+                        }}
                         className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                         required
                       >
@@ -919,61 +920,82 @@ export default function Transactions() {
                     </div>
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <Label htmlFor="productName">Product Name</Label>
-                      <Input
-                        id="productName"
-                        value={formData.productName}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            productName: e.target.value,
-                          })
-                        }
-                        required
-                      />
-                    </div>
-
-                    <div>
-                      <Label htmlFor="productId">Product ID</Label>
-                      <Input
-                        id="productId"
-                        value={formData.productId}
-                        onChange={(e) =>
-                          setFormData({
-                            ...formData,
-                            productId: e.target.value,
-                          })
-                        }
-                        required
-                      />
-                    </div>
-                  </div>
-
                   <div>
-                    <Label htmlFor="category">Category</Label>
+                    <Label htmlFor="productSelect">Select Product</Label>
                     <select
-                      id="category"
-                      value={formData.category}
-                      onChange={(e) =>
-                        setFormData({ ...formData, category: e.target.value })
-                      }
+                      id="productSelect"
+                      value={formData.selectedProductDbId || ""}
+                      onChange={(e) => {
+                        const selectedProduct = products?.find(
+                          (p) => p.id == e.target.value, // Use == to handle string/number comparison
+                        );
+                        if (selectedProduct) {
+                          setFormData({
+                            ...formData,
+                            selectedProductDbId: selectedProduct.id.toString(), // Store DB ID for dropdown
+                            productId: selectedProduct.id.toString(), // Send database ID to API
+                            productName:
+                              selectedProduct.productName ||
+                              selectedProduct.name,
+                            category: selectedProduct.category,
+                            unitPrice:
+                              selectedProduct.price ||
+                              selectedProduct.unit_price,
+                          });
+                        } else {
+                          // Clear fields if no product selected
+                          setFormData({
+                            ...formData,
+                            selectedProductDbId: "",
+                            productId: "",
+                            productName: "",
+                            category: "",
+                            unitPrice: "",
+                          });
+                        }
+                      }}
                       className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                       required
+                      disabled={!formData.storeId}
                     >
-                      <option value="">Select category</option>
-                      <option value="Fruits & Vegetables">
-                        Fruits & Vegetables
+                      <option value="">
+                        {!formData.storeId
+                          ? "Select a store first"
+                          : "Select product"}
                       </option>
-                      <option value="Dairy">Dairy</option>
-                      <option value="Bakery">Bakery</option>
-                      <option value="Meat & Poultry">Meat & Poultry</option>
-                      <option value="Seafood">Seafood</option>
-                      <option value="Beverages">Beverages</option>
-                      <option value="Snacks">Snacks</option>
+                      {products?.map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.productName} (ID: {product.productId}) -
+                          Stock: {product.stock}
+                        </option>
+                      ))}
                     </select>
+                    {!formData.storeId && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Please select a store to see available products
+                      </p>
+                    )}
                   </div>
+
+                  {/* Auto-filled Product Details */}
+                  {formData.selectedProductDbId && formData.productName && (
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          Product Name
+                        </Label>
+                        <p className="text-sm font-medium">
+                          {formData.productName}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">
+                          Category
+                        </Label>
+                        <p className="text-sm">{formData.category}</p>
+                      </div>
+                    </div>
+                  )}
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>
@@ -988,10 +1010,15 @@ export default function Transactions() {
                         placeholder="Use negative for adjustments"
                         required
                       />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Positive for sales/restocks, negative for adjustments
+                      </p>
                     </div>
 
                     <div>
-                      <Label htmlFor="unitPrice">Unit Price</Label>
+                      <Label htmlFor="unitPrice">
+                        Unit Price (Auto-filled)
+                      </Label>
                       <Input
                         id="unitPrice"
                         type="number"
@@ -1003,8 +1030,15 @@ export default function Transactions() {
                             unitPrice: e.target.value,
                           })
                         }
+                        className="bg-muted/50"
+                        disabled={!formData.selectedProductDbId}
                         required
                       />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formData.selectedProductDbId
+                          ? "From selected product"
+                          : "Select a product first"}
+                      </p>
                     </div>
                   </div>
 

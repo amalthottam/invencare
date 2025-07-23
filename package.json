@@ -21,6 +21,7 @@
   },
   "dependencies": {
     "@aws-amplify/ui-react": "^6.11.2",
+<<<<<<< HEAD
     "@aws-sdk/client-cognito-identity-provider": "^3.844.0",
     "@aws-sdk/client-lambda": "^3.844.0",
     "@aws-sdk/client-sagemaker-runtime": "^3.844.0",
@@ -29,10 +30,21 @@
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "jwt-decode": "^4.0.0",
+=======
+    "@aws-sdk/client-lambda": "^3.844.0",
+    "aws-amplify": "^6.15.3",
+    "cors": "^2.8.5",
+    "express": "^4.18.2",
+    "mysql2": "^3.14.2",
+>>>>>>> origin/main
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-router-dom": "^6.26.2",
     "serverless-http": "^3.2.0",
+<<<<<<< HEAD
+=======
+    "sqlite3": "^5.1.7",
+>>>>>>> origin/main
     "tailwindcss": "^3.4.11",
     "three": "^0.176.0",
     "zod": "^3.23.8"

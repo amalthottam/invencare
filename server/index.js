@@ -1,47 +1,92 @@
 import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo.js";
+import {
+  handleInventoryAnalytics,
+  handleTransactionAnalytics,
+  handleAutoReorder,
+  handleTransactionProcessor,
+  handleLambdaHealthCheck,
+} from "./routes/lambda-integration.js";
+import {
+  getTransactions,
+  getTransactionSummary,
+  createTransaction,
+  getStores as getStoresFromTransactions,
+  getProducts,
+} from "./routes/transactions.js";
+import {
+  getTransactions as getTransactionsWorking,
+  getTransactionSummary as getTransactionSummaryWorking,
+} from "./routes/transactions-working.js";
+import { testDatabase } from "./routes/test-db.js";
+import { testSimple } from "./routes/test-simple.js";
+import { testParams } from "./routes/test-params.js";
+import {
+  getDemandPredictions,
+  getForecastingDashboard,
+} from "./routes/forecasting.js";
+import {
+  getProductPerformance,
+  getDemandForecast,
+  getReorderRecommendations,
+  getAnalyticsDashboard,
+  getProductSalesTrends,
+  initializeAnalytics,
+  generateStoreAnalytics,
+} from "./routes/productAnalytics.js";
+import { ProductAnalyticsService } from "./services/productAnalytics.js";
+import {
+  getTopSellingCategories,
+  getDashboardAnalytics,
+  getStores,
+  getLowStockItems,
+  getRecentTransactions,
+} from "./routes/dashboard.js";
+import { initializeDatabase, seedSampleData, query } from "./db/sqlite.js";
+import { cleanupDatabase } from "./db/cleanup.js";
 
 // AWS Lambda Integration
 // import serverless from 'serverless-http';
 
 // AWS RDS Integration
-// import mysql from 'mysql2/promise';
-// import { RDSClient, DescribeDBInstancesCommand } from '@aws-sdk/client-rds';
-//
+import mysql from "mysql2/promise";
+
 // RDS Connection Configuration
-// const dbConfig = {
-//   host: process.env.RDS_HOSTNAME || 'your-rds-endpoint.region.rds.amazonaws.com',
-//   user: process.env.RDS_USERNAME || 'admin',
-//   password: process.env.RDS_PASSWORD || 'your-password',
-//   database: process.env.RDS_DB_NAME || 'invencare',
-//   port: process.env.RDS_PORT || 3306,
-//   ssl: {
-//     rejectUnauthorized: false
-//   }
-// };
-//
+const dbConfig = {
+  host:
+    process.env.RDS_HOSTNAME ||
+    "invencaredb.cihe2wg8etco.us-east-1.rds.amazonaws.com",
+  user: process.env.RDS_USERNAME || "admin",
+  password: process.env.RDS_PASSWORD || "InvenCare123",
+  database: process.env.RDS_DB_NAME || "invencare",
+  port: process.env.RDS_PORT || 3306,
+  ssl: {
+    rejectUnauthorized: false,
+  },
+};
+
 // Create RDS connection pool
-// const pool = mysql.createPool({
-//   ...dbConfig,
-//   waitForConnections: true,
-//   connectionLimit: 10,
-//   queueLimit: 0
-// });
+const pool = mysql.createPool({
+  ...dbConfig,
+  waitForConnections: true,
+  connectionLimit: 10,
+  queueLimit: 0,
+});
 //
 // RDS Health Check Function
-// const checkRDSConnection = async () => {
-//   try {
-//     const connection = await pool.getConnection();
-//     await connection.ping();
-//     connection.release();
-//     console.log('RDS connection successful');
-//     return true;
-//   } catch (error) {
-//     console.error('RDS connection failed:', error);
-//     return false;
-//   }
-// };
+const checkRDSConnection = async () => {
+  try {
+    const connection = await pool.getConnection();
+    await connection.ping();
+    connection.release();
+    console.log("RDS connection successful");
+    return true;
+  } catch (error) {
+    console.error("RDS connection failed:", error);
+    return false;
+  }
+};
 
 export function createServer() {
   const app = express();
@@ -51,16 +96,26 @@ export function createServer() {
   app.use(express.json());
   app.use(express.urlencoded({ extended: true }));
 
+  // Initialize local database on startup
+  initializeDatabase().then(async (success) => {
+    if (success) {
+      await seedSampleData();
+      // Initialize product analytics tables
+      await ProductAnalyticsService.initializeTables();
+      console.log("🚀 Local database ready");
+    }
+  });
+
   // AWS RDS Database middleware
-  // app.use(async (req, res, next) => {
-  //   try {
-  //     req.db = pool;
-  //     next();
-  //   } catch (error) {
-  //     console.error('Database middleware error:', error);
-  //     res.status(500).json({ error: 'Database connection failed' });
-  //   }
-  // });
+  app.use(async (req, res, next) => {
+    try {
+      req.db = pool;
+      next();
+    } catch (error) {
+      console.error("Database middleware error:", error);
+      res.status(500).json({ error: "Database connection failed" });
+    }
+  });
 
   // Example API routes
   app.get("/api/ping", (_req, res) => {
@@ -68,105 +123,753 @@ export function createServer() {
   });
 
   // AWS RDS Health Check endpoint
-  // app.get("/api/health", async (req, res) => {
-  //   try {
-  //     const dbHealthy = await checkRDSConnection();
-  //     res.json({
-  //       status: 'ok',
-  //       database: dbHealthy ? 'connected' : 'disconnected',
-  //       timestamp: new Date().toISOString()
-  //     });
-  //   } catch (error) {
-  //     res.status(500).json({
-  //       status: 'error',
-  //       error: error.message
-  //     });
-  //   }
-  // });
+  app.get("/api/health", async (req, res) => {
+    try {
+      const dbHealthy = await checkRDSConnection();
+      res.json({
+        status: "ok",
+        database: dbHealthy ? "connected" : "disconnected",
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        error: error.message,
+      });
+    }
+  });
 
   // AWS RDS Product Management endpoints
-  // app.get("/api/products", async (req, res) => {
-  //   try {
-  //     const [rows] = await req.db.execute(
-  //       'SELECT * FROM products ORDER BY created_at DESC'
-  //     );
-  //     res.json({ products: rows });
-  //   } catch (error) {
-  //     console.error('Products fetch error:', error);
-  //     res.status(500).json({ error: 'Failed to fetch products' });
-  //   }
-  // });
-  //
-  // app.post("/api/products", async (req, res) => {
-  //   try {
-  //     const { name, description, price, quantity, category } = req.body;
-  //     const [result] = await req.db.execute(
-  //       'INSERT INTO products (name, description, price, quantity, category) VALUES (?, ?, ?, ?, ?)',
-  //       [name, description, price, quantity, category]
-  //     );
-  //     res.json({
-  //       message: 'Product created successfully',
-  //       productId: result.insertId
-  //     });
-  //   } catch (error) {
-  //     console.error('Product creation error:', error);
-  //     res.status(500).json({ error: 'Failed to create product' });
-  //   }
-  // });
-  //
-  // app.put("/api/products/:id", async (req, res) => {
-  //   try {
-  //     const { id } = req.params;
-  //     const { name, description, price, quantity, category } = req.body;
-  //     await req.db.execute(
-  //       'UPDATE products SET name=?, description=?, price=?, quantity=?, category=? WHERE id=?',
-  //       [name, description, price, quantity, category, id]
-  //     );
-  //     res.json({ message: 'Product updated successfully' });
-  //   } catch (error) {
-  //     console.error('Product update error:', error);
-  //     res.status(500).json({ error: 'Failed to update product' });
-  //   }
-  // });
-  //
-  // app.delete("/api/products/:id", async (req, res) => {
-  //   try {
-  //     const { id } = req.params;
-  //     await req.db.execute('DELETE FROM products WHERE id=?', [id]);
-  //     res.json({ message: 'Product deleted successfully' });
-  //   } catch (error) {
-  //     console.error('Product deletion error:', error);
-  //     res.status(500).json({ error: 'Failed to delete product' });
-  //   }
-  // });
+  app.get("/api/products", async (req, res) => {
+    try {
+      const [rows] = await req.db.execute(
+        `SELECT
+          p.id,
+          p.name as productName,
+          p.sku as productId,
+          COALESCE(c.name, p.category) as category,
+          p.category_id,
+          p.quantity as stock,
+          p.price,
+          s.name as storeName,
+          p.store_id as storeId,
+          'kg' as unit,
+          CASE
+            WHEN p.quantity = 0 THEN 'Out of Stock'
+            WHEN p.quantity <= p.minimum_stock THEN 'Low Stock'
+            ELSE 'Available'
+          END as status,
+          p.minimum_stock as minimumStock,
+          sup.name as supplier,
+          DATE_FORMAT(p.updated_at, '%Y-%m-%d') as lastUpdated,
+          p.barcode,
+          p.location_in_store as location,
+          p.description,
+          p.maximum_stock as maximumStock
+        FROM products p
+        JOIN stores s ON p.store_id = s.id
+        LEFT JOIN suppliers sup ON p.supplier_id = sup.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.status = 'active'
+        ORDER BY p.updated_at DESC`,
+      );
+      res.json({ products: rows });
+    } catch (error) {
+      console.error("Products fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch products" });
+    }
+  });
+
+  app.get("/api/products/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const [rows] = await req.db.execute(
+        `SELECT
+          p.id,
+          p.name as productName,
+          p.sku as productId,
+          COALESCE(c.name, p.category) as category,
+          p.category_id,
+          p.quantity as stock,
+          p.price,
+          s.name as storeName,
+          p.store_id as storeId,
+          'kg' as unit,
+          CASE
+            WHEN p.quantity = 0 THEN 'Out of Stock'
+            WHEN p.quantity <= p.minimum_stock THEN 'Low Stock'
+            ELSE 'Available'
+          END as status,
+          p.minimum_stock as minimumStock,
+          p.maximum_stock as maximumStock,
+          sup.name as supplier,
+          DATE_FORMAT(p.updated_at, '%Y-%m-%d') as lastUpdated,
+          p.barcode,
+          p.location_in_store as location,
+          p.description,
+          DATE_FORMAT(p.created_at, '%Y-%m-%d') as createdAt
+        FROM products p
+        JOIN stores s ON p.store_id = s.id
+        LEFT JOIN suppliers sup ON p.supplier_id = sup.id
+        LEFT JOIN categories c ON p.category_id = c.id
+        WHERE p.id = ? AND p.status = 'active'`,
+        [id],
+      );
+
+      if (rows.length === 0) {
+        return res.status(404).json({ error: "Product not found" });
+      }
+
+      res.json({ product: rows[0] });
+    } catch (error) {
+      console.error("Product fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch product" });
+    }
+  });
+
+  app.post("/api/products", async (req, res) => {
+    try {
+      const {
+        productName,
+        productId,
+        category_id,
+        storeName,
+        stock,
+        unit,
+        price = 0,
+        description = "",
+      } = req.body;
+
+      // Get store_id from store name
+      const [stores] = await req.db.execute(
+        "SELECT id FROM stores WHERE name = ?",
+        [storeName],
+      );
+
+      if (stores.length === 0) {
+        return res.status(400).json({ error: "Store not found" });
+      }
+
+      const storeId = stores[0].id;
+
+      const [result] = await req.db.execute(
+        "INSERT INTO products (name, sku, category_id, quantity, price, store_id, status, description) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+          productName,
+          productId,
+          category_id,
+          stock,
+          price,
+          storeId,
+          "active",
+          description,
+        ],
+      );
+
+      res.json({
+        message: "Product created successfully",
+        productId: result.insertId,
+      });
+    } catch (error) {
+      console.error("Product creation error:", error);
+      res.status(500).json({ error: "Failed to create product" });
+    }
+  });
+
+  app.put("/api/products/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      const {
+        productName,
+        productId,
+        category_id,
+        stock,
+        price,
+        description,
+        minimumStock,
+        maximumStock,
+      } = req.body;
+
+      await req.db.execute(
+        "UPDATE products SET name=?, sku=?, category_id=?, quantity=?, price=?, description=?, minimum_stock=?, maximum_stock=? WHERE id=?",
+        [
+          productName,
+          productId,
+          category_id,
+          stock,
+          price,
+          description,
+          minimumStock ? parseInt(minimumStock) : null,
+          maximumStock ? parseInt(maximumStock) : null,
+          id,
+        ],
+      );
+      res.json({ message: "Product updated successfully" });
+    } catch (error) {
+      console.error("Product update error:", error);
+      res.status(500).json({ error: "Failed to update product" });
+    }
+  });
+
+  app.delete("/api/products/:id", async (req, res) => {
+    try {
+      const { id } = req.params;
+      await req.db.execute("DELETE FROM products WHERE id=?", [id]);
+      res.json({ message: "Product deleted successfully" });
+    } catch (error) {
+      console.error("Product deletion error:", error);
+      res.status(500).json({ error: "Failed to delete product" });
+    }
+  });
 
   // AWS RDS Inventory Analytics
-  // app.get("/api/analytics/inventory", async (req, res) => {
-  //   try {
-  //     const [lowStockItems] = await req.db.execute(
-  //       'SELECT * FROM products WHERE quantity < 10 ORDER BY quantity ASC'
-  //     );
-  //
-  //     const [totalProducts] = await req.db.execute(
-  //       'SELECT COUNT(*) as total FROM products'
-  //     );
-  //
-  //     const [totalValue] = await req.db.execute(
-  //       'SELECT SUM(price * quantity) as total_value FROM products'
-  //     );
-  //
-  //     res.json({
-  //       lowStockItems,
-  //       totalProducts: totalProducts[0].total,
-  //       totalValue: totalValue[0].total_value || 0
-  //     });
-  //   } catch (error) {
-  //     console.error('Analytics error:', error);
-  //     res.status(500).json({ error: 'Failed to fetch analytics' });
-  //   }
-  // });
+  app.get("/api/analytics/inventory-db", async (req, res) => {
+    try {
+      const [lowStockItems] = await req.db.execute(
+        "SELECT * FROM products WHERE quantity <= minimum_stock ORDER BY quantity ASC",
+      );
+
+      const [totalProducts] = await req.db.execute(
+        'SELECT COUNT(*) as total FROM products WHERE status = "active"',
+      );
+
+      const [totalValue] = await req.db.execute(
+        'SELECT SUM(price * quantity) as total_value FROM products WHERE status = "active"',
+      );
+
+      res.json({
+        lowStockItems,
+        totalProducts: totalProducts[0].total,
+        totalValue: totalValue[0].total_value || 0,
+      });
+    } catch (error) {
+      console.error("Analytics error:", error);
+      res.status(500).json({ error: "Failed to fetch analytics" });
+    }
+  });
 
   app.get("/api/demo", handleDemo);
+
+  // Generate sample AI analytics data
+  app.post("/api/generate-analytics-data", async (req, res) => {
+    try {
+      // 1. Create sample forecasting models
+      const models = [
+        {
+          name: "Seasonal ARIMA Model",
+          type: "arima",
+          endpoint:
+            "arn:aws:sagemaker:us-east-1:123456789012:endpoint/seasonal-arima-v1",
+          accuracy: 0.8547,
+          status: "deployed",
+          store_id: "store_001",
+          category_id: 1,
+        },
+        {
+          name: "LSTM Deep Learning Model",
+          type: "lstm",
+          endpoint:
+            "arn:aws:sagemaker:us-east-1:123456789012:endpoint/lstm-demand-v2",
+          accuracy: 0.9122,
+          status: "deployed",
+          store_id: null,
+          category_id: 6,
+        },
+        {
+          name: "Prophet Trend Model",
+          type: "prophet",
+          endpoint:
+            "arn:aws:sagemaker:us-east-1:123456789012:endpoint/prophet-trend-v1",
+          accuracy: 0.8934,
+          status: "deployed",
+          store_id: "store_002",
+          category_id: 2,
+        },
+      ];
+
+      for (const model of models) {
+        await req.db.execute(
+          `INSERT IGNORE INTO demand_forecasting_models
+           (model_name, model_type, sagemaker_endpoint, model_accuracy, training_status, store_id, category_id)
+           VALUES (?, ?, ?, ?, ?, ?, ?)`,
+          [
+            model.name,
+            model.type,
+            model.endpoint,
+            model.accuracy,
+            model.status,
+            model.store_id,
+            model.category_id,
+          ],
+        );
+      }
+
+      // 2. Generate demand predictions for next 30 days
+      const [products] = await req.db.execute(
+        "SELECT id, store_id FROM products LIMIT 10",
+      );
+      const [modelIds] = await req.db.execute(
+        "SELECT id FROM demand_forecasting_models",
+      );
+
+      for (const product of products) {
+        for (let days = 1; days <= 30; days++) {
+          const predictionDate = new Date();
+          predictionDate.setDate(predictionDate.getDate() + days);
+
+          const basedemand = 20 + Math.random() * 50;
+          const seasonalFactor = 1 + 0.3 * Math.sin((days / 7) * Math.PI);
+          const predictedDemand = Math.round(basedemand * seasonalFactor);
+
+          await req.db.execute(
+            `INSERT IGNORE INTO demand_predictions
+             (product_id, store_id, model_id, prediction_date, predicted_demand,
+              confidence_interval_lower, confidence_interval_upper, factors, lambda_execution_id)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            [
+              product.id,
+              product.store_id,
+              modelIds[Math.floor(Math.random() * modelIds.length)].id,
+              predictionDate.toISOString().split("T")[0],
+              predictedDemand,
+              Math.round(predictedDemand * 0.8),
+              Math.round(predictedDemand * 1.2),
+              JSON.stringify({
+                seasonality: "weekly",
+                weatherImpact: "minimal",
+                promotions: Math.random() > 0.8 ? "active" : "none",
+              }),
+              `lambda-exec-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            ],
+          );
+        }
+      }
+
+      // 3. Generate inventory optimization recommendations
+      for (const product of products) {
+        const currentStock = 50 + Math.random() * 200;
+        const recommendedStock = currentStock + (Math.random() * 40 - 20);
+        const reorderPoint = Math.round(currentStock * 0.3);
+
+        await req.db.execute(
+          `INSERT IGNORE INTO inventory_optimization
+           (product_id, store_id, current_stock, recommended_stock, reorder_point,
+            optimal_order_quantity, safety_stock, stockout_probability, excess_inventory_risk,
+            cost_optimization_score, recommendation_type, reasoning, implementation_priority,
+            estimated_cost_savings, lambda_function_version, analysis_date, expires_at)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+          [
+            product.id,
+            product.store_id,
+            Math.round(currentStock),
+            Math.round(recommendedStock),
+            reorderPoint,
+            Math.round(recommendedStock * 0.6),
+            Math.round(reorderPoint * 0.5),
+            (Math.random() * 0.15).toFixed(2),
+            (Math.random() * 0.25).toFixed(2),
+            (Math.random() * 1000).toFixed(2),
+            recommendedStock > currentStock
+              ? "increase"
+              : recommendedStock < currentStock
+                ? "decrease"
+                : "maintain",
+            JSON.stringify({
+              demandTrend: Math.random() > 0.5 ? "increasing" : "stable",
+              seasonalFactor: "moderate",
+              supplierReliability: "high",
+              storageCost: "low",
+            }),
+            Math.random() > 0.6
+              ? "high"
+              : Math.random() > 0.3
+                ? "medium"
+                : "low",
+            (Math.random() * 500).toFixed(2),
+            "lambda-inv-opt-v1.2",
+            new Date().toISOString().split("T")[0],
+            new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split("T")[0],
+          ],
+        );
+      }
+
+      res.json({
+        message: "AI Analytics sample data generated successfully",
+        modelsCreated: models.length,
+        predictionsGenerated: products.length * 30,
+        optimizationRecommendations: products.length,
+      });
+    } catch (error) {
+      console.error("Analytics data generation error:", error);
+      res.status(500).json({ error: "Failed to generate analytics data" });
+    }
+  });
+
+  // Categories API endpoints
+  app.get("/api/categories", async (req, res) => {
+    try {
+      const [rows] = await req.db.execute(
+        "SELECT id, name, description FROM categories ORDER BY name ASC",
+      );
+      res.json({ categories: rows });
+    } catch (error) {
+      console.error("Categories fetch error:", error);
+      res.status(500).json({ error: "Failed to fetch categories" });
+    }
+  });
+
+  // Database initialization endpoint
+  app.post("/api/init-database", async (req, res) => {
+    try {
+      // Create categories table
+      await req.db.execute(`
+        CREATE TABLE IF NOT EXISTS categories (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          name VARCHAR(100) NOT NULL UNIQUE,
+          description TEXT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          INDEX idx_name (name)
+        )
+      `);
+
+      // Insert default categories
+      const categories = [
+        [
+          "Fruits & Vegetables",
+          "Fresh produce including fruits and vegetables",
+        ],
+        ["Dairy", "Milk, cheese, yogurt and other dairy products"],
+        ["Bakery", "Bread, pastries and baked goods"],
+        ["Meat & Poultry", "Fresh meat and poultry products"],
+        ["Seafood", "Fresh fish and seafood"],
+        ["Beverages", "Drinks including juices, sodas and water"],
+        ["Snacks", "Chips, nuts and snack foods"],
+        ["Grains", "Rice, pasta and grain products"],
+        ["Frozen Foods", "Frozen vegetables, meals and ice cream"],
+        ["Personal Care", "Health and beauty products"],
+      ];
+
+      for (const [name, description] of categories) {
+        await req.db.execute(
+          "INSERT IGNORE INTO categories (name, description) VALUES (?, ?)",
+          [name, description],
+        );
+      }
+
+      // Add category_id column to products table if it doesn't exist
+      try {
+        await req.db.execute(`
+          ALTER TABLE products
+          ADD COLUMN category_id INT,
+          ADD FOREIGN KEY (category_id) REFERENCES categories(id)
+        `);
+      } catch (error) {
+        // Column might already exist, ignore error
+        console.log("Category_id column might already exist:", error.message);
+      }
+
+      // Update existing products to use category_id
+      const categoryMapping = {
+        "Fruits & Vegetables": 1,
+        Dairy: 2,
+        Bakery: 3,
+        "Meat & Poultry": 4,
+        Seafood: 5,
+        Beverages: 6,
+        Snacks: 7,
+        Grains: 8,
+      };
+
+      for (const [categoryName, categoryId] of Object.entries(
+        categoryMapping,
+      )) {
+        await req.db.execute(
+          "UPDATE products SET category_id = ? WHERE category = ?",
+          [categoryId, categoryName],
+        );
+      }
+
+      // Create AI Analytics tables for Lambda and SageMaker integration
+
+      // 1. Demand Forecasting Models table
+      await req.db.execute(`
+        CREATE TABLE IF NOT EXISTS demand_forecasting_models (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          model_name VARCHAR(100) NOT NULL,
+          model_type ENUM('arima', 'lstm', 'prophet', 'linear_regression') NOT NULL,
+          sagemaker_endpoint VARCHAR(255),
+          model_artifacts_s3_path VARCHAR(500),
+          training_data_s3_path VARCHAR(500),
+          model_accuracy DECIMAL(5,4),
+          training_status ENUM('training', 'completed', 'failed', 'deployed') DEFAULT 'training',
+          created_by VARCHAR(255),
+          store_id VARCHAR(50),
+          category_id INT,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+          FOREIGN KEY (store_id) REFERENCES stores(id),
+          FOREIGN KEY (category_id) REFERENCES categories(id),
+          INDEX idx_model_type (model_type),
+          INDEX idx_training_status (training_status),
+          INDEX idx_store_category (store_id, category_id)
+        )
+      `);
+
+      // 2. Demand Predictions table
+      await req.db.execute(`
+        CREATE TABLE IF NOT EXISTS demand_predictions (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          product_id INT NOT NULL,
+          store_id VARCHAR(50) NOT NULL,
+          model_id INT NOT NULL,
+          prediction_date DATE NOT NULL,
+          predicted_demand DECIMAL(10,2) NOT NULL,
+          confidence_interval_lower DECIMAL(10,2),
+          confidence_interval_upper DECIMAL(10,2),
+          actual_demand DECIMAL(10,2) NULL,
+          prediction_accuracy DECIMAL(5,4) NULL,
+          factors JSON,
+          lambda_execution_id VARCHAR(100),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+          FOREIGN KEY (store_id) REFERENCES stores(id),
+          FOREIGN KEY (model_id) REFERENCES demand_forecasting_models(id),
+          INDEX idx_product_date (product_id, prediction_date),
+          INDEX idx_store_date (store_id, prediction_date),
+          INDEX idx_model_execution (model_id, lambda_execution_id),
+          UNIQUE KEY unique_prediction (product_id, store_id, model_id, prediction_date)
+        )
+      `);
+
+      // 3. Market Trends Analysis table
+      await req.db.execute(`
+        CREATE TABLE IF NOT EXISTS market_trends (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          category_id INT NOT NULL,
+          store_id VARCHAR(50),
+          trend_type ENUM('seasonal', 'promotional', 'competitor', 'economic', 'weather') NOT NULL,
+          trend_period ENUM('daily', 'weekly', 'monthly', 'quarterly', 'yearly') NOT NULL,
+          trend_value DECIMAL(10,4) NOT NULL,
+          trend_direction ENUM('increasing', 'decreasing', 'stable') NOT NULL,
+          confidence_score DECIMAL(3,2) NOT NULL,
+          external_factors JSON,
+          analysis_date DATE NOT NULL,
+          sagemaker_job_name VARCHAR(100),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (category_id) REFERENCES categories(id),
+          FOREIGN KEY (store_id) REFERENCES stores(id),
+          INDEX idx_category_date (category_id, analysis_date),
+          INDEX idx_trend_type (trend_type, trend_period),
+          INDEX idx_sagemaker_job (sagemaker_job_name)
+        )
+      `);
+
+      // 4. Customer Behavior Analytics table
+      await req.db.execute(`
+        CREATE TABLE IF NOT EXISTS customer_behavior_analytics (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          customer_segment VARCHAR(50) NOT NULL,
+          store_id VARCHAR(50) NOT NULL,
+          category_id INT NOT NULL,
+          purchase_frequency DECIMAL(5,2),
+          average_basket_size DECIMAL(8,2),
+          price_sensitivity DECIMAL(3,2),
+          seasonal_preference JSON,
+          loyalty_score DECIMAL(3,2),
+          churn_probability DECIMAL(3,2),
+          predicted_ltv DECIMAL(10,2),
+          behavior_drivers JSON,
+          analysis_period_start DATE NOT NULL,
+          analysis_period_end DATE NOT NULL,
+          ml_model_version VARCHAR(50),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (store_id) REFERENCES stores(id),
+          FOREIGN KEY (category_id) REFERENCES categories(id),
+          INDEX idx_segment_store (customer_segment, store_id),
+          INDEX idx_analysis_period (analysis_period_start, analysis_period_end),
+          INDEX idx_loyalty_churn (loyalty_score, churn_probability)
+        )
+      `);
+
+      // 5. Inventory Optimization Recommendations table
+      await req.db.execute(`
+        CREATE TABLE IF NOT EXISTS inventory_optimization (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          product_id INT NOT NULL,
+          store_id VARCHAR(50) NOT NULL,
+          current_stock INT NOT NULL,
+          recommended_stock INT NOT NULL,
+          reorder_point INT NOT NULL,
+          optimal_order_quantity INT NOT NULL,
+          safety_stock INT NOT NULL,
+          stockout_probability DECIMAL(3,2),
+          excess_inventory_risk DECIMAL(3,2),
+          cost_optimization_score DECIMAL(8,2),
+          recommendation_type ENUM('increase', 'decrease', 'maintain', 'discontinue') NOT NULL,
+          reasoning JSON,
+          implementation_priority ENUM('high', 'medium', 'low') NOT NULL,
+          estimated_cost_savings DECIMAL(10,2),
+          lambda_function_version VARCHAR(50),
+          analysis_date DATE NOT NULL,
+          expires_at DATE NOT NULL,
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE,
+          FOREIGN KEY (store_id) REFERENCES stores(id),
+          INDEX idx_product_store (product_id, store_id),
+          INDEX idx_recommendation_type (recommendation_type, implementation_priority),
+          INDEX idx_analysis_expiry (analysis_date, expires_at),
+          INDEX idx_cost_savings (estimated_cost_savings DESC)
+        )
+      `);
+
+      // 6. AI Model Performance Metrics table
+      await req.db.execute(`
+        CREATE TABLE IF NOT EXISTS ai_model_metrics (
+          id INT AUTO_INCREMENT PRIMARY KEY,
+          model_id INT NOT NULL,
+          model_name VARCHAR(100) NOT NULL,
+          metric_type ENUM('accuracy', 'precision', 'recall', 'f1_score', 'mape', 'rmse', 'mae') NOT NULL,
+          metric_value DECIMAL(8,6) NOT NULL,
+          evaluation_dataset VARCHAR(100),
+          evaluation_period_start DATE NOT NULL,
+          evaluation_period_end DATE NOT NULL,
+          sagemaker_training_job VARCHAR(100),
+          hyperparameters JSON,
+          feature_importance JSON,
+          model_drift_score DECIMAL(3,2),
+          retrain_recommended BOOLEAN DEFAULT FALSE,
+          benchmark_comparison DECIMAL(8,6),
+          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+          FOREIGN KEY (model_id) REFERENCES demand_forecasting_models(id),
+          INDEX idx_model_metric (model_id, metric_type),
+          INDEX idx_evaluation_period (evaluation_period_start, evaluation_period_end),
+          INDEX idx_drift_retrain (model_drift_score, retrain_recommended)
+        )
+      `);
+
+      res.json({
+        message: "Database initialized successfully with AI Analytics tables",
+        categoriesCreated: categories.length,
+        aiTablesCreated: 6,
+      });
+    } catch (error) {
+      console.error("Database initialization error:", error);
+      res.status(500).json({ error: "Failed to initialize database" });
+    }
+  });
+
+  // Database test route
+  app.get("/api/test-db", testDatabase);
+  app.get("/api/test-simple", testSimple);
+  app.get("/api/test-params", testParams);
+
+  // Local database transaction routes
+  app.get("/api/transactions", getTransactionsWorking);
+  app.get("/api/transactions/summary", getTransactionSummaryWorking);
+  app.post("/api/transactions", createTransaction);
+  app.get("/api/stores", getStoresFromTransactions);
+  app.get("/api/products", getProducts);
+
+  // Local database forecasting routes
+  app.get("/api/analytics/demand-predictions", getDemandPredictions);
+  app.get("/api/analytics/forecasting-dashboard", getForecastingDashboard);
+
+  // Product Analytics routes
+  app.get("/api/analytics/products/:storeId/dashboard", getAnalyticsDashboard);
+  app.get(
+    "/api/analytics/products/:productId/:storeId/performance",
+    getProductPerformance,
+  );
+  app.get(
+    "/api/analytics/products/:productId/:storeId/forecast",
+    getDemandForecast,
+  );
+  app.get(
+    "/api/analytics/products/:productId/:storeId/trends",
+    getProductSalesTrends,
+  );
+  app.get("/api/analytics/stores/:storeId/reorder", getReorderRecommendations);
+  app.post("/api/analytics/stores/:storeId/generate", generateStoreAnalytics);
+  app.post("/api/analytics/initialize", initializeAnalytics);
+
+  // Dashboard Analytics routes
+  app.get("/api/dashboard/analytics", getDashboardAnalytics);
+  app.get("/api/dashboard/categories", getTopSellingCategories);
+  app.get("/api/dashboard/stores", getStores);
+  app.get("/api/dashboard/low-stock", getLowStockItems);
+  app.get("/api/dashboard/transactions", getRecentTransactions);
+
+  // Database cleanup endpoint
+  app.post("/api/database/cleanup", async (req, res) => {
+    try {
+      const success = await cleanupDatabase();
+      if (success) {
+        res.json({
+          success: true,
+          message: "Database cleanup completed successfully",
+        });
+      } else {
+        res
+          .status(500)
+          .json({ success: false, message: "Database cleanup failed" });
+      }
+    } catch (error) {
+      res.status(500).json({ success: false, message: error.message });
+    }
+  });
+
+  // Debug endpoint for transactions
+  app.get("/api/debug/transactions", async (req, res) => {
+    try {
+      const [transactions] = await query(
+        "SELECT * FROM inventory_transactions ORDER BY created_at DESC LIMIT 10",
+      );
+      const [stores] = await query("SELECT * FROM stores");
+      const [products] = await query("SELECT * FROM products LIMIT 5");
+
+      res.json({
+        success: true,
+        data: {
+          transactions,
+          stores,
+          products,
+          transactionCount: transactions.length,
+          storeCount: stores.length,
+        },
+      });
+    } catch (error) {
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Lambda-powered API routes
+  app.get("/api/analytics/inventory", handleInventoryAnalytics);
+  app.get("/api/analytics/transactions", handleTransactionAnalytics);
+  app.post("/api/reorder/auto", handleAutoReorder);
+  app.post("/api/transactions/process", handleTransactionProcessor);
+  app.get("/api/lambda/health", handleLambdaHealthCheck);
+
+  // Real-time analytics endpoint
+  app.get("/api/analytics/realtime", async (req, res) => {
+    try {
+      const modifiedReq = {
+        ...req,
+        query: { ...req.query, action: "realTimeMetrics" },
+      };
+      await handleTransactionAnalytics(modifiedReq, res);
+    } catch (error) {
+      console.error("Real-time analytics error:", error);
+      res.status(500).json({
+        success: false,
+        error: "Real-time analytics failed",
+        message: error.message,
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
 
   // AWS Lambda Error handling middleware
   // app.use((error, req, res, next) => {
@@ -176,13 +879,6 @@ export function createServer() {
   //     message: process.env.NODE_ENV === 'development' ? error.message : 'Something went wrong'
   //   });
   // });
-
-  const PORT = process.env.PORT || 3000;
-
-  app.listen(PORT, '0.0.0.0', () => {
-    console.log(`InvenCare server running on port ${PORT}`);
-  });
-
 
   return app;
 }
@@ -478,5 +1174,3 @@ export function createServer() {
 // WHERE p.status = 'active'
 // GROUP BY s.id, p.category
 // ORDER BY store_name, inventory_value DESC;
-
-

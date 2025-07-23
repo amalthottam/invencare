@@ -176,51 +176,18 @@ export default function Dashboard() {
     try {
       setIsLoading(true);
 
-      // AWS Lambda Analytics Function Invocation with Store Filtering
-      // const lambdaClient = new LambdaClient({
-      //   region: process.env.REACT_APP_AWS_REGION || 'us-east-1'
-      // });
-      //
-      // const lambdaParams = {
-      //   FunctionName: process.env.REACT_APP_LAMBDA_ANALYTICS_FUNCTION,
-      //   InvocationType: 'RequestResponse',
-      //   Payload: JSON.stringify({
-      //     action: 'getDashboardAnalytics',
-      //     storeId: selectedStore === 'all' ? null : selectedStore, // Filter by specific store or aggregate all
-      //     storeName: selectedStore === 'all' ? null : stores.find(s => s.id === selectedStore)?.name,
-      //     includeStoreBreakdown: selectedStore === 'all', // Include per-store breakdown when viewing all stores
-      //     timeframe: '30days',
-      //     metrics: ['totalProducts', 'revenue', 'lowStockItems', 'inventoryTurnover', 'topCategories'],
-      //     includeTransactions: true, // Include recent transactions for the selected store(s)
-      //     includeLowStockDetails: true // Include detailed low stock items with store context
-      //   })
-      // };
-      //
-      // const command = new InvokeCommand(lambdaParams);
-      // const response = await lambdaClient.send(command);
-      // const responsePayload = JSON.parse(
-      //   new TextDecoder().decode(response.Payload)
-      // );
-      //
-      // // Handle store-specific vs aggregated data
-      // if (selectedStore === 'all') {
-      //   // For "all stores" view, responsePayload should contain:
-      //   // - aggregatedMetrics: combined totals across all stores
-      //   // - storeBreakdown: individual metrics per store
-      //   // - combinedTransactions: recent transactions from all stores with store identifiers
-      //   setAnalyticsData(responsePayload.aggregatedMetrics);
-      // } else {
-      //   // For individual store view, responsePayload contains store-specific data
-      //   setAnalyticsData(responsePayload);
-      // }
-
       // Fetch real dashboard analytics data
       const storeParam =
         selectedStore !== "all" ? `?storeId=${selectedStore}` : "";
+
+      console.log(`Attempting to fetch dashboard data from: /api/dashboard/analytics${storeParam}`);
+      console.log(`Current window.location.origin: ${window.location.origin}`);
+
       const response = await fetch(`/api/dashboard/analytics${storeParam}`);
 
       if (response.ok) {
         const result = await response.json();
+        console.log("Dashboard API response:", result);
         const data = result.data;
         setAnalyticsData({
           totalProducts: data.totalProducts,
@@ -230,10 +197,14 @@ export default function Dashboard() {
           topSellingCategories: data.topSellingCategories,
         });
       } else {
+        console.warn(`Dashboard API failed with status: ${response.status}`);
+        console.log("Falling back to inventory-db endpoint");
+
         // Fallback to basic inventory data if dashboard API fails
         const fallbackResponse = await fetch("/api/analytics/inventory-db");
         if (fallbackResponse.ok) {
           const data = await fallbackResponse.json();
+          console.log("Fallback inventory data:", data);
           setAnalyticsData({
             totalProducts: data.totalProducts,
             lowStockItems: data.lowStockItems.length,
@@ -242,14 +213,24 @@ export default function Dashboard() {
             topSellingCategories: [],
           });
         } else {
+          console.warn(`Fallback API also failed with status: ${fallbackResponse.status}`);
+          console.log("Using mock data as final fallback");
           // Final fallback to mock data
           setAnalyticsData(storeAnalytics[selectedStore]);
         }
       }
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
-      // Set fallback data
-      setAnalyticsData({
+      console.log("Network error details:", {
+        message: error.message,
+        stack: error.stack,
+        origin: window.location.origin,
+        href: window.location.href
+      });
+
+      // Always provide fallback data to ensure the UI still works
+      console.log("Using mock data due to network error");
+      setAnalyticsData(storeAnalytics[selectedStore] || {
         totalProducts: 0,
         lowStockItems: 0,
         topSellingCategories: [],

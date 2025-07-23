@@ -23,6 +23,7 @@ import {
   Building,
 } from "lucide-react";
 import { fetchDashboardAnalytics } from "@/lib/api";
+import { logHealthCheck, testDashboardConnectivity } from "@/lib/health-check";
 
 // AWS Cognito and Lambda Integration
 // import { getCurrentUser, signOut } from 'aws-amplify/auth';

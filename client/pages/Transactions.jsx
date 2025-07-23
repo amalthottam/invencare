@@ -713,10 +713,13 @@ export default function Transactions() {
                         placeholder="Use negative for adjustments"
                         required
                       />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Positive for sales/restocks, negative for adjustments
+                      </p>
                     </div>
 
                     <div>
-                      <Label htmlFor="unitPrice">Unit Price</Label>
+                      <Label htmlFor="unitPrice">Unit Price (Auto-filled)</Label>
                       <Input
                         id="unitPrice"
                         type="number"
@@ -728,9 +731,13 @@ export default function Transactions() {
                             unitPrice: e.target.value,
                           })
                         }
-                        disabled={formData.productId && products?.length > 0}
+                        className="bg-muted/50"
+                        disabled={!formData.productId}
                         required
                       />
+                      <p className="text-xs text-muted-foreground mt-1">
+                        {formData.productId ? "From selected product" : "Select a product first"}
+                      </p>
                     </div>
                   </div>
 

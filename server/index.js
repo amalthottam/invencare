@@ -798,6 +798,9 @@ export function createServer() {
   // Dashboard Analytics routes
   app.get("/api/dashboard/analytics", getDashboardAnalytics);
   app.get("/api/dashboard/categories", getTopSellingCategories);
+  app.get("/api/dashboard/stores", getStores);
+  app.get("/api/dashboard/low-stock", getLowStockItems);
+  app.get("/api/dashboard/transactions", getRecentTransactions);
 
   // Database cleanup endpoint
   app.post("/api/database/cleanup", async (req, res) => {

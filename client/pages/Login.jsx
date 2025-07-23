@@ -48,46 +48,14 @@ export default function Login() {
     setIsLoading(true);
 
     try {
-      // Debug: Check Amplify configuration
-      console.log('🔐 Starting sign in process...');
-      console.log('Email:', formData.email);
-
-      // Validate Cognito setup
-      const setupValidation = await validateCognitoSetup();
-      if (!setupValidation.valid) {
-        throw new Error(`Cognito setup error: ${setupValidation.error}`);
-      }
-
-      // Test Cognito connection
-      const connectionTest = await testCognitoConnection();
-      if (!connectionTest.success) {
-        throw new Error(`Cognito connection failed: ${connectionTest.error}`);
-      }
+      console.log('🔐 Starting sign in process for:', formData.email);
 
       // AWS Cognito Sign In Implementation with Store Access Validation
-      console.log('Attempting signIn...');
+      const { isSignedIn, nextStep } = await signIn({
+        username: formData.email,
+        password: formData.password,
+      });
 
-      // Try simplified sign-in first
-      let signInResult;
-      try {
-        signInResult = await signIn({
-          username: formData.email,
-          password: formData.password
-        });
-      } catch (authError) {
-        console.warn('Standard auth failed, trying with explicit flow type:', authError);
-
-        // Fallback: try with different auth flow
-        signInResult = await signIn({
-          username: formData.email,
-          password: formData.password,
-          options: {
-            authFlowType: 'USER_PASSWORD_AUTH' // Alternative flow
-          }
-        });
-      }
-
-      const { isSignedIn, nextStep } = signInResult;
       console.log('Sign in result:', { isSignedIn, nextStep });
 
       if (isSignedIn) {

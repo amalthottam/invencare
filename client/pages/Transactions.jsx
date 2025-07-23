@@ -297,12 +297,20 @@ export default function Transactions() {
   };
 
   const formatDateTime = (timestamp) => {
-    return new Date(timestamp).toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
+    try {
+      if (!timestamp) return "N/A";
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) return "Invalid Date";
+      return date.toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+    } catch (error) {
+      console.error("Error formatting date:", error);
+      return "N/A";
+    }
   };
 
   if (isLoading && transactions.length === 0) {

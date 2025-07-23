@@ -13,8 +13,8 @@ import {
 import { Package, Eye, EyeOff } from "lucide-react";
 
 // AWS Cognito Authentication
-// import { signIn, signUp, confirmSignUp, resendSignUpCode } from 'aws-amplify/auth';
-// import { toast } from "@/components/ui/use-toast";
+import { signIn, signUp, confirmSignUp, resendSignUpCode, fetchUserAttributes } from 'aws-amplify/auth';
+import { useToast } from "@/components/ui/use-toast";
 
 export default function Login() {
   const navigate = useNavigate();

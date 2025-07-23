@@ -246,71 +246,20 @@ export default function Forecasting() {
             </div>
           </div>
 
-          {/* Filters */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Filter className="h-5 w-5" />
-                Filters & Controls
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                <div>
-                  <label className="block text-sm font-medium mb-1">Time Range</label>
-                  <select
-                    value={selectedTimeframe}
-                    onChange={(e) => setSelectedTimeframe(e.target.value)}
-                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="3">Next 3 days</option>
-                    <option value="7">Next 7 days</option>
-                    <option value="14">Next 14 days</option>
-                    <option value="30">Next 30 days</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Store</label>
-                  <select
-                    value={selectedStore}
-                    onChange={(e) => setSelectedStore(e.target.value)}
-                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="all">All Stores</option>
-                    {stores.map((store) => (
-                      <option key={store.id} value={store.id}>
-                        {store.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-sm font-medium mb-1">Product</label>
-                  <select
-                    value={selectedProduct}
-                    onChange={(e) => setSelectedProduct(e.target.value)}
-                    className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="">All Products</option>
-                    {products.map((product) => (
-                      <option key={product.id} value={product.id}>
-                        {product.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex items-end">
-                  <Button 
-                    onClick={fetchForecastingData}
-                    className="w-full"
-                  >
-                    <Activity className="h-4 w-4 mr-2" />
-                    Apply Filters
-                  </Button>
-                </div>
+          {/* Success Message */}
+          {generateSuccess && (
+            <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg animate-fade-in">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-green-600" />
+                <p className="text-green-700 font-medium">
+                  Forecast generation completed successfully!
+                </p>
               </div>
-            </CardContent>
-          </Card>
+              <p className="text-green-600 text-sm mt-1">
+                New predictions have been generated for the next 30 days. Data will refresh automatically.
+              </p>
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (

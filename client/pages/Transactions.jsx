@@ -256,13 +256,13 @@ export default function Transactions() {
 
   // Load initial data
   useEffect(() => {
-    // Detect if FullStory or other analytics are interfering with fetch
-    const hasAnalyticsInterference = window.FS || window._fs_debug || document.querySelector('script[src*="fullstory"]');
+    // Use improved analytics detection
+    const hasAnalyticsInterference = detectAnalyticsInterference();
 
     if (hasAnalyticsInterference) {
-      console.warn('Analytics interference detected, using fallback data loading strategy');
+      console.warn('Analytics interference detected, using XMLHttpRequest and delayed loading');
       // Use a delay to avoid conflicts with analytics scripts
-      setTimeout(loadInitialData, 500);
+      setTimeout(loadInitialData, 1000);
     } else {
       loadInitialData();
     }

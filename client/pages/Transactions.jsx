@@ -629,7 +629,7 @@ export default function Transactions() {
                     </div>
                   </div>
 
-                  {formData.storeId && products.length > 0 ? (
+                  {formData.storeId && products?.length > 0 ? (
                     <div>
                       <Label htmlFor="productSelect">Select Product</Label>
                       <select

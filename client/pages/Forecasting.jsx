@@ -28,6 +28,7 @@ import {
 
 export default function Forecasting() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [predictions, setPredictions] = useState([]);
   const [loading, setLoading] = useState(true);

@@ -22,6 +22,7 @@ import {
   MapPin,
   Building,
 } from "lucide-react";
+import { fetchDashboardAnalytics } from "@/lib/api";
 
 // AWS Cognito and Lambda Integration
 // import { getCurrentUser, signOut } from 'aws-amplify/auth';

@@ -215,13 +215,19 @@ export default function Login() {
   // AWS Cognito Resend Confirmation Code
   const handleResendCode = async () => {
     try {
-      // await resendSignUpCode({ username: formData.email });
-      // toast({
-      //   title: "Code Sent",
-      //   description: "Confirmation code resent to your email",
-      // });
+      await resendSignUpCode({ username: formData.email });
+      toast({
+        title: "Code Sent",
+        description: "Confirmation code resent to your email",
+        variant: "success",
+      });
     } catch (error) {
       console.error("Resend code error:", error);
+      toast({
+        title: "Error",
+        description: error.message || "Failed to resend code",
+        variant: "destructive",
+      });
     }
   };
 

@@ -529,25 +529,54 @@ export default function Login() {
                 Use your AWS Cognito credentials
               </p>
 
-              {process.env.NODE_ENV === 'development' && (
+              <div className="flex gap-2 mt-2">
+                {process.env.NODE_ENV === 'development' && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={async () => {
+                      const test = await testCognitoConnection();
+                      console.log('Connection test result:', test);
+                      toast({
+                        title: test.success ? "Connection Test Passed" : "Connection Test Failed",
+                        description: test.message || test.error,
+                        variant: test.success ? "success" : "destructive",
+                      });
+                    }}
+                  >
+                    Test Connection
+                  </Button>
+                )}
+
                 <Button
                   type="button"
                   variant="outline"
                   size="sm"
-                  className="mt-2"
                   onClick={async () => {
-                    const test = await testCognitoConnection();
-                    console.log('Connection test result:', test);
-                    toast({
-                      title: test.success ? "Connection Test Passed" : "Connection Test Failed",
-                      description: test.message || test.error,
-                      variant: test.success ? "success" : "destructive",
-                    });
+                    try {
+                      const { signOut } = await import('aws-amplify/auth');
+                      await signOut();
+                      toast({
+                        title: "Signed Out",
+                        description: "Previous session cleared. You can now sign in with different credentials.",
+                        variant: "success",
+                      });
+                      window.location.reload();
+                    } catch (error) {
+                      console.warn('Sign out error:', error);
+                      toast({
+                        title: "Session Cleared",
+                        description: "Previous session cleared.",
+                        variant: "success",
+                      });
+                      window.location.reload();
+                    }
                   }}
                 >
-                  Test Cognito Connection
+                  Clear Session
                 </Button>
-              )}
+              </div>
             </div>
           </CardContent>
         </Card>

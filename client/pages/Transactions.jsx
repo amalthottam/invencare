@@ -657,10 +657,10 @@ export default function Transactions() {
                         if (selectedProduct) {
                           setFormData({
                             ...formData,
-                            productId: selectedProduct.id,
-                            productName: selectedProduct.productName || selectedProduct.name,
+                            productId: selectedProduct.productId, // Use the SKU/productId
+                            productName: selectedProduct.productName,
                             category: selectedProduct.category,
-                            unitPrice: selectedProduct.price || "",
+                            unitPrice: selectedProduct.price,
                           });
                         } else {
                           // Clear fields if no product selected

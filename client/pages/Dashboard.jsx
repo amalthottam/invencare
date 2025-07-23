@@ -74,10 +74,34 @@ export default function Dashboard() {
     }
   }, [selectedStore]);
 
-  // Helper function to get product ID from name in low stock items
-  const getProductIdFromItem = (item) => {
-    // We'll need to fetch products to get the ID, for now navigate to products page with search
-    navigate(`/products?search=${encodeURIComponent(item.name)}`);
+  // Helper function to find and navigate to specific product
+  const navigateToProduct = async (productName) => {
+    try {
+      // First try to find the product by searching
+      const response = await fetch('/api/products');
+      if (response.ok) {
+        const data = await response.json();
+        const product = data.products.find(p =>
+          p.productName.toLowerCase() === productName.toLowerCase() ||
+          p.name?.toLowerCase() === productName.toLowerCase()
+        );
+
+        if (product) {
+          // Navigate directly to the product detail page
+          navigate(`/products/${product.id}`);
+        } else {
+          // Fallback to search in products page
+          navigate(`/products?search=${encodeURIComponent(productName)}`);
+        }
+      } else {
+        // Fallback to search if API fails
+        navigate(`/products?search=${encodeURIComponent(productName)}`);
+      }
+    } catch (error) {
+      console.error('Error finding product:', error);
+      // Fallback to search
+      navigate(`/products?search=${encodeURIComponent(productName)}`);
+    }
   };
 
   const loadStores = async () => {

@@ -898,10 +898,10 @@ export default function Transactions() {
                           setFormData({
                             ...formData,
                             selectedProductDbId: selectedProduct.id.toString(), // Store DB ID for dropdown
-                            productId: selectedProduct.productId, // Use the SKU/productId for API
-                            productName: selectedProduct.productName,
+                            productId: selectedProduct.id.toString(), // Send database ID to API
+                            productName: selectedProduct.productName || selectedProduct.name,
                             category: selectedProduct.category,
-                            unitPrice: selectedProduct.price,
+                            unitPrice: selectedProduct.price || selectedProduct.unit_price,
                           });
                         } else {
                           // Clear fields if no product selected

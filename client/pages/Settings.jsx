@@ -27,6 +27,7 @@ import {
 
 export default function Settings() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [profileData, setProfileData] = useState({
     name: "Demo User",
     email: "demo@invencare.com",

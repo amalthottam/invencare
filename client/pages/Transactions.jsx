@@ -918,11 +918,11 @@ export default function Transactions() {
                           })
                         }
                         className="bg-muted/50"
-                        disabled={!formData.productId}
+                        disabled={!formData.selectedProductDbId}
                         required
                       />
                       <p className="text-xs text-muted-foreground mt-1">
-                        {formData.productId ? "From selected product" : "Select a product first"}
+                        {formData.selectedProductDbId ? "From selected product" : "Select a product first"}
                       </p>
                     </div>
                   </div>

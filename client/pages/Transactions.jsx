@@ -821,7 +821,7 @@ export default function Transactions() {
                     <Label htmlFor="productSelect">Select Product</Label>
                     <select
                       id="productSelect"
-                      value={formData.productId}
+                      value={formData.selectedProductDbId || ""}
                       onChange={(e) => {
                         const selectedProduct = products?.find(
                           (p) => p.id == e.target.value, // Use == to handle string/number comparison
@@ -829,7 +829,8 @@ export default function Transactions() {
                         if (selectedProduct) {
                           setFormData({
                             ...formData,
-                            productId: selectedProduct.productId, // Use the SKU/productId
+                            selectedProductDbId: selectedProduct.id.toString(), // Store DB ID for dropdown
+                            productId: selectedProduct.productId, // Use the SKU/productId for API
                             productName: selectedProduct.productName,
                             category: selectedProduct.category,
                             unitPrice: selectedProduct.price,
@@ -838,6 +839,7 @@ export default function Transactions() {
                           // Clear fields if no product selected
                           setFormData({
                             ...formData,
+                            selectedProductDbId: "",
                             productId: "",
                             productName: "",
                             category: "",

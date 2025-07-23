@@ -55,16 +55,8 @@ export default function Forecasting() {
         setDashboardData(response.data);
       }
 
-      // Fetch demand predictions with filters
-      const params = new URLSearchParams({
-        days: selectedTimeframe,
-        ...(selectedStore !== "all" && { store_id: selectedStore }),
-        ...(selectedProduct && { product_id: selectedProduct }),
-      });
-
-      const predictionsResponse = await fetch(
-        `/api/analytics/demand-predictions?${params}`
-      );
+      // Fetch demand predictions
+      const predictionsResponse = await fetch("/api/analytics/demand-predictions?days=30");
       if (predictionsResponse.ok) {
         const response = await predictionsResponse.json();
         setPredictions(response.data.predictions || []);
@@ -79,39 +71,40 @@ export default function Forecasting() {
     }
   };
 
-  const fetchStores = async () => {
+  const generateForecast = async () => {
     try {
-      const response = await fetch("/api/analytics/forecasting-stores");
-      if (response.ok) {
-        const data = await response.json();
-        setStores(data.data.stores || []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch stores:", err);
-    }
-  };
+      setGenerating(true);
+      setGenerateSuccess(false);
+      setError(null);
 
-  const fetchProducts = async () => {
-    try {
-      const response = await fetch("/api/analytics/forecasting-products");
-      if (response.ok) {
-        const data = await response.json();
-        setProducts(data.data.products || []);
-      }
-    } catch (err) {
-      console.error("Failed to fetch products:", err);
-    }
-  };
+      const response = await fetch(
+        "https://guo98gn0q0.execute-api.us-east-1.amazonaws.com/production/forecast/refresh-predictions",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": "lPACRhgg5y8dqG6OMOUXFNWPpJdH7IP1cdNPRsW7",
+          },
+          body: JSON.stringify({
+            forecasting_days: 30,
+          }),
+        }
+      );
 
-  const fetchCategoryInsights = async () => {
-    try {
-      const response = await fetch("/api/analytics/category-insights");
       if (response.ok) {
-        const data = await response.json();
-        setCategoryInsights(data.data.categories || []);
+        setGenerateSuccess(true);
+        // Refresh the data after successful generation
+        setTimeout(() => {
+          fetchForecastingData();
+        }, 2000);
+      } else {
+        throw new Error(`API call failed with status: ${response.status}`);
       }
     } catch (err) {
-      console.error("Failed to fetch category insights:", err);
+      console.error("Failed to generate forecast:", err);
+      setError("Failed to generate forecast. Please try again.");
+    } finally {
+      setGenerating(false);
     }
   };
 

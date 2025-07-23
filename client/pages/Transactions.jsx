@@ -510,29 +510,23 @@ export default function Transactions() {
               <p className="text-muted-foreground">
                 Track all inventory movements and sales across your stores
               </p>
-              {!isConnected && (
-                <div className="bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded mt-4">
-                  <div className="flex items-center">
-                    <div className="h-2 w-2 bg-orange-500 rounded-full mr-2"></div>
-                    Network connection issues detected. Some features may not work properly.
-                  </div>
-                </div>
-              )}
-
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mt-4 flex justify-between items-center">
-                  <span>{error}</span>
+                <div className="bg-blue-50 border border-blue-200 text-blue-700 px-4 py-3 rounded mt-4 flex justify-between items-center">
+                  <div>
+                    <div className="font-medium mb-1">Demo Mode Active</div>
+                    <div className="text-sm">{error}</div>
+                  </div>
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => {
                       setError(null);
-                      testApiConnectivity().then(() => loadInitialData());
+                      loadInitialData();
                     }}
                     className="ml-4"
                   >
                     <RefreshCw className="h-4 w-4 mr-1" />
-                    Retry
+                    Retry Connection
                   </Button>
                 </div>
               )}

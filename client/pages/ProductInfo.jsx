@@ -148,6 +148,45 @@ export default function ProductInfo() {
     navigate(`/products/${id}`);
   };
 
+  const handlePriceEdit = () => {
+    setTempPrice(product.price);
+    setIsEditingPrice(true);
+  };
+
+  const handlePriceSave = async () => {
+    try {
+      setSaving(true);
+      const response = await fetch(`/api/products/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...formData,
+          price: tempPrice,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Update the product data locally
+      setProduct({ ...product, price: tempPrice });
+      setIsEditingPrice(false);
+    } catch (err) {
+      console.error("Failed to update price:", err);
+      setError("Failed to update price. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handlePriceCancel = () => {
+    setTempPrice("");
+    setIsEditingPrice(false);
+  };
+
   const getStockStatusIcon = (status) => {
     switch (status) {
       case "Available":

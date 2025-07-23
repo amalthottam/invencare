@@ -56,7 +56,7 @@ export default function Forecasting() {
         body: JSON.stringify({
           action: "batch_predict",
           store_id: "store_001", // You can make this dynamic based on user
-          limit: 20
+          limit: 20,
         }),
       });
 
@@ -72,7 +72,7 @@ export default function Forecasting() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          action: "dashboard"
+          action: "dashboard",
         }),
       });
 
@@ -85,16 +85,22 @@ export default function Forecasting() {
           summary: {
             totalModels: 1,
             avgAccuracy: mlResponse.data.prediction_stats?.avg_accuracy || 0.85,
-            totalPredictions: mlResponse.data.prediction_stats?.total_predictions || 0,
-            highPriorityRecommendations: mlResponse.data.urgent_recommendations?.length || 0
+            totalPredictions:
+              mlResponse.data.prediction_stats?.total_predictions || 0,
+            highPriorityRecommendations:
+              mlResponse.data.urgent_recommendations?.length || 0,
           },
-          modelPerformance: [{
-            model_name: "Statistical Forecasting",
-            model_type: "statistical",
-            model_accuracy: mlResponse.data.prediction_stats?.avg_accuracy || 0.85,
-            predictions_count: mlResponse.data.prediction_stats?.total_predictions || 0
-          }],
-          recentPredictions: mlResponse.data.urgent_recommendations || []
+          modelPerformance: [
+            {
+              model_name: "Statistical Forecasting",
+              model_type: "statistical",
+              model_accuracy:
+                mlResponse.data.prediction_stats?.avg_accuracy || 0.85,
+              predictions_count:
+                mlResponse.data.prediction_stats?.total_predictions || 0,
+            },
+          ],
+          recentPredictions: mlResponse.data.urgent_recommendations || [],
         };
 
         setDashboardData(transformedData);
@@ -215,8 +221,10 @@ export default function Forecasting() {
                 <option value="30">Next 30 days</option>
               </select>
               <Button onClick={fetchForecastingData} disabled={loading}>
-                <Activity className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-                {loading ? 'Generating Predictions...' : 'Refresh & Predict'}
+                <Activity
+                  className={`h-4 w-4 mr-2 ${loading ? "animate-spin" : ""}`}
+                />
+                {loading ? "Generating Predictions..." : "Refresh & Predict"}
               </Button>
             </div>
           </div>

@@ -1,6 +1,7 @@
 # Lambda Function Deployment Guide
 
 ## Prerequisites
+
 1. AWS CLI configured with appropriate permissions
 2. Python 3.9 installed locally
 3. Your database credentials
@@ -8,6 +9,7 @@
 ## Step 1: Set Environment Variables
 
 Create a `.env` file with your credentials:
+
 ```bash
 # Database Configuration
 DB_HOST=your-rds-endpoint.amazonaws.com
@@ -96,6 +98,7 @@ aws iam attach-role-policy \
 ### Manual Method:
 
 1. **Create deployment package:**
+
 ```bash
 # Create directory
 mkdir lambda-package
@@ -113,6 +116,7 @@ cd ..
 ```
 
 2. **Deploy function:**
+
 ```bash
 # Get the role ARN
 ROLE_ARN=$(aws iam get-role --role-name lambda-ml-analytics-role --query 'Role.Arn' --output text)
@@ -166,6 +170,7 @@ cat test-output.json
 ## Step 5: Update Express Server Environment
 
 Add to your Express server environment variables:
+
 ```bash
 LAMBDA_ML_ANALYTICS_FUNCTION=invencare-ml-analytics
 AWS_REGION=us-east-1
@@ -176,6 +181,7 @@ AWS_SECRET_ACCESS_KEY=your-secret-key
 ## Step 6: Verify API Endpoints
 
 Once deployed, test these endpoints:
+
 - `GET /api/ml/health` - Health check
 - `POST /api/ml/analytics` - Main ML operations
 - `GET /api/ml/dashboard` - Dashboard data

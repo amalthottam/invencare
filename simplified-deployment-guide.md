@@ -1,6 +1,7 @@
 # 🚀 Simplified ML Predictions - Direct Database Setup
 
 ## ✨ **NEW SIMPLIFIED APPROACH:**
+
 - ❌ **NO S3 required** - Everything uses your database directly
 - ❌ **NO model training** - Uses statistical forecasting algorithms
 - ✅ **Direct stock analysis** - Checks current stock levels
@@ -70,6 +71,7 @@ AWS_REGION=us-east-1
 ## 🧪 **Step 4: Test the Pipeline**
 
 ### Test with a single product:
+
 ```bash
 curl -X POST https://your-lambda-url/2015-03-31/functions/invencare-simple-ml/invocations \
   -H "Content-Type: application/json" \
@@ -81,6 +83,7 @@ curl -X POST https://your-lambda-url/2015-03-31/functions/invencare-simple-ml/in
 ```
 
 ### Test batch predictions:
+
 ```bash
 curl -X POST https://your-lambda-url/2015-03-31/functions/invencare-simple-ml/invocations \
   -H "Content-Type: application/json" \
@@ -94,7 +97,7 @@ curl -X POST https://your-lambda-url/2015-03-31/functions/invencare-simple-ml/in
 ## 📊 **Step 5: What Happens When You Click Refresh**
 
 1. **Stock Analysis** - Gets current stock levels from `products` table
-2. **Sales History** - Fetches recent sales from `inventory_transactions` table  
+2. **Sales History** - Fetches recent sales from `inventory_transactions` table
 3. **Demand Forecasting** - Uses statistical algorithms to predict future demand
 4. **Stock Recommendations** - Calculates reorder points and quantities
 5. **Database Updates** - Stores results in `demand_predictions` and `stock_recommendations` tables
@@ -103,23 +106,27 @@ curl -X POST https://your-lambda-url/2015-03-31/functions/invencare-simple-ml/in
 ## 🎯 **Key Features:**
 
 ### ✅ **Current Stock Monitoring:**
+
 - Identifies low stock and out-of-stock items
 - Calculates stock status (CRITICAL/LOW/NORMAL)
 - Analyzes stock deficits
 
 ### ✅ **Smart Forecasting:**
+
 - Moving averages (7-day, 14-day)
 - Trend analysis with decay
 - Weekly seasonality patterns
 - Confidence intervals
 
 ### ✅ **Automated Recommendations:**
+
 - Reorder point calculations
-- Safety stock recommendations  
+- Safety stock recommendations
 - Lead time considerations
 - Urgency levels (HIGH/MEDIUM/LOW)
 
 ### ✅ **Database Integration:**
+
 - Creates tables automatically if needed
 - Uses existing product and transaction data
 - Stores predictions for frontend display
@@ -128,6 +135,7 @@ curl -X POST https://your-lambda-url/2015-03-31/functions/invencare-simple-ml/in
 ## 📈 **Tables Created:**
 
 ### `demand_predictions`
+
 ```sql
 - product_id, store_id, predictions (JSON)
 - model_accuracy, total_forecast_demand
@@ -135,7 +143,8 @@ curl -X POST https://your-lambda-url/2015-03-31/functions/invencare-simple-ml/in
 - created_at
 ```
 
-### `stock_recommendations`  
+### `stock_recommendations`
+
 ```sql
 - product_id, store_id, current_stock
 - reorder_point, recommended_order_quantity
@@ -160,8 +169,9 @@ curl -X POST https://your-lambda-url/2015-03-31/functions/invencare-simple-ml/in
 - 🔄 **Real-time** - Immediate predictions based on current data
 
 Your forecasting page refresh button will now:
+
 1. ✅ Analyze current stock levels
-2. ✅ Generate demand predictions  
+2. ✅ Generate demand predictions
 3. ✅ Create reorder recommendations
 4. ✅ Store results in database
 5. ✅ Update UI with fresh data

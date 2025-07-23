@@ -45,11 +45,11 @@ export const handleUnifiedMLAnalytics = async (req, res) => {
       product_id,
       store_id,
       forecast_days = 30,
-      model_type = 'lstm',
+      model_type = "lstm",
       days_back = 90,
       include_confidence = true,
-      batch_size = 10
-    } = req.method === 'GET' ? req.query : req.body;
+      batch_size = 10,
+    } = req.method === "GET" ? req.query : req.body;
 
     const userRole = req.headers["x-user-role"] || "employee";
     const userStoreAccess = req.headers["x-user-store-access"]
@@ -63,22 +63,22 @@ export const handleUnifiedMLAnalytics = async (req, res) => {
       forecast_days: parseInt(forecast_days),
       model_type,
       days_back: parseInt(days_back),
-      include_confidence: include_confidence === 'true',
+      include_confidence: include_confidence === "true",
       batch_size: parseInt(batch_size),
       userRole,
       userStoreAccess,
       timestamp: new Date().toISOString(),
-      request_id: `ml-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      request_id: `ml-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     };
 
     // Add additional parameters based on action
-    if (action === 'batch_predict') {
+    if (action === "batch_predict") {
       payload.store_ids = req.body.store_ids || [store_id];
       payload.product_ids = req.body.product_ids || [];
     }
 
-    if (action === 'training_data') {
-      payload.export_format = req.body.export_format || 'json';
+    if (action === "training_data") {
+      payload.export_format = req.body.export_format || "json";
       payload.include_features = req.body.include_features || true;
     }
 
@@ -90,19 +90,19 @@ export const handleUnifiedMLAnalytics = async (req, res) => {
     // Add action-specific response formatting
     let responseMessage = "ML analytics processed successfully";
     switch (action) {
-      case 'forecast':
+      case "forecast":
         responseMessage = `Demand forecast generated for ${product_id}`;
         break;
-      case 'classify':
+      case "classify":
         responseMessage = `Product classification completed for ${product_id}`;
         break;
-      case 'batch_predict':
+      case "batch_predict":
         responseMessage = `Batch predictions completed for ${result.total_products || 0} products`;
         break;
-      case 'training_data':
+      case "training_data":
         responseMessage = `Training data extracted: ${result.records_count || 0} records`;
         break;
-      case 'model_health':
+      case "model_health":
         responseMessage = "Model health check completed";
         break;
     }
@@ -119,19 +119,19 @@ export const handleGetMLPredictions = async (req, res) => {
   try {
     const { product_id, store_id } = req.params;
     const {
-      prediction_type = 'all', // 'forecast', 'classification', 'all'
+      prediction_type = "all", // 'forecast', 'classification', 'all'
       limit = 5,
-      days_back = 30
+      days_back = 30,
     } = req.query;
 
     const payload = {
-      action: 'get_predictions',
+      action: "get_predictions",
       product_id,
       store_id,
       prediction_type,
       limit: parseInt(limit),
       days_back: parseInt(days_back),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     const result = await invokeLambda(
@@ -139,9 +139,9 @@ export const handleGetMLPredictions = async (req, res) => {
       payload,
     );
 
-    res.status(200).json(
-      createApiResponse(result, "ML predictions retrieved successfully")
-    );
+    res
+      .status(200)
+      .json(createApiResponse(result, "ML predictions retrieved successfully"));
   } catch (error) {
     console.error("Get ML Predictions error:", error);
     res.status(500).json(createApiError(error));
@@ -153,9 +153,9 @@ export const handleMLDashboard = async (req, res) => {
   try {
     const {
       store_id,
-      time_period = '30days',
+      time_period = "30days",
       include_trends = true,
-      include_accuracy = true
+      include_accuracy = true,
     } = req.query;
 
     const userRole = req.headers["x-user-role"] || "employee";
@@ -164,14 +164,14 @@ export const handleMLDashboard = async (req, res) => {
       : [];
 
     const payload = {
-      action: 'dashboard',
+      action: "dashboard",
       store_id,
       time_period,
-      include_trends: include_trends === 'true',
-      include_accuracy: include_accuracy === 'true',
+      include_trends: include_trends === "true",
+      include_accuracy: include_accuracy === "true",
       userRole,
       userStoreAccess,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     const result = await invokeLambda(
@@ -179,9 +179,11 @@ export const handleMLDashboard = async (req, res) => {
       payload,
     );
 
-    res.status(200).json(
-      createApiResponse(result, "ML dashboard data retrieved successfully")
-    );
+    res
+      .status(200)
+      .json(
+        createApiResponse(result, "ML dashboard data retrieved successfully"),
+      );
   } catch (error) {
     console.error("ML Dashboard error:", error);
     res.status(500).json(createApiError(error));
@@ -195,26 +197,30 @@ export const handleModelManagement = async (req, res) => {
       action, // 'deploy', 'update', 'delete', 'status', 'retrain'
       model_type,
       endpoint_name,
-      training_config
+      training_config,
     } = req.body;
 
     const userRole = req.headers["x-user-role"] || "employee";
-    
+
     // Only allow admin/manager roles for model management
-    if (!['admin', 'manager'].includes(userRole)) {
-      return res.status(403).json(
-        createApiError(new Error("Insufficient permissions for model management"))
-      );
+    if (!["admin", "manager"].includes(userRole)) {
+      return res
+        .status(403)
+        .json(
+          createApiError(
+            new Error("Insufficient permissions for model management"),
+          ),
+        );
     }
 
     const payload = {
-      action: 'model_management',
+      action: "model_management",
       management_action: action,
       model_type,
       endpoint_name,
       training_config,
       userRole,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     const result = await invokeLambda(
@@ -222,9 +228,11 @@ export const handleModelManagement = async (req, res) => {
       payload,
     );
 
-    res.status(200).json(
-      createApiResponse(result, `Model ${action} completed successfully`)
-    );
+    res
+      .status(200)
+      .json(
+        createApiResponse(result, `Model ${action} completed successfully`),
+      );
   } catch (error) {
     console.error("Model Management error:", error);
     res.status(500).json(createApiError(error));
@@ -235,11 +243,11 @@ export const handleModelManagement = async (req, res) => {
 export const handleMLHealthCheck = async (req, res) => {
   try {
     const payload = {
-      action: 'health_check',
+      action: "health_check",
       check_endpoints: true,
       check_database: true,
       check_models: true,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
     };
 
     const result = await invokeLambda(
@@ -256,9 +264,9 @@ export const handleMLHealthCheck = async (req, res) => {
       timestamp: new Date().toISOString(),
     };
 
-    res.status(200).json(
-      createApiResponse(healthStatus, "ML health check completed")
-    );
+    res
+      .status(200)
+      .json(createApiResponse(healthStatus, "ML health check completed"));
   } catch (error) {
     console.error("ML Health check error:", error);
     res.status(500).json(createApiError(error));
@@ -271,26 +279,28 @@ export const handleRealTimePrediction = async (req, res) => {
     const {
       product_id,
       store_id,
-      model_type = 'lstm',
+      model_type = "lstm",
       forecast_days = 7,
-      priority = 'high' // high, normal, low
+      priority = "high", // high, normal, low
     } = req.body;
 
     if (!product_id || !store_id) {
-      return res.status(400).json(
-        createApiError(new Error("product_id and store_id are required"))
-      );
+      return res
+        .status(400)
+        .json(
+          createApiError(new Error("product_id and store_id are required")),
+        );
     }
 
     const payload = {
-      action: 'realtime_predict',
+      action: "realtime_predict",
       product_id,
       store_id,
       model_type,
       forecast_days: parseInt(forecast_days),
       priority,
       timestamp: new Date().toISOString(),
-      request_id: `rt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+      request_id: `rt-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
     };
 
     const result = await invokeLambda(
@@ -298,9 +308,9 @@ export const handleRealTimePrediction = async (req, res) => {
       payload,
     );
 
-    res.status(200).json(
-      createApiResponse(result, "Real-time prediction completed")
-    );
+    res
+      .status(200)
+      .json(createApiResponse(result, "Real-time prediction completed"));
   } catch (error) {
     console.error("Real-time Prediction error:", error);
     res.status(500).json(createApiError(error));

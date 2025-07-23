@@ -121,15 +121,8 @@ export default function Transactions() {
 
   // Load initial data
   useEffect(() => {
-    // Check authentication
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-
     loadInitialData();
-  }, [navigate]);
+  }, []);
 
   const loadInitialData = async () => {
     try {

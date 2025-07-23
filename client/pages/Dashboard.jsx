@@ -132,49 +132,60 @@ export default function Dashboard() {
   const checkAuthentication = async () => {
     try {
       // AWS Cognito Authentication Check with Store-Based Access Control
-      // const currentUser = await getCurrentUser();
-      // const userAttributes = await fetchUserAttributes();
-      //
-      // // Check user's store access permissions
-      // const userStoreAccess = userAttributes['custom:store_access']; // e.g., "all" or "store_001,store_002"
-      // const userRole = userAttributes['custom:role']; // e.g., "admin", "manager", "employee"
-      // const userPrimaryStore = userAttributes['custom:primary_store']; // User's main store
-      //
-      // // Set default store based on user permissions
-      // let defaultStore = "all";
-      // if (userRole === "employee" && userPrimaryStore) {
-      //   // Employees typically see only their assigned store
-      //   defaultStore = userPrimaryStore;
-      // } else if (userRole === "manager" && userStoreAccess !== "all") {
-      //   // Managers might have access to specific stores
-      //   const accessibleStores = userStoreAccess.split(',');
-      //   defaultStore = accessibleStores.length === 1 ? accessibleStores[0] : "all";
-      // }
-      // // Admins get "all" by default
-      //
-      // setSelectedStore(defaultStore);
-      // setUser(currentUser);
+      const { getCurrentUser, fetchUserAttributes } = await import('aws-amplify/auth');
+      const currentUser = await getCurrentUser();
+      const userAttributes = await fetchUserAttributes();
 
-      // Demo authentication check (remove when implementing Cognito)
-      const isAuthenticated = localStorage.getItem("isAuthenticated");
-      if (!isAuthenticated) {
+      console.log('Dashboard - Current user:', currentUser);
+      console.log('Dashboard - User attributes:', userAttributes);
+
+      // Check user's store access permissions
+      const userStoreAccess = userAttributes['custom:store_access']; // e.g., "all" or "store_001,store_002"
+      const userRole = userAttributes['custom:role']; // e.g., "admin", "manager", "employee"
+      const userStatus = userAttributes['custom:status']; // Check if account is active
+
+      // Validate user status
+      if (userStatus === 'pending') {
+        const { signOut } = await import('aws-amplify/auth');
+        await signOut();
         navigate("/login");
         return;
       }
 
-      // Demo user data with store access control (remove when implementing Cognito)
+      if (userStatus === 'inactive' || userStatus === 'suspended') {
+        const { signOut } = await import('aws-amplify/auth');
+        await signOut();
+        navigate("/login");
+        return;
+      }
+
+      // Set default store based on user permissions
+      let defaultStore = "all";
+      if (userRole === "employee" && userStoreAccess && userStoreAccess !== "all") {
+        // Employees typically see only their assigned store(s)
+        const accessibleStores = userStoreAccess.split(',');
+        defaultStore = accessibleStores.length === 1 ? accessibleStores[0] : "all";
+      } else if (userRole === "manager" && userStoreAccess !== "all") {
+        // Managers might have access to specific stores
+        const accessibleStores = userStoreAccess.split(',');
+        defaultStore = accessibleStores.length === 1 ? accessibleStores[0] : "all";
+      }
+      // Admins get "all" by default
+
+      setSelectedStore(defaultStore);
       setUser({
-        username: "demo@invencare.com",
+        username: currentUser.username,
         attributes: {
-          given_name: "Demo",
-          family_name: "User",
-          "custom:role": "manager", // Role determines default store access
-          "custom:primary_store": "store_001", // User's main store assignment
-          "custom:store_access": "all", // Stores user can access: "all" or "store_001,store_002"
+          given_name: userAttributes.given_name || userAttributes.name || "User",
+          family_name: userAttributes.family_name || "",
+          "custom:role": userRole,
+          "custom:store_access": userStoreAccess,
         },
       });
     } catch (error) {
       console.log("Authentication check failed:", error);
+      // Remove demo authentication fallback
+      localStorage.removeItem("isAuthenticated");
       navigate("/login");
     }
   };

@@ -56,11 +56,28 @@ export default function Products() {
   useEffect(() => {
     console.log("Products page - User authenticated:", user?.username);
 
+    // Initialize filters from URL parameters
+    const searchParam = searchParams.get('search');
+    const categoryParam = searchParams.get('category');
+    const filterParam = searchParams.get('filter');
+
+    if (searchParam) {
+      setSearchTerm(searchParam);
+    }
+
+    if (categoryParam) {
+      setCategoryFilter(categoryParam);
+    }
+
+    if (filterParam === 'lowstock') {
+      setStatusFilter('Low Stock');
+    }
+
     // Fetch products, categories, and stores from API
     fetchProducts();
     fetchCategories();
     fetchStores();
-  }, []);
+  }, [searchParams]);
 
   const fetchCategories = async () => {
     try {

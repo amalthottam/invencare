@@ -161,12 +161,12 @@ export default function Transactions() {
         api.getTransactionSummary(params),
       ]);
 
-      setTransactions(transactionsResponse.data.transactions);
+      setTransactions(transactionsResponse?.data?.transactions || []);
       setSummaryStats({
-        totalTransactions: summaryResponse.data.total_transactions || 0,
-        totalSales: summaryResponse.data.total_sales || 0,
-        totalRestocks: summaryResponse.data.total_restocks || 0,
-        totalTransfers: summaryResponse.data.total_transfers || 0,
+        totalTransactions: summaryResponse?.data?.total_transactions || 0,
+        totalSales: summaryResponse?.data?.total_sales || 0,
+        totalRestocks: summaryResponse?.data?.total_restocks || 0,
+        totalTransfers: summaryResponse?.data?.total_transfers || 0,
       });
     } catch (err) {
       console.error("Failed to load transactions:", err);

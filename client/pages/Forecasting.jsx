@@ -353,7 +353,7 @@ export default function Forecasting() {
                   </Badge>
                 </CardTitle>
                 <CardDescription>
-                  AI-generated demand forecasts for the next {selectedTimeframe} days
+                  AI-generated demand forecasts for the next 30 days
                 </CardDescription>
               </CardHeader>
               <CardContent>

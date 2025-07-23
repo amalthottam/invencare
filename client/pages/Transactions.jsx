@@ -30,46 +30,63 @@ import {
   Filter,
 } from "lucide-react";
 
-// Improved API helper functions with better error handling
+// Simple, reliable API helper using XMLHttpRequest as fallback
 const makeApiRequest = async (url, options = {}) => {
+  console.log(`Making API request to: ${url}`);
+
+  // First try with fetch, then fallback to XMLHttpRequest
   try {
-    console.log(`Making API request to: ${url}`);
-
-    // Add timeout to prevent hanging requests
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
-
     const response = await fetch(url, {
       headers: {
         "Content-Type": "application/json",
         ...options.headers,
       },
-      signal: controller.signal,
       ...options,
     });
 
-    clearTimeout(timeoutId);
-
     if (!response.ok) {
-      const errorText = await response.text().catch(() => 'Unknown error');
-      console.error(`HTTP ${response.status} for ${url}: ${errorText}`);
-      throw new Error(`HTTP ${response.status}: ${errorText}`);
+      throw new Error(`HTTP ${response.status}`);
     }
 
-    const data = await response.json();
-    console.log(`API request successful for ${url}:`, data);
-    return data;
-  } catch (error) {
-    if (error.name === 'AbortError') {
-      console.error(`API request timeout for ${url}`);
-      throw new Error(`Request timeout - server took too long to respond`);
-    } else if (error instanceof TypeError && error.message === 'Failed to fetch') {
-      console.error(`Network error for ${url}:`, error);
-      throw new Error(`Network error - please check your internet connection`);
-    } else {
-      console.error(`API request failed for ${url}:`, error);
-      throw error;
-    }
+    return await response.json();
+  } catch (fetchError) {
+    console.warn(`Fetch failed for ${url}, trying XMLHttpRequest fallback:`, fetchError.message);
+
+    // Fallback to XMLHttpRequest
+    return new Promise((resolve, reject) => {
+      const xhr = new XMLHttpRequest();
+      xhr.open(options.method || 'GET', url);
+      xhr.setRequestHeader('Content-Type', 'application/json');
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const data = JSON.parse(xhr.responseText);
+            console.log(`XMLHttpRequest successful for ${url}`);
+            resolve(data);
+          } catch (parseError) {
+            reject(new Error(`Invalid JSON response: ${parseError.message}`));
+          }
+        } else {
+          reject(new Error(`HTTP ${xhr.status}: ${xhr.statusText}`));
+        }
+      };
+
+      xhr.onerror = () => {
+        reject(new Error(`Network error - unable to connect to server`));
+      };
+
+      xhr.timeout = 10000; // 10 second timeout
+      xhr.ontimeout = () => {
+        reject(new Error(`Request timeout - server took too long to respond`));
+      };
+
+      if (options.body) {
+        xhr.send(options.body);
+      } else {
+        xhr.send();
+      }
+    });
   }
 };
 

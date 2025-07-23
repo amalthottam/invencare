@@ -396,7 +396,7 @@ export default function Login() {
               )}
 
               <p className="text-xs text-muted-foreground mt-2">
-                Demo credentials: Use any email and password
+                Use your AWS Cognito credentials
               </p>
             </div>
           </CardContent>

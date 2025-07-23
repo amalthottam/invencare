@@ -40,22 +40,22 @@ export default function Settings() {
 
   useEffect(() => {
     // Profile data is now populated from Cognito user context
-    if (user && user.attributes) {
-      console.log("User attributes:", user.attributes);
+    if (user && userAttributes) {
+      console.log("User attributes:", userAttributes);
       setProfileData({
         name:
-          user.attributes?.name ||
-          (user.attributes?.given_name
-            ? `${user.attributes.given_name} ${user.attributes.family_name || ""}`.trim()
+          userAttributes?.name ||
+          (userAttributes?.given_name
+            ? `${userAttributes.given_name} ${userAttributes.family_name || ""}`.trim()
             : "User"),
-        email: user.attributes?.email || user.username,
-        role: user.attributes?.["custom:role"] || "employee",
-        storeAccess: user.attributes?.["custom:store_access"] || "none",
-        userId: user.attributes?.sub || user.username,
-        emailVerified: user.attributes?.email_verified === "true",
+        email: userAttributes?.email || user.username,
+        role: userAttributes?.["custom:role"] || "employee",
+        storeAccess: userAttributes?.["custom:store_access"] || "none",
+        userId: userAttributes?.sub || user.username,
+        emailVerified: userAttributes?.email_verified === "true",
       });
     }
-  }, [user]);
+  }, [user, userAttributes]);
 
   const handleLogout = async () => {
     await logout();

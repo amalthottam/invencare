@@ -223,7 +223,7 @@ export default function Forecasting() {
               <Button
                 onClick={generateForecast}
                 disabled={generating}
-                className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 animate-pulse"
+                className="bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
                 size="lg"
               >
                 {generating ? (

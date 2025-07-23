@@ -636,67 +636,64 @@ export default function Transactions() {
                     </div>
                   </div>
 
-                  {formData.storeId && products?.length > 0 ? (
-                    <div>
-                      <Label htmlFor="productSelect">Select Product</Label>
-                      <select
-                        id="productSelect"
-                        value={formData.productId}
-                        onChange={(e) => {
-                          const selectedProduct = products?.find(
-                            (p) => p.id === e.target.value,
-                          );
-                          if (selectedProduct) {
-                            setFormData({
-                              ...formData,
-                              productId: selectedProduct.id,
-                              productName: selectedProduct.name,
-                              category: selectedProduct.category,
-                              unitPrice: selectedProduct.unit_price || "",
-                            });
-                          }
-                        }}
-                        className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                        required
-                      >
-                        <option value="">Select product</option>
-                        {products?.map((product) => (
-                          <option key={product.id} value={product.id}>
-                            {product.name} - Stock: {product.current_stock}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <Label htmlFor="productName">Product Name</Label>
-                        <Input
-                          id="productName"
-                          value={formData.productName}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              productName: e.target.value,
-                            })
-                          }
-                          required
-                        />
-                      </div>
+                  <div>
+                    <Label htmlFor="productSelect">Select Product</Label>
+                    <select
+                      id="productSelect"
+                      value={formData.productId}
+                      onChange={(e) => {
+                        const selectedProduct = products?.find(
+                          (p) => p.id == e.target.value, // Use == to handle string/number comparison
+                        );
+                        if (selectedProduct) {
+                          setFormData({
+                            ...formData,
+                            productId: selectedProduct.id,
+                            productName: selectedProduct.productName || selectedProduct.name,
+                            category: selectedProduct.category,
+                            unitPrice: selectedProduct.price || "",
+                          });
+                        } else {
+                          // Clear fields if no product selected
+                          setFormData({
+                            ...formData,
+                            productId: "",
+                            productName: "",
+                            category: "",
+                            unitPrice: "",
+                          });
+                        }
+                      }}
+                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      required
+                      disabled={!formData.storeId}
+                    >
+                      <option value="">
+                        {!formData.storeId ? "Select a store first" : "Select product"}
+                      </option>
+                      {products?.map((product) => (
+                        <option key={product.id} value={product.id}>
+                          {product.productName || product.name} - Stock: {product.stock || product.quantity || 0}
+                        </option>
+                      ))}
+                    </select>
+                    {!formData.storeId && (
+                      <p className="text-sm text-muted-foreground mt-1">
+                        Please select a store to see available products
+                      </p>
+                    )}
+                  </div>
 
+                  {/* Auto-filled Product Details */}
+                  {formData.productId && (
+                    <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
                       <div>
-                        <Label htmlFor="productId">Product ID</Label>
-                        <Input
-                          id="productId"
-                          value={formData.productId}
-                          onChange={(e) =>
-                            setFormData({
-                              ...formData,
-                              productId: e.target.value,
-                            })
-                          }
-                          required
-                        />
+                        <Label className="text-sm font-medium text-muted-foreground">Product Name</Label>
+                        <p className="text-sm font-medium">{formData.productName}</p>
+                      </div>
+                      <div>
+                        <Label className="text-sm font-medium text-muted-foreground">Category</Label>
+                        <p className="text-sm">{formData.category}</p>
                       </div>
                     </div>
                   )}

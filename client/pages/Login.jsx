@@ -493,6 +493,26 @@ export default function Login() {
               <p className="text-xs text-muted-foreground mt-2">
                 Use your AWS Cognito credentials
               </p>
+
+              {process.env.NODE_ENV === 'development' && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-2"
+                  onClick={async () => {
+                    const test = await testCognitoConnection();
+                    console.log('Connection test result:', test);
+                    toast({
+                      title: test.success ? "Connection Test Passed" : "Connection Test Failed",
+                      description: test.message || test.error,
+                      variant: test.success ? "success" : "destructive",
+                    });
+                  }}
+                >
+                  Test Cognito Connection
+                </Button>
+              )}
             </div>
           </CardContent>
         </Card>

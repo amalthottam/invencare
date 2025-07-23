@@ -202,47 +202,46 @@ export default function Transactions() {
   }, []);
 
   const loadInitialData = async () => {
+    setIsLoading(true);
+    setError(null);
+
+    // Load stores first
     try {
-      setIsLoading(true);
-      setError(null);
-
-      // Load stores with fallback
-      try {
-        const storesResponse = await api.getStores();
-        const storeData = [
-          { id: "all", name: "All Stores", location: "Combined View" },
-          ...(storesResponse?.data || storesResponse?.stores || []),
-        ];
-        setStores(storeData);
-      } catch (storeError) {
-        console.error("Failed to load stores:", storeError);
-        // Provide fallback stores
-        setStores([
-          { id: "all", name: "All Stores", location: "Combined View" },
-          { id: "store_001", name: "Downtown Store", location: "123 Main St" },
-          { id: "store_002", name: "Mall Location", location: "456 Shopping Center" },
-          { id: "store_003", name: "Uptown Branch", location: "789 North Ave" },
-          { id: "store_004", name: "Westside Market", location: "321 West Blvd" },
-        ]);
-      }
-
-      // Load transactions and products independently
-      await Promise.all([
-        loadTransactions().catch(err => {
-          console.error("Failed to load transactions in parallel:", err);
-          setTransactions([]);
-        }),
-        loadAllProducts().catch(err => {
-          console.error("Failed to load products in parallel:", err);
-          setAllProducts([]);
-        })
+      const storesResponse = await api.getStores();
+      const storeData = [
+        { id: "all", name: "All Stores", location: "Combined View" },
+        ...(storesResponse?.data || storesResponse?.stores || []),
+      ];
+      setStores(storeData);
+    } catch (storeError) {
+      console.error("Failed to load stores:", storeError);
+      // Provide fallback stores
+      setStores([
+        { id: "all", name: "All Stores", location: "Combined View" },
+        { id: "store_001", name: "Downtown Store", location: "123 Main St" },
+        { id: "store_002", name: "Mall Location", location: "456 Shopping Center" },
+        { id: "store_003", name: "Uptown Branch", location: "789 North Ave" },
+        { id: "store_004", name: "Westside Market", location: "321 West Blvd" },
       ]);
-    } catch (err) {
-      console.error("Failed to load initial data:", err);
-      setError("Failed to load some data. The page may have limited functionality.");
-    } finally {
-      setIsLoading(false);
     }
+
+    // Load transactions sequentially
+    try {
+      await loadTransactions();
+    } catch (err) {
+      console.error("Failed to load transactions:", err);
+      setError("Failed to load transactions. Please check your connection and try again.");
+    }
+
+    // Load products last
+    try {
+      await loadAllProducts();
+    } catch (err) {
+      console.error("Failed to load products:", err);
+      // Don't show error for products as it's not critical for viewing transactions
+    }
+
+    setIsLoading(false);
   };
 
   const loadTransactions = async () => {

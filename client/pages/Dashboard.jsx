@@ -106,6 +106,11 @@ export default function Dashboard() {
   const [selectedStore, setSelectedStore] = useState("all");
 
   useEffect(() => {
+    // Perform health check in development mode for debugging
+    if (process.env.NODE_ENV === 'development') {
+      logHealthCheck().catch(console.error);
+    }
+
     checkAuthentication();
     fetchDashboardData();
 

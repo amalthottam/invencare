@@ -481,72 +481,80 @@ export default function Transactions() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredTransactions?.map((transaction) => (
-                      <tr
-                        key={transaction.id}
-                        className="border-b hover:bg-slate-50/50"
-                      >
-                        <td className="p-4">
-                          <div className="font-mono text-sm text-blue-600">
-                            {transaction.reference_number}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="flex items-center gap-2">
-                            {getTransactionTypeIcon(transaction.type)}
-                            {getTransactionTypeBadge(transaction.type)}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div>
-                            <div className="font-medium">
-                              {transaction.product_name}
+                    {filteredTransactions?.length > 0 ? (
+                      filteredTransactions.map((transaction) => (
+                        <tr
+                          key={transaction.id}
+                          className="border-b hover:bg-slate-50/50"
+                        >
+                          <td className="p-4">
+                            <div className="font-mono text-sm text-blue-600">
+                              {transaction.reference_number}
                             </div>
-                            <div className="text-sm text-muted-foreground">
-                              {transaction.product_id}
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center gap-2">
+                              {getTransactionTypeIcon(transaction.type)}
+                              {getTransactionTypeBadge(transaction.type)}
                             </div>
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <CategoryBadge category={transaction.category} />
-                        </td>
-                        <td className="p-4">
-                          <span
-                            className={`font-semibold ${
-                              transaction.quantity > 0
-                                ? "text-green-600"
-                                : "text-red-600"
-                            }`}
-                          >
-                            {transaction.quantity > 0 ? "+" : ""}
-                            {transaction.quantity}
-                          </span>
-                        </td>
-                        <td className="p-4 font-semibold">
-                          {formatCurrency(transaction.total_amount)}
-                        </td>
-                        <td className="p-4">
-                          <div>
-                            <div className="text-sm font-medium">
-                              {transaction.store_name}
-                            </div>
-                            {transaction.transfer_to_store_name && (
-                              <div className="text-xs text-muted-foreground">
-                                → {transaction.transfer_to_store_name}
+                          </td>
+                          <td className="p-4">
+                            <div>
+                              <div className="font-medium">
+                                {transaction.product_name}
                               </div>
-                            )}
-                          </div>
-                        </td>
-                        <td className="p-4">
-                          <div className="text-sm">{transaction.user_name}</div>
-                        </td>
-                        <td className="p-4">
-                          <div className="text-sm">
-                            {formatDateTime(transaction.timestamp)}
-                          </div>
+                              <div className="text-sm text-muted-foreground">
+                                {transaction.product_id}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <CategoryBadge category={transaction.category} />
+                          </td>
+                          <td className="p-4">
+                            <span
+                              className={`font-semibold ${
+                                transaction.quantity > 0
+                                  ? "text-green-600"
+                                  : "text-red-600"
+                              }`}
+                            >
+                              {transaction.quantity > 0 ? "+" : ""}
+                              {transaction.quantity}
+                            </span>
+                          </td>
+                          <td className="p-4 font-semibold">
+                            {formatCurrency(transaction.total_amount)}
+                          </td>
+                          <td className="p-4">
+                            <div>
+                              <div className="text-sm font-medium">
+                                {transaction.store_name}
+                              </div>
+                              {transaction.transfer_to_store_name && (
+                                <div className="text-xs text-muted-foreground">
+                                  → {transaction.transfer_to_store_name}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-sm">{transaction.user_name}</div>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-sm">
+                              {formatDateTime(transaction.timestamp)}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    ) : (
+                      <tr>
+                        <td colSpan="9" className="p-8 text-center text-muted-foreground">
+                          No transactions found. Try adjusting your filters or add a new transaction.
                         </td>
                       </tr>
-                    ))}
+                    )}
                   </tbody>
                 </table>
               </div>

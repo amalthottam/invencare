@@ -12,7 +12,7 @@ import {
   getTransactions,
   getTransactionSummary,
   createTransaction,
-  getStores,
+  getStores as getStoresFromTransactions,
   getProducts,
 } from "./routes/transactions.js";
 import {

@@ -26,10 +26,12 @@ import {
   testCognitoConnection,
   validateCognitoSetup,
 } from "@/lib/cognito-test";
+import { useAuth } from "@/lib/auth-context";
 
 export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { checkAuthState } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);

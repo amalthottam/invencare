@@ -618,8 +618,17 @@ export default function Transactions() {
                         id="storeId"
                         value={formData.storeId}
                         onChange={(e) => {
-                          setFormData({ ...formData, storeId: e.target.value });
-                          loadProductsForStore(e.target.value);
+                          const newStoreId = e.target.value;
+                          setFormData({
+                            ...formData,
+                            storeId: newStoreId,
+                            // Clear product selection when store changes
+                            productId: "",
+                            productName: "",
+                            category: "",
+                            unitPrice: ""
+                          });
+                          loadProductsForStore(newStoreId);
                         }}
                         className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
                         required

@@ -471,6 +471,15 @@ export default function Transactions() {
               <p className="text-muted-foreground">
                 Track all inventory movements and sales across your stores
               </p>
+              {!isConnected && (
+                <div className="bg-orange-50 border border-orange-200 text-orange-700 px-4 py-3 rounded mt-4">
+                  <div className="flex items-center">
+                    <div className="h-2 w-2 bg-orange-500 rounded-full mr-2"></div>
+                    Network connection issues detected. Some features may not work properly.
+                  </div>
+                </div>
+              )}
+
               {error && (
                 <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mt-4 flex justify-between items-center">
                   <span>{error}</span>
@@ -479,7 +488,7 @@ export default function Transactions() {
                     size="sm"
                     onClick={() => {
                       setError(null);
-                      loadInitialData();
+                      testApiConnectivity().then(() => loadInitialData());
                     }}
                     className="ml-4"
                   >

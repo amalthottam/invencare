@@ -34,6 +34,27 @@ export default function Login() {
     lastName: "",
   });
 
+  // Check if user is already authenticated when component mounts
+  useEffect(() => {
+    const checkExistingAuth = async () => {
+      try {
+        const { getCurrentUser } = await import('aws-amplify/auth');
+        const existingUser = await getCurrentUser();
+
+        if (existingUser) {
+          console.log('User already authenticated on login page:', existingUser.username);
+          console.log('Redirecting to dashboard...');
+          navigate("/dashboard", { replace: true });
+        }
+      } catch (error) {
+        // No existing user, stay on login page
+        console.log('No existing authenticated user found');
+      }
+    };
+
+    checkExistingAuth();
+  }, [navigate]);
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData((prev) => ({

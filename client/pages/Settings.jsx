@@ -27,7 +27,7 @@ import {
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { user, logout } = useAuth();
+  const { user, userAttributes, logout } = useAuth();
   const [profileData, setProfileData] = useState({
     name: "Loading...",
     email: "Loading...",

@@ -128,9 +128,33 @@ export default function Login() {
       }
     } catch (error) {
       console.error("Sign in error:", error);
+      console.error("Error details:", {
+        name: error.name,
+        message: error.message,
+        code: error.code,
+        stack: error.stack,
+      });
+
+      let errorMessage = "Failed to sign in";
+
+      // Handle specific Cognito errors
+      if (error.name === 'UserNotFoundException') {
+        errorMessage = "User not found. Please check your email address.";
+      } else if (error.name === 'NotAuthorizedException') {
+        errorMessage = "Incorrect email or password.";
+      } else if (error.name === 'UserNotConfirmedException') {
+        errorMessage = "Please confirm your email address before signing in.";
+      } else if (error.name === 'TooManyRequestsException') {
+        errorMessage = "Too many sign-in attempts. Please try again later.";
+      } else if (error.name === 'NetworkError') {
+        errorMessage = "Network error. Please check your internet connection.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+
       toast({
-        title: "Error",
-        description: error.message || "Failed to sign in",
+        title: "Sign In Failed",
+        description: errorMessage,
         variant: "destructive",
       });
     } finally {

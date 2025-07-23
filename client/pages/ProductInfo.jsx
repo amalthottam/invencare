@@ -40,6 +40,8 @@ export default function ProductInfo() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [saving, setSaving] = useState(false);
+  const [isEditingPrice, setIsEditingPrice] = useState(false);
+  const [tempPrice, setTempPrice] = useState("");
   const [formData, setFormData] = useState({
     productName: "",
     productId: "",

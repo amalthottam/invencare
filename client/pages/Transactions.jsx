@@ -170,35 +170,10 @@ export default function Transactions() {
     notes: "",
   });
 
-  // Test API connectivity
-  const testApiConnectivity = async () => {
-    try {
-      const response = await fetch('/api/ping');
-      if (response.ok) {
-        console.log('API connectivity test passed');
-        setIsConnected(true);
-        return true;
-      } else {
-        console.warn('API connectivity test failed - server responded with error');
-        setIsConnected(false);
-        return false;
-      }
-    } catch (error) {
-      console.error('API connectivity test failed:', error);
-      setIsConnected(false);
-      return false;
-    }
-  };
-
   // Load initial data
   useEffect(() => {
-    // Test connectivity first, then load data
-    testApiConnectivity().then(() => {
-      loadInitialData();
-    }).catch(() => {
-      setError("Cannot connect to server. Please check your internet connection.");
-      setIsLoading(false);
-    });
+    // Skip connectivity test and load data directly
+    loadInitialData();
   }, []);
 
   const loadInitialData = async () => {

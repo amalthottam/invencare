@@ -852,6 +852,10 @@ export function createServer() {
   app.post("/api/transactions/process", handleTransactionProcessor);
   app.get("/api/lambda/health", handleLambdaHealthCheck);
 
+  // SageMaker ML Predictions routes
+  import mlPredictionsRouter from './routes/ml-predictions.js';
+  app.use('/api/ml', mlPredictionsRouter);
+
   // Real-time analytics endpoint
   app.get("/api/analytics/realtime", async (req, res) => {
     try {

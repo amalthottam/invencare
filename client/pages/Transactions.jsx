@@ -481,7 +481,7 @@ export default function Transactions() {
                     </tr>
                   </thead>
                   <tbody>
-                    {filteredTransactions.map((transaction) => (
+                    {filteredTransactions?.map((transaction) => (
                       <tr
                         key={transaction.id}
                         className="border-b hover:bg-slate-50/50"

@@ -29,9 +29,12 @@ export const testCognitoConnection = async () => {
       return { success: true, message: 'Already authenticated' };
     } catch (authError) {
       // This is expected if no user is signed in
-      if (authError.name === 'UserUnAuthenticatedError' || authError.message.includes('not authenticated')) {
+      if (authError.name === 'UserUnAuthenticatedException' ||
+          authError.name === 'UserUnAuthenticatedError' ||
+          authError.message.includes('not authenticated') ||
+          authError.message.includes('needs to be authenticated')) {
         console.log('✅ Cognito connection test: SUCCESS (service reachable, no user signed in)');
-        return { success: true, message: 'Service reachable' };
+        return { success: true, message: 'Service reachable - ready for authentication' };
       } else {
         console.error('❌ Cognito connection test: FAILED', authError);
         return { success: false, error: authError.message };

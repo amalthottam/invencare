@@ -386,9 +386,22 @@ export default function Dashboard() {
 
           {/* Stats Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            {stats.map((stat, index) => (
-              <StatCard key={index} {...stat} />
-            ))}
+            {analyticsLoading ? (
+              // Loading skeleton for stats
+              Array.from({ length: 4 }).map((_, index) => (
+                <div key={index} className="bg-card rounded-lg border p-6">
+                  <div className="animate-pulse">
+                    <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                    <div className="h-8 bg-muted rounded w-1/2 mb-2"></div>
+                    <div className="h-3 bg-muted rounded w-2/3"></div>
+                  </div>
+                </div>
+              ))
+            ) : (
+              stats.map((stat, index) => (
+                <StatCard key={index} {...stat} />
+              ))
+            )}
           </div>
 
           {/* Dashboard Content */}
@@ -406,14 +419,32 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {lowStockItems.length > 0 ? (
+                  {lowStockLoading ? (
+                    // Loading skeleton for low stock items
+                    Array.from({ length: 3 }).map((_, index) => (
+                      <div key={index} className="p-3 bg-muted/50 rounded-lg">
+                        <div className="animate-pulse flex justify-between">
+                          <div className="flex-1">
+                            <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                            <div className="h-3 bg-muted rounded w-1/2"></div>
+                          </div>
+                          <div className="w-16">
+                            <div className="h-4 bg-muted rounded w-full mb-1"></div>
+                            <div className="h-3 bg-muted rounded w-full"></div>
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  ) : lowStockItems.length > 0 ? (
                     lowStockItems.map((item, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                        onClick={() => getProductIdFromItem(item)}
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-muted/70 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                        title="Click to view product details"
                       >
                         <div>
-                          <p className="font-medium">{item.name}</p>
+                          <p className="font-medium hover:text-primary transition-colors">{item.name}</p>
                           <p className="text-sm text-muted-foreground">
                             {item.category}
                             {selectedStore === "all" && item.store && (
@@ -459,33 +490,53 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {recentTransactions.map((transaction, index) => (
-                    <div
-                      key={index}
-                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
-                    >
-                      <div>
-                        <p className="font-medium">{transaction.product}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {transaction.type} • {transaction.time}
-                          {selectedStore === "all" && transaction.store && (
-                            <span className="ml-2 text-blue-600">
-                              • {transaction.store}
-                            </span>
-                          )}
-                        </p>
+                  {transactionsLoading ? (
+                    // Loading skeleton for transactions
+                    Array.from({ length: 3 }).map((_, index) => (
+                      <div key={index} className="p-3 bg-muted/50 rounded-lg">
+                        <div className="animate-pulse flex justify-between">
+                          <div className="flex-1">
+                            <div className="h-4 bg-muted rounded w-2/3 mb-2"></div>
+                            <div className="h-3 bg-muted rounded w-1/2"></div>
+                          </div>
+                          <div className="w-16">
+                            <div className="h-4 bg-muted rounded w-full mb-1"></div>
+                            <div className="h-3 bg-muted rounded w-full"></div>
+                          </div>
+                        </div>
                       </div>
-                      <div className="text-right">
-                        <p className="font-medium">
-                          {transaction.type === "Sale" ? "-" : "+"}
-                          {transaction.quantity}
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                          ${transaction.amount?.toFixed(2) || "0.00"}
-                        </p>
+                    ))
+                  ) : (
+                    recentTransactions.map((transaction, index) => (
+                      <div
+                        key={index}
+                        onClick={() => navigate(`/products?search=${encodeURIComponent(transaction.product)}`)}
+                        className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-muted/70 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                        title="Click to view product details"
+                      >
+                        <div>
+                          <p className="font-medium hover:text-primary transition-colors">{transaction.product}</p>
+                          <p className="text-sm text-muted-foreground">
+                            {transaction.type} • {transaction.time}
+                            {selectedStore === "all" && transaction.store && (
+                              <span className="ml-2 text-blue-600">
+                                • {transaction.store}
+                              </span>
+                            )}
+                          </p>
+                        </div>
+                        <div className="text-right">
+                          <p className="font-medium">
+                            {transaction.type === "Sale" ? "-" : "+"}
+                            {transaction.quantity}
+                          </p>
+                          <p className="text-sm text-muted-foreground">
+                            ${transaction.amount?.toFixed(2) || "0.00"}
+                          </p>
+                        </div>
                       </div>
-                    </div>
-                  ))}
+                    ))
+                  )}
                 </div>
                 <Button
                   variant="outline"
@@ -509,13 +560,26 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  {analyticsData?.topSellingCategories?.map(
-                    (category, index) => (
+                  {analyticsLoading ? (
+                    // Loading skeleton for categories
+                    Array.from({ length: 3 }).map((_, index) => (
+                      <div key={index} className="p-4 bg-muted/50 rounded-lg text-center">
+                        <div className="animate-pulse">
+                          <div className="h-5 bg-muted rounded w-3/4 mx-auto mb-3"></div>
+                          <div className="h-8 bg-muted rounded w-1/2 mx-auto mb-2"></div>
+                          <div className="h-3 bg-muted rounded w-2/3 mx-auto"></div>
+                        </div>
+                      </div>
+                    ))
+                  ) : analyticsData?.topSellingCategories?.length > 0 ? (
+                    analyticsData.topSellingCategories.map((category, index) => (
                       <div
                         key={index}
-                        className="p-4 bg-muted/50 rounded-lg text-center"
+                        onClick={() => navigate(`/products?category=${encodeURIComponent(category.name)}`)}
+                        className="p-4 bg-muted/50 rounded-lg text-center cursor-pointer transition-all duration-200 hover:bg-muted/70 hover:shadow-md hover:scale-[1.05] active:scale-[0.95]"
+                        title={`Click to view ${category.name} products`}
                       >
-                        <p className="font-semibold text-lg">{category.name}</p>
+                        <p className="font-semibold text-lg hover:text-primary transition-colors">{category.name}</p>
                         <p className="text-2xl font-bold text-primary">
                           {category.sales}
                         </p>
@@ -523,11 +587,11 @@ export default function Dashboard() {
                           units sold
                         </p>
                       </div>
-                    ),
-                  ) || (
+                    ))
+                  ) : (
                     <div className="col-span-3 text-center text-muted-foreground py-8">
                       <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                      <p>Analytics data will appear here</p>
+                      <p>No category data available</p>
                     </div>
                   )}
                 </div>

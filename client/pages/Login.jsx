@@ -186,31 +186,27 @@ export default function Login() {
 
     try {
       // AWS Cognito Confirm Sign Up Implementation
-      // const { isSignUpComplete, nextStep } = await confirmSignUp({
-      //   username: formData.email,
-      //   confirmationCode: formData.confirmationCode,
-      // });
-      //
-      // if (isSignUpComplete) {
-      //   toast({
-      //     title: "Success",
-      //     description: "Account confirmed! Please sign in.",
-      //   });
-      //   setIsSignUp(false);
-      //   setConfirmationStep(false);
-      // }
+      const { isSignUpComplete, nextStep } = await confirmSignUp({
+        username: formData.email,
+        confirmationCode: formData.confirmationCode,
+      });
 
-      // Demo implementation
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      setIsSignUp(false);
-      setConfirmationStep(false);
+      if (isSignUpComplete) {
+        toast({
+          title: "Success",
+          description: "Account confirmed! Please sign in. Your account is pending admin approval.",
+          variant: "success",
+        });
+        setIsSignUp(false);
+        setConfirmationStep(false);
+      }
     } catch (error) {
       console.error("Confirmation error:", error);
-      // toast({
-      //   title: "Error",
-      //   description: error.message || "Failed to confirm account",
-      //   variant: "destructive",
-      // });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to confirm account",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

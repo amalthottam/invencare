@@ -91,4 +91,13 @@ const App = () => {
   );
 };
 
-createRoot(document.getElementById("root")).render(<App />);
+// Only create root if it doesn't exist to prevent double initialization
+const container = document.getElementById("root");
+let root = container._reactRoot;
+
+if (!root) {
+  root = createRoot(container);
+  container._reactRoot = root;
+}
+
+root.render(<App />);

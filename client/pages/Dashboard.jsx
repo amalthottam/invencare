@@ -463,7 +463,7 @@ export default function Dashboard() {
                     lowStockItems.map((item, index) => (
                       <div
                         key={index}
-                        onClick={() => getProductIdFromItem(item)}
+                        onClick={() => navigateToProduct(item.name)}
                         className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-muted/70 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
                         title="Click to view product details"
                       >

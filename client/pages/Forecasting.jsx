@@ -43,22 +43,11 @@ export default function Forecasting() {
     try {
       setLoading(true);
 
-      // First check ML Analytics health
+      // Health check for ML service
       const healthResponse = await fetch("/api/ml/health");
-      console.log("ML Health check:", healthResponse.ok);
+      console.log("ML Health:", healthResponse.ok);
 
-      // Fetch ML dashboard data (new unified approach)
-      const mlDashboardResponse = await fetch(
-        `/api/ml/dashboard?time_period=${selectedTimeframe}days&include_trends=true&include_accuracy=true`,
-      );
-
-      if (mlDashboardResponse.ok) {
-        const mlResponse = await mlDashboardResponse.json();
-        console.log("ML Dashboard data:", mlResponse);
-        setDashboardData(mlResponse.data);
-      }
-
-      // Trigger batch predictions for fresh data
+      // Trigger batch predictions for critical stock items
       const batchPredictResponse = await fetch("/api/ml/analytics", {
         method: "POST",
         headers: {
@@ -66,18 +55,52 @@ export default function Forecasting() {
         },
         body: JSON.stringify({
           action: "batch_predict",
-          store_id: "store_001", // You can make this dynamic
-          batch_size: 20,
-          model_type: "lstm"
+          store_id: "store_001", // You can make this dynamic based on user
+          limit: 20
         }),
       });
 
       if (batchPredictResponse.ok) {
         const batchResult = await batchPredictResponse.json();
-        console.log("Batch prediction result:", batchResult);
+        console.log("✅ Batch predictions completed:", batchResult.data);
       }
 
-      // Fetch latest predictions from database
+      // Get ML dashboard data (predictions summary)
+      const mlDashboardResponse = await fetch("/api/ml/analytics", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          action: "dashboard"
+        }),
+      });
+
+      if (mlDashboardResponse.ok) {
+        const mlResponse = await mlDashboardResponse.json();
+        console.log("📊 ML Dashboard data:", mlResponse.data);
+
+        // Transform data for existing dashboard structure
+        const transformedData = {
+          summary: {
+            totalModels: 1,
+            avgAccuracy: mlResponse.data.prediction_stats?.avg_accuracy || 0.85,
+            totalPredictions: mlResponse.data.prediction_stats?.total_predictions || 0,
+            highPriorityRecommendations: mlResponse.data.urgent_recommendations?.length || 0
+          },
+          modelPerformance: [{
+            model_name: "Statistical Forecasting",
+            model_type: "statistical",
+            model_accuracy: mlResponse.data.prediction_stats?.avg_accuracy || 0.85,
+            predictions_count: mlResponse.data.prediction_stats?.total_predictions || 0
+          }],
+          recentPredictions: mlResponse.data.urgent_recommendations || []
+        };
+
+        setDashboardData(transformedData);
+      }
+
+      // Fetch latest predictions from original API (fallback)
       const predictionsResponse = await fetch(
         `/api/analytics/demand-predictions?days=${selectedTimeframe}`,
       );
@@ -86,7 +109,7 @@ export default function Forecasting() {
         setPredictions(response.data.predictions || []);
       }
 
-      // Fallback: Fetch original dashboard if ML dashboard fails
+      // Fallback to original dashboard if needed
       if (!mlDashboardResponse.ok) {
         const dashboardResponse = await fetch(
           "/api/analytics/forecasting-dashboard",

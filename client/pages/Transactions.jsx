@@ -139,6 +139,7 @@ export default function Transactions() {
   const [products, setProducts] = useState([]);
   const [allProducts, setAllProducts] = useState([]);
   const [error, setError] = useState(null);
+  const [isConnected, setIsConnected] = useState(true);
 
   const [formData, setFormData] = useState({
     type: "",

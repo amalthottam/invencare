@@ -52,18 +52,11 @@ export default function ProductInfo() {
   });
 
   useEffect(() => {
-    // Check authentication
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-
     fetchProduct();
     if (isEditMode) {
       fetchCategories();
     }
-  }, [id, navigate, isEditMode]);
+  }, [id, isEditMode]);
 
   const fetchCategories = async () => {
     try {

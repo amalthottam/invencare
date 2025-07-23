@@ -797,6 +797,7 @@ export default function Transactions() {
                             ...formData,
                             storeId: newStoreId,
                             // Clear product selection when store changes
+                            selectedProductDbId: "",
                             productId: "",
                             productName: "",
                             category: "",

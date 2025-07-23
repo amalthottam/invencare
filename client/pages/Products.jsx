@@ -115,8 +115,10 @@ export default function Products() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
+  const { logout } = useAuth();
+
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 

@@ -23,11 +23,11 @@ import {
   Zap,
   Store,
   Package,
-  Filter,
   RefreshCw,
-  TrendingDown,
   Clock,
   Layers,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 
 export default function Forecasting() {

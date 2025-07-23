@@ -426,8 +426,20 @@ export default function Transactions() {
                 Track all inventory movements and sales across your stores
               </p>
               {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mt-4">
-                  {error}
+                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded mt-4 flex justify-between items-center">
+                  <span>{error}</span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setError(null);
+                      loadInitialData();
+                    }}
+                    className="ml-4"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-1" />
+                    Retry
+                  </Button>
                 </div>
               )}
 

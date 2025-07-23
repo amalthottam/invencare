@@ -254,7 +254,7 @@ export default function Transactions() {
     if (storeId && storeId !== "all") {
       try {
         const response = await api.getProducts(storeId);
-        setProducts(response.data);
+        setProducts(response?.data || []);
       } catch (err) {
         console.error("Failed to load products:", err);
         setProducts([]);

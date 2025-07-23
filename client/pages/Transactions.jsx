@@ -34,23 +34,42 @@ import {
 const makeApiRequest = async (url, options = {}) => {
   try {
     console.log(`Making API request to: ${url}`);
+
+    // Add timeout to prevent hanging requests
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
+
     const response = await fetch(url, {
       headers: {
         "Content-Type": "application/json",
         ...options.headers,
       },
+      signal: controller.signal,
       ...options,
     });
 
+    clearTimeout(timeoutId);
+
     if (!response.ok) {
       const errorText = await response.text().catch(() => 'Unknown error');
+      console.error(`HTTP ${response.status} for ${url}: ${errorText}`);
       throw new Error(`HTTP ${response.status}: ${errorText}`);
     }
 
-    return await response.json();
+    const data = await response.json();
+    console.log(`API request successful for ${url}:`, data);
+    return data;
   } catch (error) {
-    console.error(`API request failed for ${url}:`, error);
-    throw error;
+    if (error.name === 'AbortError') {
+      console.error(`API request timeout for ${url}`);
+      throw new Error(`Request timeout - server took too long to respond`);
+    } else if (error instanceof TypeError && error.message === 'Failed to fetch') {
+      console.error(`Network error for ${url}:`, error);
+      throw new Error(`Network error - please check your internet connection`);
+    } else {
+      console.error(`API request failed for ${url}:`, error);
+      throw error;
+    }
   }
 };
 

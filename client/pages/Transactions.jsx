@@ -653,7 +653,7 @@ export default function Transactions() {
                         required
                       >
                         <option value="">Select product</option>
-                        {products.map((product) => (
+                        {products?.map((product) => (
                           <option key={product.id} value={product.id}>
                             {product.name} - Stock: {product.current_stock}
                           </option>

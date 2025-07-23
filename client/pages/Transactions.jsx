@@ -191,21 +191,51 @@ export default function Transactions() {
         limit: 100,
       };
 
-      const [transactionsResponse, summaryResponse] = await Promise.all([
+      // Load transactions and summary independently
+      const [transactionsResult, summaryResult] = await Promise.allSettled([
         api.getTransactions(params),
         api.getTransactionSummary(params),
       ]);
 
-      setTransactions(transactionsResponse?.data?.transactions || []);
-      setSummaryStats({
-        totalTransactions: summaryResponse?.data?.total_transactions || 0,
-        totalSales: summaryResponse?.data?.total_sales || 0,
-        totalRestocks: summaryResponse?.data?.total_restocks || 0,
-        totalTransfers: summaryResponse?.data?.total_transfers || 0,
-      });
+      // Handle transactions result
+      if (transactionsResult.status === 'fulfilled') {
+        const transactionsData = transactionsResult.value?.data?.transactions ||
+                                transactionsResult.value?.transactions || [];
+        setTransactions(transactionsData);
+      } else {
+        console.error("Failed to load transactions:", transactionsResult.reason);
+        setTransactions([]);
+        setError("Failed to load transactions. Showing empty list.");
+      }
+
+      // Handle summary result
+      if (summaryResult.status === 'fulfilled') {
+        const summaryData = summaryResult.value?.data || summaryResult.value || {};
+        setSummaryStats({
+          totalTransactions: summaryData.total_transactions || 0,
+          totalSales: summaryData.total_sales || 0,
+          totalRestocks: summaryData.total_restocks || 0,
+          totalTransfers: summaryData.total_transfers || 0,
+        });
+      } else {
+        console.error("Failed to load summary:", summaryResult.reason);
+        setSummaryStats({
+          totalTransactions: 0,
+          totalSales: 0,
+          totalRestocks: 0,
+          totalTransfers: 0,
+        });
+      }
     } catch (err) {
       console.error("Failed to load transactions:", err);
       setError("Failed to load transactions.");
+      setTransactions([]);
+      setSummaryStats({
+        totalTransactions: 0,
+        totalSales: 0,
+        totalRestocks: 0,
+        totalTransfers: 0,
+      });
     }
   };
 

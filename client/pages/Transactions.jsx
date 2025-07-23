@@ -200,8 +200,16 @@ export default function Transactions() {
 
   // Load initial data
   useEffect(() => {
-    // Skip connectivity test and load data directly
-    loadInitialData();
+    // Detect if FullStory or other analytics are interfering with fetch
+    const hasAnalyticsInterference = window.FS || window._fs_debug || document.querySelector('script[src*="fullstory"]');
+
+    if (hasAnalyticsInterference) {
+      console.warn('Analytics interference detected, using fallback data loading strategy');
+      // Use a delay to avoid conflicts with analytics scripts
+      setTimeout(loadInitialData, 500);
+    } else {
+      loadInitialData();
+    }
   }, []);
 
   const loadInitialData = async () => {

@@ -136,8 +136,70 @@ export default function Settings() {
             </p>
           </div>
 
-          {/* Settings Cards */}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* AWS Cognito Account Information */}
+            <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Shield className="h-5 w-5" />
+                  AWS Cognito Account Information
+                </CardTitle>
+                <CardDescription>
+                  Your authentication and authorization details managed by AWS Cognito
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <span className="font-medium">User ID (Sub)</span>
+                      <span className="text-sm text-muted-foreground font-mono">
+                        {profileData.userId ? `${profileData.userId.substring(0, 8)}...` : 'Loading...'}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <span className="font-medium">Email Status</span>
+                      <div className="flex items-center gap-2">
+                        {profileData.emailVerified ? (
+                          <Badge className="bg-green-100 text-green-800">Verified</Badge>
+                        ) : (
+                          <Badge className="bg-yellow-100 text-yellow-800">Not Verified</Badge>
+                        )}
+                      </div>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <span className="font-medium">Role</span>
+                      <Badge className={getRoleBadgeColor(profileData.role)}>
+                        {profileData.role?.charAt(0).toUpperCase() + profileData.role?.slice(1)}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <span className="font-medium">Store Access</span>
+                      <Badge className={getStoreAccessBadgeColor(profileData.storeAccess)}>
+                        {formatStoreAccess(profileData.storeAccess)}
+                      </Badge>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <span className="font-medium">Authentication Provider</span>
+                      <span className="text-sm text-muted-foreground">AWS Cognito</span>
+                    </div>
+
+                    <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
+                      <span className="font-medium">Session Management</span>
+                      <StatusBadge status="Active" />
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Settings Cards */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
@@ -166,46 +228,13 @@ export default function Settings() {
                     className="w-full"
                     size="sm"
                     onClick={handleManageUsers}
+                    disabled={profileData.role !== 'admin'}
                   >
                     Manage Users
                   </Button>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
-                  Security Settings
-                </CardTitle>
-                <CardDescription>
-                  Configure security and authentication
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between">
-                    <span>Two-Factor Auth</span>
-                    <StatusBadge status="Active" />
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Session Timeout</span>
-                    <span className="text-sm text-muted-foreground">
-                      30 min
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span>Password Policy</span>
-                    <StatusBadge status="Active" />
-                  </div>
-                  <Button
-                    className="w-full"
-                    size="sm"
-                    onClick={handleSecuritySettings}
-                  >
-                    Security Settings
-                  </Button>
+                  {profileData.role !== 'admin' && (
+                    <p className="text-xs text-muted-foreground">Admin access required</p>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -227,8 +256,8 @@ export default function Settings() {
                     <StatusBadge status="Online" />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Backup Status</span>
-                    <StatusBadge status="Success" />
+                    <span>AWS Cognito</span>
+                    <StatusBadge status="Connected" />
                   </div>
                   <div className="flex items-center justify-between">
                     <span>API Status</span>
@@ -238,9 +267,13 @@ export default function Settings() {
                     className="w-full"
                     size="sm"
                     onClick={handleSystemSettings}
+                    disabled={profileData.role !== 'admin'}
                   >
                     System Settings
                   </Button>
+                  {profileData.role !== 'admin' && (
+                    <p className="text-xs text-muted-foreground">Admin access required</p>
+                  )}
                 </div>
               </CardContent>
             </Card>

@@ -1,105 +1,70 @@
-import { query } from "../db/sqlite.js";
+import pool from "../db/database.js";
 import { createApiResponse, createApiError } from "../../shared/api.js";
 
-// Get demand predictions
+// Get demand predictions from real database
 export const getDemandPredictions = async (req, res) => {
   try {
     const { product_id, store_id, days = 30 } = req.query;
 
-    // For demo purposes, create mock prediction data since we don't have ML models set up
-    const mockPredictions = [
-      {
-        prediction_date: "2024-01-16",
-        predicted_demand: 45,
-        confidence_interval_lower: 35,
-        confidence_interval_upper: 55,
-        factors: JSON.stringify({ seasonality: "high", weather: "favorable" }),
-        product_name: "Organic Bananas",
-        product_id: "FV-BAN-001",
-        store_name: "Downtown Store",
-        model_name: "LSTM_Demand_Forecaster_v2",
-        model_accuracy: 0.89,
-      },
-      {
-        prediction_date: "2024-01-16",
-        predicted_demand: 28,
-        confidence_interval_lower: 22,
-        confidence_interval_upper: 34,
-        factors: JSON.stringify({
-          seasonality: "moderate",
-          promotions: "active",
-        }),
-        product_name: "Ground Coffee",
-        product_id: "BV-COF-009",
-        store_name: "Mall Location",
-        model_name: "ARIMA_Seasonal_v1",
-        model_accuracy: 0.82,
-      },
-      {
-        prediction_date: "2024-01-17",
-        predicted_demand: 42,
-        confidence_interval_lower: 38,
-        confidence_interval_upper: 48,
-        factors: JSON.stringify({ seasonality: "high", weather: "favorable" }),
-        product_name: "Organic Bananas",
-        product_id: "FV-BAN-001",
-        store_name: "Downtown Store",
-        model_name: "LSTM_Demand_Forecaster_v2",
-        model_accuracy: 0.89,
-      },
-      {
-        prediction_date: "2024-01-17",
-        predicted_demand: 31,
-        confidence_interval_lower: 25,
-        confidence_interval_upper: 37,
-        factors: JSON.stringify({
-          seasonality: "moderate",
-          promotions: "none",
-        }),
-        product_name: "Ground Coffee",
-        product_id: "BV-COF-009",
-        store_name: "Mall Location",
-        model_name: "ARIMA_Seasonal_v1",
-        model_accuracy: 0.82,
-      },
-      {
-        prediction_date: "2024-01-16",
-        predicted_demand: 18,
-        confidence_interval_lower: 14,
-        confidence_interval_upper: 22,
-        factors: JSON.stringify({ seasonality: "low", weather: "neutral" }),
-        product_name: "Chicken Breast",
-        product_id: "MP-CHI-008",
-        store_name: "Mall Location",
-        model_name: "Prophet_Trend_v1",
-        model_accuracy: 0.75,
-      },
-    ];
+    // Calculate date range
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - 1); // Start from yesterday
+    const endDate = new Date();
+    endDate.setDate(endDate.getDate() + parseInt(days));
 
-    // Filter by store_id if provided
-    let filteredPredictions = mockPredictions;
+    let query = `
+      SELECT
+        dp.id,
+        dp.product_id,
+        dp.store_id,
+        dp.prediction_date,
+        dp.predicted_demand,
+        dp.confidence_interval_lower,
+        dp.confidence_interval_upper,
+        dp.actual_demand,
+        dp.prediction_accuracy,
+        dp.factors,
+        dp.lambda_execution_id,
+        dp.created_at,
+        p.name as product_name,
+        p.category,
+        s.name as store_name,
+        dfm.model_name,
+        dfm.model_accuracy
+      FROM demand_predictions dp
+      JOIN products p ON dp.product_id = p.id
+      JOIN stores s ON dp.store_id = s.id
+      JOIN demand_forecasting_models dfm ON dp.model_id = dfm.id
+      WHERE dp.prediction_date >= ? AND dp.prediction_date <= ?
+    `;
+
+    const params = [startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0]];
+
+    // Add filters
     if (store_id && store_id !== "all") {
-      filteredPredictions = mockPredictions.filter((p) => {
-        const storeMapping = {
-          store_001: "Downtown Store",
-          store_002: "Mall Location",
-          store_003: "Uptown Branch",
-          store_004: "Westside Market",
-        };
-        return p.store_name === storeMapping[store_id];
-      });
+      query += " AND dp.store_id = ?";
+      params.push(store_id);
     }
 
-    // Filter by product_id if provided
     if (product_id) {
-      filteredPredictions = filteredPredictions.filter(
-        (p) => p.product_id === product_id,
-      );
+      query += " AND dp.product_id = ?";
+      params.push(product_id);
     }
+
+    query += " ORDER BY dp.prediction_date ASC, dp.predicted_demand DESC";
+    query += " LIMIT 100"; // Limit for performance
+
+    const [rows] = await pool.execute(query, params);
+
+    // Parse JSON factors field
+    const predictions = rows.map(row => ({
+      ...row,
+      factors: typeof row.factors === 'string' ? JSON.parse(row.factors) : row.factors
+    }));
 
     res.json(
       createApiResponse(
-        { predictions: filteredPredictions },
+        { predictions },
         "Demand predictions retrieved successfully",
       ),
     );
@@ -109,67 +74,120 @@ export const getDemandPredictions = async (req, res) => {
   }
 };
 
-// Get forecasting dashboard summary
+// Get category-wise prediction insights
+export const getCategoryInsights = async (req, res) => {
+  try {
+    const [categoryData] = await pool.execute(`
+      SELECT
+        p.category,
+        COUNT(DISTINCT dp.product_id) as product_count,
+        AVG(dp.predicted_demand) as avg_predicted_demand,
+        SUM(dp.predicted_demand) as total_predicted_demand,
+        AVG(dp.prediction_accuracy) as avg_accuracy,
+        AVG(dp.confidence_interval_upper - dp.confidence_interval_lower) as avg_uncertainty
+      FROM demand_predictions dp
+      JOIN products p ON dp.product_id = p.id
+      WHERE dp.prediction_date >= CURDATE()
+      AND dp.prediction_date <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+      GROUP BY p.category
+      ORDER BY total_predicted_demand DESC
+    `);
+
+    res.json(
+      createApiResponse(
+        { categories: categoryData },
+        "Category insights retrieved successfully",
+      ),
+    );
+  } catch (error) {
+    console.error("Category insights fetch error:", error);
+    res.status(500).json(createApiError(error));
+  }
+};
+
+// Get forecasting dashboard summary from real database
 export const getForecastingDashboard = async (req, res) => {
   try {
-    // Create mock dashboard data for demo purposes
+    const [summaryResult] = await pool.execute(`
+      SELECT
+        COUNT(DISTINCT dfm.id) as totalModels,
+        AVG(dfm.model_accuracy) as avgAccuracy,
+        COUNT(dp.id) as totalPredictions
+      FROM demand_forecasting_models dfm
+      LEFT JOIN demand_predictions dp ON dfm.id = dp.model_id
+      WHERE dfm.training_status = 'deployed'
+    `);
+
+    const summary = summaryResult[0] || {
+      totalModels: 1,
+      avgAccuracy: 0.65,
+      totalPredictions: 0
+    };
+
+    // Get high priority recommendations (predictions with high demand variance)
+    const [highPriorityResult] = await pool.execute(`
+      SELECT COUNT(*) as count
+      FROM demand_predictions dp
+      WHERE dp.prediction_date >= CURDATE()
+      AND (dp.confidence_interval_upper - dp.confidence_interval_lower) > dp.predicted_demand * 0.5
+    `);
+
+    const highPriorityRecommendations = highPriorityResult[0]?.count || 0;
+
+    // Get top predicted products for next 7 days
+    const [recentPredictions] = await pool.execute(`
+      SELECT
+        p.name as product_name,
+        dp.product_id,
+        s.name as store_name,
+        SUM(dp.predicted_demand) as total_predicted_demand,
+        AVG(dp.predicted_demand) as avg_daily_demand
+      FROM demand_predictions dp
+      JOIN products p ON dp.product_id = p.id
+      JOIN stores s ON dp.store_id = s.id
+      WHERE dp.prediction_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+      GROUP BY dp.product_id, dp.store_id
+      ORDER BY total_predicted_demand DESC
+      LIMIT 10
+    `);
+
+    // Get model performance data
+    const [modelPerformance] = await pool.execute(`
+      SELECT
+        dfm.model_name,
+        dfm.model_type,
+        dfm.model_accuracy,
+        COUNT(dp.id) as predictions_count,
+        dfm.training_status
+      FROM demand_forecasting_models dfm
+      LEFT JOIN demand_predictions dp ON dfm.id = dp.model_id
+      WHERE dfm.training_status = 'deployed'
+      GROUP BY dfm.id
+      ORDER BY dfm.model_accuracy DESC
+    `);
+
+    // Get accuracy trends and insights
+    const [accuracyTrends] = await pool.execute(`
+      SELECT
+        DATE(dp.created_at) as date,
+        AVG(dp.prediction_accuracy) as avg_accuracy,
+        COUNT(*) as prediction_count
+      FROM demand_predictions dp
+      WHERE dp.created_at >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+      AND dp.prediction_accuracy IS NOT NULL
+      GROUP BY DATE(dp.created_at)
+      ORDER BY date DESC
+      LIMIT 7
+    `);
+
     const dashboardData = {
       summary: {
-        totalModels: 3,
-        avgAccuracy: 0.8533,
-        totalPredictions: 15,
-        highPriorityRecommendations: 4,
+        ...summary,
+        highPriorityRecommendations
       },
-      recentPredictions: [
-        {
-          product_name: "Organic Bananas",
-          product_id: "FV-BAN-001",
-          total_predicted_demand: 287,
-          avg_daily_demand: 41,
-          store_name: "Downtown Store",
-        },
-        {
-          product_name: "Ground Coffee",
-          product_id: "BV-COF-009",
-          total_predicted_demand: 203,
-          avg_daily_demand: 29,
-          store_name: "Mall Location",
-        },
-        {
-          product_name: "Chicken Breast",
-          product_id: "MP-CHI-008",
-          total_predicted_demand: 126,
-          avg_daily_demand: 18,
-          store_name: "Mall Location",
-        },
-        {
-          product_name: "Energy Drinks",
-          product_id: "BV-ENE-015",
-          total_predicted_demand: 154,
-          avg_daily_demand: 22,
-          store_name: "Westside Market",
-        },
-      ],
-      modelPerformance: [
-        {
-          model_name: "LSTM_Demand_Forecaster_v2",
-          model_type: "lstm",
-          model_accuracy: 0.89,
-          predictions_count: 45,
-        },
-        {
-          model_name: "ARIMA_Seasonal_v1",
-          model_type: "arima",
-          model_accuracy: 0.82,
-          predictions_count: 38,
-        },
-        {
-          model_name: "Prophet_Trend_v1",
-          model_type: "prophet",
-          model_accuracy: 0.75,
-          predictions_count: 22,
-        },
-      ],
+      recentPredictions: recentPredictions || [],
+      modelPerformance: modelPerformance || [],
+      accuracyTrends: accuracyTrends || []
     };
 
     res.json(
@@ -180,6 +198,52 @@ export const getForecastingDashboard = async (req, res) => {
     );
   } catch (error) {
     console.error("Forecasting dashboard fetch error:", error);
+    res.status(500).json(createApiError(error));
+  }
+};
+
+// Get stores for filtering
+export const getStores = async (req, res) => {
+  try {
+    const [stores] = await pool.execute(`
+      SELECT id, name, status
+      FROM stores
+      WHERE status = 'active'
+      ORDER BY name
+    `);
+
+    res.json(
+      createApiResponse(
+        { stores },
+        "Stores retrieved successfully",
+      ),
+    );
+  } catch (error) {
+    console.error("Stores fetch error:", error);
+    res.status(500).json(createApiError(error));
+  }
+};
+
+// Get products for filtering
+export const getProducts = async (req, res) => {
+  try {
+    const [products] = await pool.execute(`
+      SELECT DISTINCT p.id, p.name, p.category
+      FROM products p
+      JOIN demand_predictions dp ON p.id = dp.product_id
+      WHERE p.status = 'active'
+      ORDER BY p.name
+      LIMIT 50
+    `);
+
+    res.json(
+      createApiResponse(
+        { products },
+        "Products with predictions retrieved successfully",
+      ),
+    );
+  } catch (error) {
+    console.error("Products fetch error:", error);
     res.status(500).json(createApiError(error));
   }
 };

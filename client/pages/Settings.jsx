@@ -48,8 +48,8 @@ export default function Settings() {
     }
   }, [user]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 

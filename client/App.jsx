@@ -81,15 +81,15 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Index />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/products" element={<Products />} />
-            <Route path="/products/:id" element={<ProductInfo />} />
-            <Route path="/products/:id/edit" element={<ProductInfo />} />
-            <Route path="/forecasting" element={<Forecasting />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/transactions" element={<Transactions />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
+            <Route path="/products/:id" element={<ProtectedRoute><ProductInfo /></ProtectedRoute>} />
+            <Route path="/products/:id/edit" element={<ProtectedRoute><ProductInfo /></ProtectedRoute>} />
+            <Route path="/forecasting" element={<ProtectedRoute><Forecasting /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/transactions" element={<ProtectedRoute><Transactions /></ProtectedRoute>} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
+            <Route path="*" element={<ProtectedRoute><NotFound /></ProtectedRoute>} />
           </Routes>
           <Toaster />
         </BrowserRouter>

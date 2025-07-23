@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/auth-context";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -85,6 +86,7 @@ const api = {
 
 export default function Transactions() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [selectedStore, setSelectedStore] = useState("all");
   const [stores, setStores] = useState([
     { id: "all", name: "All Stores", location: "Combined View" },
@@ -119,15 +121,8 @@ export default function Transactions() {
 
   // Load initial data
   useEffect(() => {
-    // Check authentication
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-
     loadInitialData();
-  }, [navigate]);
+  }, []);
 
   const loadInitialData = async () => {
     try {
@@ -200,8 +195,8 @@ export default function Transactions() {
     setFilteredTransactions(transactions);
   }, [transactions]);
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 

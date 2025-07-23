@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/auth-context";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +28,7 @@ import {
 
 export default function Forecasting() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [dashboardData, setDashboardData] = useState(null);
   const [predictions, setPredictions] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,15 +36,8 @@ export default function Forecasting() {
   const [selectedTimeframe, setSelectedTimeframe] = useState("7");
 
   useEffect(() => {
-    // Check authentication
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-
     fetchForecastingData();
-  }, [navigate, selectedTimeframe]);
+  }, [selectedTimeframe]);
 
   const fetchForecastingData = async () => {
     try {
@@ -75,8 +70,8 @@ export default function Forecasting() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 

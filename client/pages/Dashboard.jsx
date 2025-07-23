@@ -22,6 +22,8 @@ import {
   MapPin,
   Building,
 } from "lucide-react";
+import { fetchDashboardAnalytics } from "@/lib/api";
+import { logHealthCheck, testDashboardConnectivity } from "@/lib/health-check";
 
 // AWS Cognito and Lambda Integration
 // import { getCurrentUser, signOut } from 'aws-amplify/auth';
@@ -104,6 +106,11 @@ export default function Dashboard() {
   const [selectedStore, setSelectedStore] = useState("all");
 
   useEffect(() => {
+    // Perform health check in development mode for debugging
+    if (process.env.NODE_ENV === 'development') {
+      logHealthCheck().catch(console.error);
+    }
+
     checkAuthentication();
     fetchDashboardData();
 
@@ -125,49 +132,60 @@ export default function Dashboard() {
   const checkAuthentication = async () => {
     try {
       // AWS Cognito Authentication Check with Store-Based Access Control
-      // const currentUser = await getCurrentUser();
-      // const userAttributes = await fetchUserAttributes();
-      //
-      // // Check user's store access permissions
-      // const userStoreAccess = userAttributes['custom:store_access']; // e.g., "all" or "store_001,store_002"
-      // const userRole = userAttributes['custom:role']; // e.g., "admin", "manager", "employee"
-      // const userPrimaryStore = userAttributes['custom:primary_store']; // User's main store
-      //
-      // // Set default store based on user permissions
-      // let defaultStore = "all";
-      // if (userRole === "employee" && userPrimaryStore) {
-      //   // Employees typically see only their assigned store
-      //   defaultStore = userPrimaryStore;
-      // } else if (userRole === "manager" && userStoreAccess !== "all") {
-      //   // Managers might have access to specific stores
-      //   const accessibleStores = userStoreAccess.split(',');
-      //   defaultStore = accessibleStores.length === 1 ? accessibleStores[0] : "all";
-      // }
-      // // Admins get "all" by default
-      //
-      // setSelectedStore(defaultStore);
-      // setUser(currentUser);
+      const { getCurrentUser, fetchUserAttributes } = await import('aws-amplify/auth');
+      const currentUser = await getCurrentUser();
+      const userAttributes = await fetchUserAttributes();
 
-      // Demo authentication check (remove when implementing Cognito)
-      const isAuthenticated = localStorage.getItem("isAuthenticated");
-      if (!isAuthenticated) {
+      console.log('Dashboard - Current user:', currentUser);
+      console.log('Dashboard - User attributes:', userAttributes);
+
+      // Check user's store access permissions
+      const userStoreAccess = userAttributes['custom:store_access']; // e.g., "all" or "store_001,store_002"
+      const userRole = userAttributes['custom:role']; // e.g., "admin", "manager", "employee"
+      const userStatus = userAttributes['custom:status']; // Check if account is active
+
+      // Validate user status
+      if (userStatus === 'pending') {
+        const { signOut } = await import('aws-amplify/auth');
+        await signOut();
         navigate("/login");
         return;
       }
 
-      // Demo user data with store access control (remove when implementing Cognito)
+      if (userStatus === 'inactive' || userStatus === 'suspended') {
+        const { signOut } = await import('aws-amplify/auth');
+        await signOut();
+        navigate("/login");
+        return;
+      }
+
+      // Set default store based on user permissions
+      let defaultStore = "all";
+      if (userRole === "employee" && userStoreAccess && userStoreAccess !== "all") {
+        // Employees typically see only their assigned store(s)
+        const accessibleStores = userStoreAccess.split(',');
+        defaultStore = accessibleStores.length === 1 ? accessibleStores[0] : "all";
+      } else if (userRole === "manager" && userStoreAccess !== "all") {
+        // Managers might have access to specific stores
+        const accessibleStores = userStoreAccess.split(',');
+        defaultStore = accessibleStores.length === 1 ? accessibleStores[0] : "all";
+      }
+      // Admins get "all" by default
+
+      setSelectedStore(defaultStore);
       setUser({
-        username: "demo@invencare.com",
+        username: currentUser.username,
         attributes: {
-          given_name: "Demo",
-          family_name: "User",
-          "custom:role": "manager", // Role determines default store access
-          "custom:primary_store": "store_001", // User's main store assignment
-          "custom:store_access": "all", // Stores user can access: "all" or "store_001,store_002"
+          given_name: userAttributes.given_name || userAttributes.name || "User",
+          family_name: userAttributes.family_name || "",
+          "custom:role": userRole,
+          "custom:store_access": userStoreAccess,
         },
       });
     } catch (error) {
       console.log("Authentication check failed:", error);
+      // Remove demo authentication fallback
+      localStorage.removeItem("isAuthenticated");
       navigate("/login");
     }
   };
@@ -175,81 +193,38 @@ export default function Dashboard() {
   const fetchDashboardData = async () => {
     try {
       setIsLoading(true);
+      console.log(`Fetching dashboard data for store: ${selectedStore}`);
 
-      // AWS Lambda Analytics Function Invocation with Store Filtering
-      // const lambdaClient = new LambdaClient({
-      //   region: process.env.REACT_APP_AWS_REGION || 'us-east-1'
-      // });
-      //
-      // const lambdaParams = {
-      //   FunctionName: process.env.REACT_APP_LAMBDA_ANALYTICS_FUNCTION,
-      //   InvocationType: 'RequestResponse',
-      //   Payload: JSON.stringify({
-      //     action: 'getDashboardAnalytics',
-      //     storeId: selectedStore === 'all' ? null : selectedStore, // Filter by specific store or aggregate all
-      //     storeName: selectedStore === 'all' ? null : stores.find(s => s.id === selectedStore)?.name,
-      //     includeStoreBreakdown: selectedStore === 'all', // Include per-store breakdown when viewing all stores
-      //     timeframe: '30days',
-      //     metrics: ['totalProducts', 'revenue', 'lowStockItems', 'inventoryTurnover', 'topCategories'],
-      //     includeTransactions: true, // Include recent transactions for the selected store(s)
-      //     includeLowStockDetails: true // Include detailed low stock items with store context
-      //   })
-      // };
-      //
-      // const command = new InvokeCommand(lambdaParams);
-      // const response = await lambdaClient.send(command);
-      // const responsePayload = JSON.parse(
-      //   new TextDecoder().decode(response.Payload)
-      // );
-      //
-      // // Handle store-specific vs aggregated data
-      // if (selectedStore === 'all') {
-      //   // For "all stores" view, responsePayload should contain:
-      //   // - aggregatedMetrics: combined totals across all stores
-      //   // - storeBreakdown: individual metrics per store
-      //   // - combinedTransactions: recent transactions from all stores with store identifiers
-      //   setAnalyticsData(responsePayload.aggregatedMetrics);
-      // } else {
-      //   // For individual store view, responsePayload contains store-specific data
-      //   setAnalyticsData(responsePayload);
-      // }
-
-      // Fetch real dashboard analytics data
-      const storeParam =
-        selectedStore !== "all" ? `?storeId=${selectedStore}` : "";
-      const response = await fetch(`/api/dashboard/analytics${storeParam}`);
-
-      if (response.ok) {
-        const result = await response.json();
-        const data = result.data;
-        setAnalyticsData({
-          totalProducts: data.totalProducts,
-          lowStockItems: data.lowStockItems,
-          revenueThisMonth: data.revenueThisMonth,
-          inventoryTurnover: data.inventoryTurnover,
-          topSellingCategories: data.topSellingCategories,
-        });
-      } else {
-        // Fallback to basic inventory data if dashboard API fails
-        const fallbackResponse = await fetch("/api/analytics/inventory-db");
-        if (fallbackResponse.ok) {
-          const data = await fallbackResponse.json();
-          setAnalyticsData({
-            totalProducts: data.totalProducts,
-            lowStockItems: data.lowStockItems.length,
-            revenueThisMonth: data.totalValue,
-            inventoryTurnover: 0,
-            topSellingCategories: [],
-          });
-        } else {
-          // Final fallback to mock data
-          setAnalyticsData(storeAnalytics[selectedStore]);
+      // Quick connectivity test in development mode
+      if (process.env.NODE_ENV === 'development') {
+        const connectivityTest = await testDashboardConnectivity(selectedStore);
+        if (!connectivityTest.success) {
+          console.warn('Connectivity test failed, proceeding with fallback');
         }
       }
+
+      const data = await fetchDashboardAnalytics(selectedStore);
+      console.log("Successfully fetched dashboard data:", data);
+
+      setAnalyticsData({
+        totalProducts: data.totalProducts,
+        lowStockItems: data.lowStockItems,
+        revenueThisMonth: data.revenueThisMonth,
+        inventoryTurnover: data.inventoryTurnover,
+        topSellingCategories: data.topSellingCategories,
+      });
     } catch (error) {
       console.error("Failed to fetch dashboard data:", error);
-      // Set fallback data
-      setAnalyticsData({
+      console.log("Network error details:", {
+        message: error.message,
+        stack: error.stack,
+        origin: window.location.origin,
+        href: window.location.href
+      });
+
+      // Always provide fallback data to ensure the UI still works
+      console.log("Using mock data due to network error");
+      setAnalyticsData(storeAnalytics[selectedStore] || {
         totalProducts: 0,
         lowStockItems: 0,
         topSellingCategories: [],
@@ -264,14 +239,14 @@ export default function Dashboard() {
   const handleLogout = async () => {
     try {
       // AWS Cognito Sign Out
-      // await signOut();
+      const { signOut } = await import('aws-amplify/auth');
+      await signOut();
 
-      // Demo logout (remove when implementing Cognito)
-      localStorage.removeItem("isAuthenticated");
+      console.log("User signed out successfully");
       navigate("/login");
     } catch (error) {
       console.error("Logout error:", error);
-      // Force logout on error
+      // Force logout on error - clear any remaining auth state
       localStorage.removeItem("isAuthenticated");
       navigate("/login");
     }

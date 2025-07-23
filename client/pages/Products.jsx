@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "@/lib/auth-context";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,6 +28,7 @@ import {
 
 export default function Products() {
   const navigate = useNavigate();
+  const { user, logout } = useAuth();
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [storeFilter, setStoreFilter] = useState("all");
@@ -51,18 +53,13 @@ export default function Products() {
   });
 
   useEffect(() => {
-    // Check authentication
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
+    console.log("Products page - User authenticated:", user?.username);
 
     // Fetch products, categories, and stores from API
     fetchProducts();
     fetchCategories();
     fetchStores();
-  }, [navigate]);
+  }, []);
 
   const fetchCategories = async () => {
     try {
@@ -108,8 +105,8 @@ export default function Products() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 

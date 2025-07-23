@@ -17,7 +17,27 @@ function getBaseURL() {
 }
 
 /**
- * Make an API request with proper error handling
+ * Get authentication headers for API requests
+ */
+async function getAuthHeaders() {
+  try {
+    const { fetchAuthSession } = await import('aws-amplify/auth');
+    const session = await fetchAuthSession();
+
+    if (session?.tokens?.idToken) {
+      return {
+        'Authorization': `Bearer ${session.tokens.idToken.toString()}`
+      };
+    }
+  } catch (error) {
+    console.warn('Could not get auth token:', error);
+  }
+
+  return {};
+}
+
+/**
+ * Make an API request with proper error handling and authentication
  * @param {string} endpoint - The API endpoint (e.g., '/api/dashboard/analytics')
  * @param {RequestInit} options - Fetch options
  * @returns {Promise<any>} - The response data
@@ -25,17 +45,28 @@ function getBaseURL() {
 export async function apiRequest(endpoint, options = {}) {
   const baseURL = getBaseURL();
   const url = `${baseURL}${endpoint}`;
-  
+
   console.log(`Making API request to: ${url}`);
-  
+
   try {
+    // Get authentication headers
+    const authHeaders = await getAuthHeaders();
+
     const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
+        ...authHeaders,
         ...options.headers,
       },
       ...options,
     });
+
+    if (response.status === 401) {
+      // Unauthorized - redirect to login
+      console.warn('API request unauthorized, user may need to re-authenticate');
+      window.location.href = '/login';
+      throw new Error('Authentication required');
+    }
 
     if (!response.ok) {
       throw new Error(`HTTP error! status: ${response.status} - ${response.statusText}`);

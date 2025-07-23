@@ -46,11 +46,23 @@ export default function Login() {
     setIsLoading(true);
 
     try {
+      // Debug: Check Amplify configuration
+      console.log('🔐 Starting sign in process...');
+      console.log('Email:', formData.email);
+
+      // Check if Amplify is properly configured
+      const { Amplify } = await import('aws-amplify');
+      const config = Amplify.getConfig();
+      console.log('Amplify Config:', config.Auth?.Cognito);
+
       // AWS Cognito Sign In Implementation with Store Access Validation
+      console.log('Attempting signIn with SRP...');
       const { isSignedIn, nextStep } = await signIn({
         username: formData.email,
         password: formData.password,
       });
+
+      console.log('Sign in result:', { isSignedIn, nextStep });
 
       if (isSignedIn) {
         // After successful sign-in, fetch user attributes to validate store access

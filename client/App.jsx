@@ -75,22 +75,24 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/products" element={<Products />} />
-          <Route path="/products/:id" element={<ProductInfo />} />
-          <Route path="/products/:id/edit" element={<ProductInfo />} />
-          <Route path="/forecasting" element={<Forecasting />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/transactions" element={<Transactions />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-        <Toaster />
-      </BrowserRouter>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/products" element={<Products />} />
+            <Route path="/products/:id" element={<ProductInfo />} />
+            <Route path="/products/:id/edit" element={<ProductInfo />} />
+            <Route path="/forecasting" element={<Forecasting />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/transactions" element={<Transactions />} />
+            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+          <Toaster />
+        </BrowserRouter>
+      </AuthProvider>
     </QueryClientProvider>
   );
 };

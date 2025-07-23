@@ -45,73 +45,80 @@ export default function Login() {
 
     try {
       // AWS Cognito Sign In Implementation with Store Access Validation
-      // const { isSignedIn, nextStep } = await signIn({
-      //   username: formData.email,
-      //   password: formData.password,
-      // });
-      //
-      // if (isSignedIn) {
-      //   // After successful sign-in, fetch user attributes to validate store access
-      //   const userAttributes = await fetchUserAttributes();
-      //   const userStatus = userAttributes['custom:status'];
-      //   const storeAccess = userAttributes['custom:store_access'];
-      //   const userRole = userAttributes['custom:role'];
-      //
-      //   // Validate user account status
-      //   if (userStatus === 'inactive' || userStatus === 'suspended') {
-      //     await signOut();
-      //     toast({
-      //       title: "Account Inactive",
-      //       description: "Your account has been deactivated. Please contact your administrator.",
-      //       variant: "destructive",
-      //     });
-      //     return;
-      //   }
-      //
-      //   if (userStatus === 'pending') {
-      //     await signOut();
-      //     toast({
-      //       title: "Account Pending Approval",
-      //       description: "Your account is pending admin approval. Please wait for activation.",
-      //       variant: "destructive",
-      //     });
-      //     return;
-      //   }
-      //
-      //   // Validate store access
-      //   if (!storeAccess || (storeAccess !== 'all' && !storeAccess.includes('store_'))) {
-      //     await signOut();
-      //     toast({
-      //       title: "No Store Access",
-      //       description: "You don't have access to any stores. Please contact your administrator.",
-      //       variant: "destructive",
-      //     });
-      //     return;
-      //   }
-      //
-      //   toast({
-      //     title: "Success",
-      //     description: `Welcome back! You have ${storeAccess === 'all' ? 'full' : 'limited'} store access.`,
-      //   });
-      //   navigate("/dashboard");
-      // } else {
-      //   // Handle MFA or other next steps
-      //   console.log('Sign in next step:', nextStep);
-      // }
+      const { isSignedIn, nextStep } = await signIn({
+        username: formData.email,
+        password: formData.password,
+      });
 
-      // Demo implementation (remove when implementing Cognito)
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      if (formData.email && formData.password) {
-        localStorage.setItem("isAuthenticated", "true");
+      if (isSignedIn) {
+        // After successful sign-in, fetch user attributes to validate store access
+        const userAttributes = await fetchUserAttributes();
+        const userStatus = userAttributes['custom:status'];
+        const storeAccess = userAttributes['custom:store_access'];
+        const userRole = userAttributes['custom:role'];
+
+        console.log('User attributes:', userAttributes);
+
+        // Validate user account status
+        if (userStatus === 'inactive' || userStatus === 'suspended') {
+          const { signOut } = await import('aws-amplify/auth');
+          await signOut();
+          toast({
+            title: "Account Inactive",
+            description: "Your account has been deactivated. Please contact your administrator.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        if (userStatus === 'pending') {
+          const { signOut } = await import('aws-amplify/auth');
+          await signOut();
+          toast({
+            title: "Account Pending Approval",
+            description: "Your account is pending admin approval. Please wait for activation.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        // Validate store access
+        if (!storeAccess || (storeAccess !== 'all' && !storeAccess.includes('store_'))) {
+          const { signOut } = await import('aws-amplify/auth');
+          await signOut();
+          toast({
+            title: "No Store Access",
+            description: "You don't have access to any stores. Please contact your administrator.",
+            variant: "destructive",
+          });
+          return;
+        }
+
+        toast({
+          title: "Success",
+          description: `Welcome back! You have ${storeAccess === 'all' ? 'full' : 'limited'} store access.`,
+          variant: "success",
+        });
+
+        // Remove demo authentication
+        localStorage.removeItem("isAuthenticated");
         navigate("/dashboard");
+      } else {
+        // Handle MFA or other next steps
+        console.log('Sign in next step:', nextStep);
+        toast({
+          title: "Additional verification required",
+          description: "Please complete the additional authentication step.",
+          variant: "warning",
+        });
       }
     } catch (error) {
       console.error("Sign in error:", error);
-      // toast({
-      //   title: "Error",
-      //   description: error.message || "Failed to sign in",
-      //   variant: "destructive",
-      // });
+      toast({
+        title: "Error",
+        description: error.message || "Failed to sign in",
+        variant: "destructive",
+      });
     } finally {
       setIsLoading(false);
     }

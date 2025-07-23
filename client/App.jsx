@@ -51,24 +51,25 @@ const queryClient = new QueryClient();
 
 const App = () => {
   // AWS Cognito Authentication State Management
-  // const [user, setUser] = useState(null);
-  // const [isLoading, setIsLoading] = useState(true);
-  //
-  // useEffect(() => {
-  //   checkAuthState();
-  // }, []);
-  //
-  // const checkAuthState = async () => {
-  //   try {
-  //     const currentUser = await getCurrentUser();
-  //     setUser(currentUser);
-  //   } catch (error) {
-  //     console.log('No authenticated user found');
-  //     setUser(null);
-  //   } finally {
-  //     setIsLoading(false);
-  //   }
-  // };
+  const [user, setUser] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    checkAuthState();
+  }, []);
+
+  const checkAuthState = async () => {
+    try {
+      const currentUser = await getCurrentUser();
+      setUser(currentUser);
+      console.log('Current user found:', currentUser);
+    } catch (error) {
+      console.log('No authenticated user found');
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <QueryClientProvider client={queryClient}>

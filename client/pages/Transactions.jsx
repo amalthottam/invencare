@@ -698,31 +698,7 @@ export default function Transactions() {
                     </div>
                   )}
 
-                  <div>
-                    <Label htmlFor="category">Category</Label>
-                    <select
-                      id="category"
-                      value={formData.category}
-                      onChange={(e) =>
-                        setFormData({ ...formData, category: e.target.value })
-                      }
-                      className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      required
-                      disabled={formData.productId && products?.length > 0}
-                    >
-                      <option value="">Select category</option>
-                      <option value="Fruits & Vegetables">
-                        Fruits & Vegetables
-                      </option>
-                      <option value="Dairy">Dairy</option>
-                      <option value="Bakery">Bakery</option>
-                      <option value="Meat & Poultry">Meat & Poultry</option>
-                      <option value="Seafood">Seafood</option>
-                      <option value="Beverages">Beverages</option>
-                      <option value="Snacks">Snacks</option>
-                      <option value="Grains">Grains</option>
-                    </select>
-                  </div>
+
 
                   <div className="grid grid-cols-2 gap-4">
                     <div>

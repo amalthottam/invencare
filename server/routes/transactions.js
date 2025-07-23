@@ -207,11 +207,20 @@ export const createTransaction = async (req, res) => {
 
     // Update product inventory if product exists
     if (productId) {
-      // Check if product exists
-      const [productRows] = await req.db.execute(
-        "SELECT quantity FROM products WHERE id = ? AND store_id = ?",
+      // Check if product exists - productId might be the database ID or SKU
+      // First try as database ID, then as SKU if not found
+      let [productRows] = await req.db.execute(
+        "SELECT id, quantity FROM products WHERE id = ? AND store_id = ?",
         [productId, storeId],
       );
+
+      // If not found by database ID, try by product_id (SKU) if it exists
+      if (productRows.length === 0) {
+        [productRows] = await req.db.execute(
+          "SELECT id, quantity FROM products WHERE product_id = ? AND store_id = ?",
+          [productId, storeId],
+        );
+      }
 
       if (productRows.length > 0) {
         let stockChange = 0;

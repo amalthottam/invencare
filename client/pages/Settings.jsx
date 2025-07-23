@@ -29,10 +29,12 @@ export default function Settings() {
   const navigate = useNavigate();
   const { user, logout } = useAuth();
   const [profileData, setProfileData] = useState({
-    name: "Demo User",
-    email: "demo@invencare.com",
-    role: "Manager",
-    department: "Inventory",
+    name: "Loading...",
+    email: "Loading...",
+    role: "employee",
+    storeAccess: "none",
+    userId: "",
+    emailVerified: false,
   });
   const [isEditingProfile, setIsEditingProfile] = useState(false);
 

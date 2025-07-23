@@ -190,6 +190,7 @@ export default function Transactions() {
     type: "",
     productName: "",
     productId: "",
+    selectedProductDbId: "", // For dropdown value tracking
     category: "",
     quantity: "",
     unitPrice: "",

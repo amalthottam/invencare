@@ -215,10 +215,33 @@ export default function Forecasting() {
                 Unified model predictions powered by AWS Lambda & SageMaker
               </p>
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-3">
               <Button onClick={fetchForecastingData} variant="outline" size="sm">
                 <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh
+                Refresh Data
+              </Button>
+              <Button
+                onClick={generateForecast}
+                disabled={generating}
+                className="bg-gradient-to-r from-violet-500 to-purple-600 hover:from-violet-600 hover:to-purple-700 text-white shadow-lg hover:shadow-xl transition-all duration-200 animate-pulse"
+                size="lg"
+              >
+                {generating ? (
+                  <>
+                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                    Generating...
+                  </>
+                ) : generateSuccess ? (
+                  <>
+                    <Sparkles className="h-5 w-5 mr-2" />
+                    Generated!
+                  </>
+                ) : (
+                  <>
+                    <Sparkles className="h-5 w-5 mr-2" />
+                    Generate Forecast
+                  </>
+                )}
               </Button>
             </div>
           </div>

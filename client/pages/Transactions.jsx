@@ -158,6 +158,34 @@ export default function Transactions() {
   const [error, setError] = useState(null);
   const [isConnected, setIsConnected] = useState(true);
 
+  // Fallback data for when API is unavailable
+  const mockTransactions = [
+    {
+      id: 1,
+      reference_number: "DEMO-001",
+      type: "sale",
+      product_name: "Sample Product",
+      category: "Demo",
+      quantity: 5,
+      total_amount: 25.99,
+      store_name: "Demo Store",
+      user_name: "Demo User",
+      created_at: new Date().toISOString(),
+    }
+  ];
+
+  const mockProducts = [
+    {
+      id: 1,
+      productName: "Sample Product",
+      productId: "DEMO-001",
+      category: "Demo",
+      price: "5.99",
+      stock: 50,
+      storeId: "store_001",
+    }
+  ];
+
   const [formData, setFormData] = useState({
     type: "",
     productName: "",

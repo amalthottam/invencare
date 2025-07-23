@@ -748,7 +748,7 @@ export default function Transactions() {
                             unitPrice: e.target.value,
                           })
                         }
-                        disabled={formData.productId && products.length > 0}
+                        disabled={formData.productId && products?.length > 0}
                         required
                       />
                     </div>

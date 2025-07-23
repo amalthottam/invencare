@@ -4,10 +4,8 @@ import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "@/lib/AuthContext";
-import { Amplify } from "aws-amplify";
-import awsConfig from "@/lib/aws-config";
-import ProtectedRoute from "@/components/ProtectedRoute";
+import { AuthProvider } from "@/lib/auth-context";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 // Import pages
 import Index from "./pages/Index";
@@ -20,13 +18,7 @@ import Settings from "./pages/Settings";
 import Transactions from "./pages/Transactions";
 import NotFound from "./pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
-import { AuthProvider } from "@/lib/auth-context";
-import ProtectedRoute from "./components/ProtectedRoute";
 
-<<<<<<< HEAD
-// Configure Amplify
-Amplify.configure(awsConfig);
-=======
 // AWS Cognito Integration
 import { Amplify } from "aws-amplify";
 import { getCurrentUser } from "aws-amplify/auth";
@@ -59,13 +51,10 @@ Amplify.configure({
     },
   },
 });
->>>>>>> origin/main
 
 const queryClient = new QueryClient();
 
 const App = () => {
-<<<<<<< HEAD
-=======
   // AWS Cognito Authentication State Management
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -87,29 +76,16 @@ const App = () => {
     }
   };
 
->>>>>>> origin/main
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>
         <BrowserRouter>
           <Routes>
-<<<<<<< HEAD
             {/* Public routes */}
             <Route path="/" element={<Index />} />
-            <Route
-              path="/login"
-              element={
-                <ProtectedRoute requireAuth={false}>
-                  <Login />
-                </ProtectedRoute>
-              }
-            />
+            <Route path="/login" element={<Login />} />
 
             {/* Protected routes */}
-=======
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
->>>>>>> origin/main
             <Route
               path="/dashboard"
               element={
@@ -127,12 +103,6 @@ const App = () => {
               }
             />
             <Route
-<<<<<<< HEAD
-              path="/transactions"
-              element={
-                <ProtectedRoute>
-                  <Transactions />
-=======
               path="/products/:id"
               element={
                 <ProtectedRoute>
@@ -145,7 +115,14 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <ProductInfo />
->>>>>>> origin/main
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/transactions"
+              element={
+                <ProtectedRoute>
+                  <Transactions />
                 </ProtectedRoute>
               }
             />
@@ -165,21 +142,8 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
-<<<<<<< HEAD
 
             {/* Catch all */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-=======
-            <Route
-              path="/transactions"
-              element={
-                <ProtectedRoute>
-                  <Transactions />
-                </ProtectedRoute>
-              }
-            />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route
               path="*"
               element={
@@ -190,7 +154,6 @@ const App = () => {
             />
           </Routes>
           <Toaster />
->>>>>>> origin/main
         </BrowserRouter>
       </AuthProvider>
     </QueryClientProvider>

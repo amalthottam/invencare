@@ -777,8 +777,11 @@ export function createServer() {
   app.get("/api/products", getProducts);
 
   // Local database forecasting routes
-  app.get("/api/analytics/demand-predictions", getDemandPredictions);
-  app.get("/api/analytics/forecasting-dashboard", getForecastingDashboard);
+app.get("/api/analytics/demand-predictions", getDemandPredictions);
+app.get("/api/analytics/forecasting-dashboard", getForecastingDashboard);
+app.get("/api/analytics/forecasting-stores", getForecastingStores);
+app.get("/api/analytics/forecasting-products", getForecastingProducts);
+app.get("/api/analytics/category-insights", getCategoryInsights);
 
   // Product Analytics routes
   app.get("/api/analytics/products/:storeId/dashboard", getAnalyticsDashboard);

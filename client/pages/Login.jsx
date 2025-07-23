@@ -51,10 +51,12 @@ export default function Login() {
       console.log('🔐 Starting sign in process...');
       console.log('Email:', formData.email);
 
-      // Check if Amplify is properly configured
-      const { Amplify } = await import('aws-amplify');
-      const config = Amplify.getConfig();
-      console.log('Amplify Config:', config.Auth?.Cognito);
+      // Run pre-authentication diagnostics
+      const diagnostics = await performPreAuthChecks();
+
+      if (!diagnostics.config.valid) {
+        throw new Error(`Configuration error: ${diagnostics.config.missing?.join(', ') || diagnostics.config.error}`);
+      }
 
       // AWS Cognito Sign In Implementation with Store Access Validation
       console.log('Attempting signIn...');

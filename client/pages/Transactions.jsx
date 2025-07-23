@@ -159,13 +159,16 @@ export default function Transactions() {
       const response = await fetch('/api/ping');
       if (response.ok) {
         console.log('API connectivity test passed');
+        setIsConnected(true);
         return true;
       } else {
         console.warn('API connectivity test failed - server responded with error');
+        setIsConnected(false);
         return false;
       }
     } catch (error) {
       console.error('API connectivity test failed:', error);
+      setIsConnected(false);
       return false;
     }
   };

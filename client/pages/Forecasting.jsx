@@ -70,8 +70,8 @@ export default function Forecasting() {
     }
   };
 
-  const handleLogout = () => {
-    localStorage.removeItem("isAuthenticated");
+  const handleLogout = async () => {
+    await logout();
     navigate("/login");
   };
 

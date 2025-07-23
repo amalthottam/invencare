@@ -871,7 +871,7 @@ export default function Transactions() {
                   </div>
 
                   {/* Auto-filled Product Details */}
-                  {formData.productId && (
+                  {formData.selectedProductDbId && formData.productName && (
                     <div className="grid grid-cols-2 gap-4 p-4 bg-muted/50 rounded-lg">
                       <div>
                         <Label className="text-sm font-medium text-muted-foreground">Product Name</Label>

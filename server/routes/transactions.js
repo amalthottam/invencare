@@ -239,10 +239,11 @@ export const createTransaction = async (req, res) => {
 
         // If transfer, update destination store stock
         if (type === "transfer" && transferToStoreId) {
-          // Find the same product in the destination store
+          // For transfers, we need to find the corresponding product in the destination store
+          // This assumes products have the same name/category across stores
           const [destProductRows] = await req.db.execute(
-            "SELECT id FROM products WHERE product_id = ? AND store_id = ?",
-            [productId, transferToStoreId],
+            "SELECT id FROM products WHERE name = ? AND category = ? AND store_id = ?",
+            [productName, category, transferToStoreId],
           );
 
           if (destProductRows.length > 0) {

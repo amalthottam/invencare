@@ -361,8 +361,8 @@ export default function Forecasting() {
                   {predictions.length === 0 ? (
                     <div className="text-center py-8 text-muted-foreground">
                       <Brain className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>No predictions available for the selected filters</p>
-                      <p className="text-sm">Try adjusting your timeframe or filters</p>
+                      <p>No predictions available</p>
+                      <p className="text-sm">Click "Generate Forecast" to create new predictions</p>
                     </div>
                   ) : (
                     predictions.map((prediction) => (

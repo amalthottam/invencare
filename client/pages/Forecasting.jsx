@@ -36,15 +36,8 @@ export default function Forecasting() {
   const [selectedTimeframe, setSelectedTimeframe] = useState("7");
 
   useEffect(() => {
-    // Check authentication
-    const isAuthenticated = localStorage.getItem("isAuthenticated");
-    if (!isAuthenticated) {
-      navigate("/login");
-      return;
-    }
-
     fetchForecastingData();
-  }, [navigate, selectedTimeframe]);
+  }, [selectedTimeframe]);
 
   const fetchForecastingData = async () => {
     try {

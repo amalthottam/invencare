@@ -107,14 +107,14 @@ export const getCategoryInsights = async (req, res) => {
 // Get forecasting dashboard summary from real database
 export const getForecastingDashboard = async (req, res) => {
   try {
+    // Get basic prediction statistics
     const [summaryResult] = await req.db.execute(`
       SELECT
-        COUNT(DISTINCT dfm.id) as totalModels,
-        AVG(dfm.model_accuracy) as avgAccuracy,
+        1 as totalModels,
+        AVG(dp.prediction_accuracy) as avgAccuracy,
         COUNT(dp.id) as totalPredictions
-      FROM demand_forecasting_models dfm
-      LEFT JOIN demand_predictions dp ON dfm.id = dp.model_id
-      WHERE dfm.training_status = 'deployed'
+      FROM demand_predictions dp
+      WHERE dp.prediction_date >= CURDATE()
     `);
 
     const summary = summaryResult[0] || {
@@ -150,19 +150,20 @@ export const getForecastingDashboard = async (req, res) => {
       LIMIT 10
     `);
 
-    // Get model performance data
-    const [modelPerformance] = await req.db.execute(`
+    // Get category performance data
+    const [categoryPerformance] = await req.db.execute(`
       SELECT
-        dfm.model_name,
-        dfm.model_type,
-        dfm.model_accuracy,
-        COUNT(dp.id) as predictions_count,
-        dfm.training_status
-      FROM demand_forecasting_models dfm
-      LEFT JOIN demand_predictions dp ON dfm.id = dp.model_id
-      WHERE dfm.training_status = 'deployed'
-      GROUP BY dfm.id
-      ORDER BY dfm.model_accuracy DESC
+        p.category,
+        COUNT(DISTINCT dp.product_id) as product_count,
+        COUNT(dp.id) as prediction_count,
+        AVG(dp.predicted_demand) as avg_predicted_demand,
+        AVG(dp.prediction_accuracy) as avg_accuracy,
+        AVG(dp.confidence_interval_upper - dp.confidence_interval_lower) as avg_uncertainty
+      FROM demand_predictions dp
+      JOIN products p ON dp.product_id = p.id
+      WHERE dp.prediction_date >= CURDATE()
+      GROUP BY p.category
+      ORDER BY avg_predicted_demand DESC
     `);
 
     // Get accuracy trends and insights
@@ -185,7 +186,7 @@ export const getForecastingDashboard = async (req, res) => {
         highPriorityRecommendations
       },
       recentPredictions: recentPredictions || [],
-      modelPerformance: modelPerformance || [],
+      categoryPerformance: categoryPerformance || [],
       accuracyTrends: accuracyTrends || []
     };
 

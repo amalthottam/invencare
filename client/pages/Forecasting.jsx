@@ -282,15 +282,28 @@ export default function Forecasting() {
           {/* Error Message */}
           {error && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-red-600">{error}</p>
-              <Button
-                onClick={fetchForecastingData}
-                variant="outline"
-                size="sm"
-                className="mt-2"
-              >
-                Retry
-              </Button>
+              <div className="flex items-center gap-2 mb-2">
+                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <p className="text-red-600 font-medium">Connection Error</p>
+              </div>
+              <p className="text-red-600 text-sm mb-3">{error}</p>
+              <div className="flex gap-2">
+                <Button
+                  onClick={fetchForecastingData}
+                  variant="outline"
+                  size="sm"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Retry
+                </Button>
+                <Button
+                  onClick={() => window.location.reload()}
+                  variant="outline"
+                  size="sm"
+                >
+                  Reload Page
+                </Button>
+              </div>
             </div>
           )}
 

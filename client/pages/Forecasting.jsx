@@ -373,21 +373,21 @@ export default function Forecasting() {
           {/* Top Section: Category Performance (main) + Right Sidebar */}
           <div className="grid gap-6 lg:grid-cols-4 mb-8">
             {/* Category Performance - Main Highlight (3 columns) */}
-            {dashboardData && dashboardData.categoryPerformance && dashboardData.categoryPerformance.length > 0 && (
-              <Card className="lg:col-span-3">
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2 justify-center">
-                    <Layers className="h-6 w-6" />
-                    Category Performance Overview
-                    <Badge variant="outline" className="ml-auto">
-                      {dashboardData.categoryPerformance.length} categories
-                    </Badge>
-                  </CardTitle>
-                  <CardDescription className="text-center">
-                    Prediction accuracy and performance metrics by product category
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
+            <Card className="lg:col-span-3">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 justify-center">
+                  <Layers className="h-6 w-6" />
+                  Category Performance Overview
+                  <Badge variant="outline" className="ml-auto">
+                    {dashboardData?.categoryPerformance?.length || 0} categories
+                  </Badge>
+                </CardTitle>
+                <CardDescription className="text-center">
+                  Prediction accuracy and performance metrics by product category
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {dashboardData?.categoryPerformance && dashboardData.categoryPerformance.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                     {dashboardData.categoryPerformance.map((category, index) => (
                       <div
@@ -431,9 +431,15 @@ export default function Forecasting() {
                       </div>
                     ))}
                   </div>
-                </CardContent>
-              </Card>
-            )}
+                ) : (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Layers className="h-16 w-16 mx-auto mb-4 opacity-50" />
+                    <p className="text-lg mb-2">No category data available</p>
+                    <p className="text-sm">Generate new forecasts to see category performance metrics</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Right Sidebar */}
             <div className="space-y-6">

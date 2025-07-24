@@ -325,6 +325,7 @@ export default function Dashboard() {
       setAnalyticsLoading(false);
       setLowStockLoading(false);
       setTransactionsLoading(false);
+      setChartsLoading(false);
     } finally {
       setIsLoading(false);
     }

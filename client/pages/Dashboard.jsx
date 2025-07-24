@@ -57,11 +57,14 @@ export default function Dashboard() {
   const [stores, setStores] = useState([]);
   const [lowStockItems, setLowStockItems] = useState([]);
   const [recentTransactions, setRecentTransactions] = useState([]);
+  const [salesTrends, setSalesTrends] = useState([]);
+  const [categoryData, setCategoryData] = useState([]);
 
   // Individual loading states for components
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
   const [lowStockLoading, setLowStockLoading] = useState(false);
   const [transactionsLoading, setTransactionsLoading] = useState(false);
+  const [chartsLoading, setChartsLoading] = useState(false);
 
   useEffect(() => {
     // Perform health check in development mode for debugging

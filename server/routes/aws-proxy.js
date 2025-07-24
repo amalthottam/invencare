@@ -4,7 +4,7 @@ import { createApiResponse, createApiError } from "../../shared/api.js";
 export const generateForecast = async (req, res) => {
   try {
     console.log("Proxying forecast generation request to AWS...");
-    
+
     const { forecasting_days = 30 } = req.body;
 
     // Make the request to AWS API Gateway
@@ -19,7 +19,7 @@ export const generateForecast = async (req, res) => {
         body: JSON.stringify({
           forecasting_days: forecasting_days,
         }),
-      }
+      },
     );
 
     console.log("AWS API Response:", response.status, response.statusText);
@@ -27,17 +27,19 @@ export const generateForecast = async (req, res) => {
     if (response.ok) {
       const responseData = await response.json();
       console.log("AWS API Success:", responseData);
-      
+
       res.json(
         createApiResponse(
           responseData,
           "Forecast generation started successfully",
-        )
+        ),
       );
     } else {
       const errorText = await response.text();
       console.error("AWS API Error Response:", errorText);
-      throw new Error(`AWS API failed with status: ${response.status} - ${errorText}`);
+      throw new Error(
+        `AWS API failed with status: ${response.status} - ${errorText}`,
+      );
     }
   } catch (error) {
     console.error("Failed to generate forecast via proxy:", error);

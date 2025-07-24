@@ -51,7 +51,9 @@ export default function Forecasting() {
 
       // Fetch dashboard summary
       console.log("Fetching dashboard summary...");
-      const dashboardResponse = await fetch("/api/analytics/forecasting-dashboard");
+      const dashboardResponse = await fetch(
+        "/api/analytics/forecasting-dashboard",
+      );
       console.log("Dashboard response status:", dashboardResponse.status);
 
       if (dashboardResponse.ok) {
@@ -59,20 +61,32 @@ export default function Forecasting() {
         console.log("Dashboard data received:", response);
         setDashboardData(response.data);
       } else {
-        console.error("Dashboard fetch failed with status:", dashboardResponse.status);
+        console.error(
+          "Dashboard fetch failed with status:",
+          dashboardResponse.status,
+        );
       }
 
       // Fetch demand predictions
       console.log("Fetching demand predictions...");
-      const predictionsResponse = await fetch("/api/analytics/demand-predictions?days=30");
+      const predictionsResponse = await fetch(
+        "/api/analytics/demand-predictions?days=30",
+      );
       console.log("Predictions response status:", predictionsResponse.status);
 
       if (predictionsResponse.ok) {
         const response = await predictionsResponse.json();
-        console.log("Predictions data received:", response.data.predictions?.length, "predictions");
+        console.log(
+          "Predictions data received:",
+          response.data.predictions?.length,
+          "predictions",
+        );
         setPredictions(response.data.predictions || []);
       } else {
-        console.error("Predictions fetch failed with status:", predictionsResponse.status);
+        console.error(
+          "Predictions fetch failed with status:",
+          predictionsResponse.status,
+        );
       }
 
       setError(null);
@@ -81,9 +95,11 @@ export default function Forecasting() {
       console.error("Error details:", {
         name: err.name,
         message: err.message,
-        stack: err.stack
+        stack: err.stack,
       });
-      setError(`Failed to load forecasting data: ${err.message}. Please try again.`);
+      setError(
+        `Failed to load forecasting data: ${err.message}. Please try again.`,
+      );
     } finally {
       setLoading(false);
     }
@@ -121,16 +137,20 @@ export default function Forecasting() {
       } else {
         const errorData = await response.json();
         console.error("Proxy API Error Response:", errorData);
-        throw new Error(errorData.error || `API call failed with status: ${response.status}`);
+        throw new Error(
+          errorData.error || `API call failed with status: ${response.status}`,
+        );
       }
     } catch (err) {
       console.error("Failed to generate forecast:", err);
       console.error("Error details:", {
         name: err.name,
         message: err.message,
-        stack: err.stack
+        stack: err.stack,
       });
-      setError(`Failed to generate forecast: ${err.message}. Please try again.`);
+      setError(
+        `Failed to generate forecast: ${err.message}. Please try again.`,
+      );
     } finally {
       setGenerating(false);
     }
@@ -172,18 +192,23 @@ export default function Forecasting() {
   };
 
   const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric'
+    return new Date(dateString).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
     });
   };
 
   const getUncertaintyLevel = (prediction) => {
-    if (!prediction.confidence_interval_lower || !prediction.confidence_interval_upper) {
+    if (
+      !prediction.confidence_interval_lower ||
+      !prediction.confidence_interval_upper
+    ) {
       return "Unknown";
     }
-    const uncertainty = prediction.confidence_interval_upper - prediction.confidence_interval_lower;
+    const uncertainty =
+      prediction.confidence_interval_upper -
+      prediction.confidence_interval_lower;
     const relative = uncertainty / prediction.predicted_demand;
     if (relative <= 0.2) return "Low";
     if (relative <= 0.5) return "Medium";
@@ -193,13 +218,13 @@ export default function Forecasting() {
   const getCategoryColor = (category) => {
     const colors = {
       "Fruits & Vegetables": "bg-green-100 text-green-800",
-      "Dairy": "bg-blue-100 text-blue-800",
+      Dairy: "bg-blue-100 text-blue-800",
       "Meat & Poultry": "bg-red-100 text-red-800",
-      "Beverages": "bg-purple-100 text-purple-800",
-      "Bakery": "bg-orange-100 text-orange-800",
-      "Snacks": "bg-yellow-100 text-yellow-800",
-      "Seafood": "bg-cyan-100 text-cyan-800",
-      "Grains": "bg-amber-100 text-amber-800",
+      Beverages: "bg-purple-100 text-purple-800",
+      Bakery: "bg-orange-100 text-orange-800",
+      Snacks: "bg-yellow-100 text-yellow-800",
+      Seafood: "bg-cyan-100 text-cyan-800",
+      Grains: "bg-amber-100 text-amber-800",
     };
     return colors[category] || "bg-gray-100 text-gray-800";
   };
@@ -213,7 +238,9 @@ export default function Forecasting() {
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-muted-foreground">Loading forecasting data...</p>
+                <p className="text-muted-foreground">
+                  Loading forecasting data...
+                </p>
               </div>
             </div>
           </main>
@@ -241,7 +268,8 @@ export default function Forecasting() {
                       AI Demand Forecasting
                     </h1>
                     <p className="text-gray-600 mt-1">
-                      Unified model predictions powered by AWS Lambda & SageMaker
+                      Unified model predictions powered by AWS Lambda &
+                      SageMaker
                     </p>
                   </div>
                 </div>
@@ -294,7 +322,8 @@ export default function Forecasting() {
                 </p>
               </div>
               <p className="text-green-600 text-sm mt-1">
-                New predictions have been generated for the next 30 days. Data will refresh automatically.
+                New predictions have been generated for the next 30 days. Data
+                will refresh automatically.
               </p>
             </div>
           )}
@@ -349,9 +378,12 @@ export default function Forecasting() {
                   <Target className="h-8 w-8" />
                   <div>
                     <div className="text-2xl font-bold">
-                      {dashboardData?.summary?.avgAccuracy ?
-                        (parseFloat(dashboardData.summary.avgAccuracy) * 100).toFixed(1) :
-                        '65.0'}%
+                      {dashboardData?.summary?.avgAccuracy
+                        ? (
+                            parseFloat(dashboardData.summary.avgAccuracy) * 100
+                          ).toFixed(1)
+                        : "65.0"}
+                      %
                     </div>
                     <div className="text-green-100">Model Accuracy</div>
                   </div>
@@ -365,7 +397,9 @@ export default function Forecasting() {
                   <BarChart3 className="h-8 w-8" />
                   <div>
                     <div className="text-2xl font-bold">
-                      {dashboardData?.summary?.totalPredictions || predictions.length || 0}
+                      {dashboardData?.summary?.totalPredictions ||
+                        predictions.length ||
+                        0}
                     </div>
                     <div className="text-purple-100">Total Predictions</div>
                   </div>
@@ -388,8 +422,6 @@ export default function Forecasting() {
             </Card>
           </div>
 
-
-
           {/* Top Section: Category Performance (main) + Right Sidebar */}
           <div className="grid gap-6 lg:grid-cols-4 mb-8">
             {/* Category Performance - Main Highlight (3 columns) */}
@@ -403,49 +435,64 @@ export default function Forecasting() {
                   </Badge>
                 </CardTitle>
                 <CardDescription className="text-center">
-                  Prediction accuracy and performance metrics by product category
+                  Prediction accuracy and performance metrics by product
+                  category
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {dashboardData?.categoryPerformance && dashboardData.categoryPerformance.length > 0 ? (
+                {dashboardData?.categoryPerformance &&
+                dashboardData.categoryPerformance.length > 0 ? (
                   <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {dashboardData.categoryPerformance.map((category, index) => (
-                      <div
-                        key={`${category.category}-${index}`}
-                        className="p-4 border rounded-lg bg-gradient-to-br from-white to-slate-50 hover:shadow-md transition-shadow"
-                      >
-                        <div className="mb-3">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge className={getCategoryColor(category.category)} variant="secondary">
-                              {category.category}
-                            </Badge>
+                    {dashboardData.categoryPerformance.map(
+                      (category, index) => (
+                        <div
+                          key={`${category.category}-${index}`}
+                          className="p-4 border rounded-lg bg-gradient-to-br from-white to-slate-50 hover:shadow-md transition-shadow"
+                        >
+                          <div className="mb-3">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge
+                                className={getCategoryColor(category.category)}
+                                variant="secondary"
+                              >
+                                {category.category}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {category.product_count} products •{" "}
+                              {category.prediction_count} predictions
+                            </div>
                           </div>
-                          <div className="text-sm text-muted-foreground">
-                            {category.product_count} products • {category.prediction_count} predictions
+                          <div className="space-y-2 text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">
+                                Avg Demand:
+                              </span>
+                              <span className="font-medium">
+                                {Math.round(category.avg_predicted_demand || 0)}{" "}
+                                units
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-muted-foreground">
+                                Uncertainty:
+                              </span>
+                              <span className="font-medium">
+                                ±{Math.round(category.avg_uncertainty || 0)}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <div className="space-y-2 text-sm">
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Avg Demand:</span>
-                            <span className="font-medium">
-                              {Math.round(category.avg_predicted_demand || 0)} units
-                            </span>
-                          </div>
-                          <div className="flex justify-between">
-                            <span className="text-muted-foreground">Uncertainty:</span>
-                            <span className="font-medium">
-                              ±{Math.round(category.avg_uncertainty || 0)}
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    ))}
+                      ),
+                    )}
                   </div>
                 ) : (
                   <div className="text-center py-12 text-muted-foreground">
                     <Layers className="h-16 w-16 mx-auto mb-4 opacity-50" />
                     <p className="text-lg mb-2">No category data available</p>
-                    <p className="text-sm">Generate new forecasts to see category performance metrics</p>
+                    <p className="text-sm">
+                      Generate new forecasts to see category performance metrics
+                    </p>
                   </div>
                 )}
               </CardContent>
@@ -454,81 +501,94 @@ export default function Forecasting() {
             {/* Right Sidebar */}
             <div className="space-y-6">
               {/* Recent Accuracy (Top of sidebar) */}
-              {dashboardData && dashboardData.accuracyTrends && dashboardData.accuracyTrends.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Clock className="h-5 w-5" />
-                      Recent Accuracy
-                    </CardTitle>
-                    <CardDescription>
-                      Model accuracy over past week
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {dashboardData.accuracyTrends.map((trend, index) => (
-                        <div
-                          key={`${trend.date}-${index}`}
-                          className="flex items-center justify-between py-2"
-                        >
-                          <div className="text-sm text-muted-foreground">
-                            {formatDate(trend.date)}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className={`text-sm font-medium ${getConfidenceColor(trend.avg_accuracy)}`}>
-                              {trend.avg_accuracy ?
-                                `${Math.round(trend.avg_accuracy * 100)}%` :
-                                'N/A'}
+              {dashboardData &&
+                dashboardData.accuracyTrends &&
+                dashboardData.accuracyTrends.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Clock className="h-5 w-5" />
+                        Recent Accuracy
+                      </CardTitle>
+                      <CardDescription>
+                        Model accuracy over past week
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-2">
+                        {dashboardData.accuracyTrends.map((trend, index) => (
+                          <div
+                            key={`${trend.date}-${index}`}
+                            className="flex items-center justify-between py-2"
+                          >
+                            <div className="text-sm text-muted-foreground">
+                              {formatDate(trend.date)}
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              ({trend.prediction_count})
+                            <div className="flex items-center gap-2">
+                              <div
+                                className={`text-sm font-medium ${getConfidenceColor(trend.avg_accuracy)}`}
+                              >
+                                {trend.avg_accuracy
+                                  ? `${Math.round(trend.avg_accuracy * 100)}%`
+                                  : "N/A"}
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                ({trend.prediction_count})
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                        ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
 
               {/* Top Predicted Demand (Below recent accuracy) */}
-              {dashboardData && dashboardData.recentPredictions && dashboardData.recentPredictions.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Package className="h-5 w-5" />
-                      Top Predicted Demand
-                    </CardTitle>
-                    <CardDescription>
-                      Highest demand products (next 7 days)
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-3">
-                      {dashboardData.recentPredictions.slice(0, 5).map((product, index) => (
-                        <div
-                          key={`${product.product_id}-${product.store_name}-${index}`}
-                          className="flex items-center justify-between p-3 border rounded-lg"
-                        >
-                          <div className="flex-1">
-                            <div className="font-medium text-sm">{product.product_name}</div>
-                            <div className="text-xs text-muted-foreground">{product.store_name}</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="font-bold text-blue-600">
-                              {Math.round(product.total_predicted_demand)} units
+              {dashboardData &&
+                dashboardData.recentPredictions &&
+                dashboardData.recentPredictions.length > 0 && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="flex items-center gap-2">
+                        <Package className="h-5 w-5" />
+                        Top Predicted Demand
+                      </CardTitle>
+                      <CardDescription>
+                        Highest demand products (next 7 days)
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        {dashboardData.recentPredictions
+                          .slice(0, 5)
+                          .map((product, index) => (
+                            <div
+                              key={`${product.product_id}-${product.store_name}-${index}`}
+                              className="flex items-center justify-between p-3 border rounded-lg"
+                            >
+                              <div className="flex-1">
+                                <div className="font-medium text-sm">
+                                  {product.product_name}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {product.store_name}
+                                </div>
+                              </div>
+                              <div className="text-right">
+                                <div className="font-bold text-blue-600">
+                                  {Math.round(product.total_predicted_demand)}{" "}
+                                  units
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {Math.round(product.avg_daily_demand)}/day
+                                </div>
+                              </div>
                             </div>
-                            <div className="text-xs text-muted-foreground">
-                              {Math.round(product.avg_daily_demand)}/day
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
+                          ))}
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
             </div>
           </div>
 
@@ -552,7 +612,9 @@ export default function Forecasting() {
                   <div className="text-center py-8 text-muted-foreground">
                     <Brain className="h-12 w-12 mx-auto mb-3 opacity-50" />
                     <p>No predictions available</p>
-                    <p className="text-sm">Click "Generate Forecast" to create new predictions</p>
+                    <p className="text-sm">
+                      Click "Generate Forecast" to create new predictions
+                    </p>
                   </div>
                 ) : (
                   <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
@@ -563,9 +625,15 @@ export default function Forecasting() {
                       >
                         <div className="mb-3">
                           <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">{prediction.product_name}</span>
+                            <span className="font-medium">
+                              {prediction.product_name}
+                            </span>
                           </div>
-                          <Badge className={getCategoryColor(prediction.category)} variant="outline" size="sm">
+                          <Badge
+                            className={getCategoryColor(prediction.category)}
+                            variant="outline"
+                            size="sm"
+                          >
                             {prediction.category}
                           </Badge>
                         </div>
@@ -586,8 +654,14 @@ export default function Forecasting() {
                             {Math.round(prediction.predicted_demand)} units
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            Range: {Math.round(prediction.confidence_interval_lower || 0)} -
-                            {Math.round(prediction.confidence_interval_upper || 0)}
+                            Range:{" "}
+                            {Math.round(
+                              prediction.confidence_interval_lower || 0,
+                            )}{" "}
+                            -
+                            {Math.round(
+                              prediction.confidence_interval_upper || 0,
+                            )}
                           </div>
                           <div className="flex gap-2 flex-wrap">
                             {getConfidenceBadge(prediction.prediction_accuracy)}

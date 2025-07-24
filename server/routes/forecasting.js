@@ -36,7 +36,10 @@ export const getDemandPredictions = async (req, res) => {
       WHERE dp.prediction_date >= ? AND dp.prediction_date <= ?
     `;
 
-    const params = [startDate.toISOString().split('T')[0], endDate.toISOString().split('T')[0]];
+    const params = [
+      startDate.toISOString().split("T")[0],
+      endDate.toISOString().split("T")[0],
+    ];
 
     // Add filters
     if (store_id && store_id !== "all") {
@@ -55,9 +58,10 @@ export const getDemandPredictions = async (req, res) => {
     const [rows] = await req.db.execute(query, params);
 
     // Parse JSON factors field
-    const predictions = rows.map(row => ({
+    const predictions = rows.map((row) => ({
       ...row,
-      factors: typeof row.factors === 'string' ? JSON.parse(row.factors) : row.factors
+      factors:
+        typeof row.factors === "string" ? JSON.parse(row.factors) : row.factors,
     }));
 
     res.json(
@@ -119,7 +123,7 @@ export const getForecastingDashboard = async (req, res) => {
     const summary = summaryResult[0] || {
       totalModels: 1,
       avgAccuracy: 0.65,
-      totalPredictions: 0
+      totalPredictions: 0,
     };
 
     // Get high priority recommendations (predictions with high demand variance)
@@ -182,11 +186,11 @@ export const getForecastingDashboard = async (req, res) => {
     const dashboardData = {
       summary: {
         ...summary,
-        highPriorityRecommendations
+        highPriorityRecommendations,
       },
       recentPredictions: recentPredictions || [],
       categoryPerformance: categoryPerformance || [],
-      accuracyTrends: accuracyTrends || []
+      accuracyTrends: accuracyTrends || [],
     };
 
     res.json(
@@ -211,12 +215,7 @@ export const getStores = async (req, res) => {
       ORDER BY name
     `);
 
-    res.json(
-      createApiResponse(
-        { stores },
-        "Stores retrieved successfully",
-      ),
-    );
+    res.json(createApiResponse({ stores }, "Stores retrieved successfully"));
   } catch (error) {
     console.error("Stores fetch error:", error);
     res.status(500).json(createApiError(error));

@@ -95,6 +95,8 @@ export default function Forecasting() {
       setGenerateSuccess(false);
       setError(null);
 
+      console.log("Starting forecast generation...");
+
       const response = await fetch(
         "https://guo98gn0q0.execute-api.us-east-1.amazonaws.com/production/forecast/refresh-predictions",
         {
@@ -109,18 +111,30 @@ export default function Forecasting() {
         }
       );
 
+      console.log("AWS API Response:", response.status, response.statusText);
+
       if (response.ok) {
+        const responseData = await response.json();
+        console.log("AWS API Success:", responseData);
         setGenerateSuccess(true);
         // Refresh the data after successful generation
         setTimeout(() => {
+          console.log("Refreshing forecasting data after generation...");
           fetchForecastingData();
-        }, 2000);
+        }, 3000);
       } else {
-        throw new Error(`API call failed with status: ${response.status}`);
+        const errorText = await response.text();
+        console.error("AWS API Error Response:", errorText);
+        throw new Error(`API call failed with status: ${response.status} - ${errorText}`);
       }
     } catch (err) {
       console.error("Failed to generate forecast:", err);
-      setError("Failed to generate forecast. Please try again.");
+      console.error("Error details:", {
+        name: err.name,
+        message: err.message,
+        stack: err.stack
+      });
+      setError(`Failed to generate forecast: ${err.message}. Please try again.`);
     } finally {
       setGenerating(false);
     }

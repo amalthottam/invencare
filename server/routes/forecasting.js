@@ -76,7 +76,7 @@ export const getDemandPredictions = async (req, res) => {
 // Get category-wise prediction insights
 export const getCategoryInsights = async (req, res) => {
   try {
-    const [categoryData] = await pool.execute(`
+    const [categoryData] = await req.db.execute(`
       SELECT
         p.category,
         COUNT(DISTINCT dp.product_id) as product_count,

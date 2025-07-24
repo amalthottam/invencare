@@ -10,7 +10,6 @@ import {
   X,
   TrendingUp,
   Receipt,
-  BarChart3,
 } from "lucide-react";
 import { useState } from "react";
 

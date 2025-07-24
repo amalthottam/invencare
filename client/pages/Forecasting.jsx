@@ -47,25 +47,43 @@ export default function Forecasting() {
   const fetchForecastingData = async () => {
     try {
       setLoading(true);
+      console.log("Fetching forecasting data...");
 
       // Fetch dashboard summary
+      console.log("Fetching dashboard summary...");
       const dashboardResponse = await fetch("/api/analytics/forecasting-dashboard");
+      console.log("Dashboard response status:", dashboardResponse.status);
+
       if (dashboardResponse.ok) {
         const response = await dashboardResponse.json();
+        console.log("Dashboard data received:", response);
         setDashboardData(response.data);
+      } else {
+        console.error("Dashboard fetch failed with status:", dashboardResponse.status);
       }
 
       // Fetch demand predictions
+      console.log("Fetching demand predictions...");
       const predictionsResponse = await fetch("/api/analytics/demand-predictions?days=30");
+      console.log("Predictions response status:", predictionsResponse.status);
+
       if (predictionsResponse.ok) {
         const response = await predictionsResponse.json();
+        console.log("Predictions data received:", response.data.predictions?.length, "predictions");
         setPredictions(response.data.predictions || []);
+      } else {
+        console.error("Predictions fetch failed with status:", predictionsResponse.status);
       }
 
       setError(null);
     } catch (err) {
       console.error("Failed to fetch forecasting data:", err);
-      setError("Failed to load forecasting data. Please try again.");
+      console.error("Error details:", {
+        name: err.name,
+        message: err.message,
+        stack: err.stack
+      });
+      setError(`Failed to load forecasting data: ${err.message}. Please try again.`);
     } finally {
       setLoading(false);
     }

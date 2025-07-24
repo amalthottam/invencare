@@ -280,11 +280,43 @@ export default function Dashboard() {
         }
       };
 
+      const fetchChartsData = async () => {
+        try {
+          // Generate mock sales trends data
+          const mockSalesTrends = [
+            { date: "Jan 10", sales: 245, forecast: 250, revenue: 2340 },
+            { date: "Jan 11", sales: 280, forecast: 275, revenue: 2680 },
+            { date: "Jan 12", sales: 195, forecast: 200, revenue: 1890 },
+            { date: "Jan 13", sales: 320, forecast: 310, revenue: 3200 },
+            { date: "Jan 14", sales: 260, forecast: 265, revenue: 2520 },
+            { date: "Jan 15", sales: 290, forecast: 285, revenue: 2890 },
+            { date: "Jan 16", sales: 235, forecast: 240, revenue: 2350 },
+          ];
+
+          // Generate category data based on top selling categories
+          const mockCategoryData = [
+            { name: "Fruits & Vegetables", value: 35, color: "#8884d8" },
+            { name: "Dairy", value: 25, color: "#82ca9d" },
+            { name: "Meat & Poultry", value: 20, color: "#ffc658" },
+            { name: "Beverages", value: 12, color: "#ff7300" },
+            { name: "Snacks", value: 8, color: "#00ff88" },
+          ];
+
+          setSalesTrends(mockSalesTrends);
+          setCategoryData(mockCategoryData);
+        } catch (error) {
+          console.error("Failed to fetch charts data:", error);
+        } finally {
+          setChartsLoading(false);
+        }
+      };
+
       // Execute all fetches in parallel
       await Promise.all([
         fetchAnalytics(),
         fetchLowStock(),
         fetchTransactions(),
+        fetchChartsData(),
       ]);
 
       console.log("Successfully fetched all dashboard data");

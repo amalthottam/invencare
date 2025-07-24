@@ -229,10 +229,10 @@ export default function Products() {
                   </div>
                   <div>
                     <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 bg-clip-text text-transparent">
-                      Grocery Products
+                      Products
                     </h1>
                     <p className="text-gray-600 mt-1">
-                      Manage your supermarket inventory and track stock levels
+                      Manage your inventory and track stock levels
                     </p>
                   </div>
                 </div>

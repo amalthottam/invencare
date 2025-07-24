@@ -229,48 +229,58 @@ export default function Forecasting() {
       <div className="lg:pl-64">
         <main className="p-6 lg:p-8">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-r from-violet-500 to-purple-600 flex items-center justify-center">
-                  <Brain className="h-6 w-6 text-white" />
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 flex items-center justify-center shadow-lg">
+                    <Brain className="h-7 w-7 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 bg-clip-text text-transparent">
+                      AI Demand Forecasting
+                    </h1>
+                    <p className="text-gray-600 mt-1">
+                      Unified model predictions powered by AWS Lambda & SageMaker
+                    </p>
+                  </div>
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-violet-600 to-purple-600 bg-clip-text text-transparent">
-                  AI Demand Forecasting
-                </h1>
               </div>
-              <p className="text-muted-foreground">
-                Unified model predictions powered by AWS Lambda & SageMaker
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Button onClick={fetchForecastingData} variant="outline" size="sm">
-                <RefreshCw className="h-4 w-4 mr-2" />
-                Refresh Data
-              </Button>
-              <Button
-                onClick={generateForecast}
-                disabled={generating}
-                className="bg-gradient-to-r from-purple-500 to-purple-700 hover:from-purple-600 hover:to-purple-800 text-white shadow-lg hover:shadow-xl transition-all duration-200"
-                size="lg"
-              >
-                {generating ? (
-                  <>
-                    <Loader2 className="h-5 w-5 mr-2 animate-spin" />
-                    Generating...
-                  </>
-                ) : generateSuccess ? (
-                  <>
-                    <Sparkles className="h-5 w-5 mr-2" />
-                    Generated!
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-5 w-5 mr-2" />
-                    Generate Forecast
-                  </>
-                )}
-              </Button>
+
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={fetchForecastingData}
+                  variant="outline"
+                  size="default"
+                  className="border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                >
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                  Refresh Data
+                </Button>
+                <Button
+                  onClick={generateForecast}
+                  disabled={generating}
+                  className="px-8 bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 hover:from-blue-600 hover:via-purple-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105"
+                  size="default"
+                >
+                  {generating ? (
+                    <>
+                      <Loader2 className="h-5 w-5 mr-2 animate-spin" />
+                      Generating...
+                    </>
+                  ) : generateSuccess ? (
+                    <>
+                      <Sparkles className="h-5 w-5 mr-2" />
+                      Generated!
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="h-5 w-5 mr-2" />
+                      Generate Forecast
+                    </>
+                  )}
+                </Button>
+              </div>
             </div>
           </div>
 

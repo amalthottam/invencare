@@ -358,68 +358,85 @@ export default function Dashboard() {
       <div className="lg:pl-64">
         <main className="container mx-auto px-4 py-8">
           {/* Header */}
-          <div className="flex justify-between items-start mb-8">
-            <div className="flex-1">
-              <h1 className="text-3xl font-bold tracking-tight">
-                Welcome back, {user?.attributes?.given_name || "User"}!
-              </h1>
-              <p className="text-muted-foreground">
-                {currentTime.toLocaleDateString("en-US", {
-                  weekday: "long",
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}{" "}
-                •{" "}
-                {currentTime.toLocaleTimeString("en-US", {
-                  timeStyle: "short",
-                })}
-              </p>
-
-              {/* Store Selector */}
-              <div className="mt-4">
-                <div className="flex items-center gap-3">
-                  <Building className="h-5 w-5 text-muted-foreground" />
-                  <select
-                    value={selectedStore}
-                    onChange={(e) => setSelectedStore(e.target.value)}
-                    className="h-10 rounded-md border border-input bg-background px-3 py-2 text-sm font-medium min-w-[200px]"
-                  >
-                    {stores.map((store) => (
-                      <option key={store.id} value={store.id}>
-                        {store.name}
-                      </option>
-                    ))}
-                  </select>
-                  {selectedStore !== "all" && (
-                    <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                      <MapPin className="h-4 w-4" />
-                      {stores.find((s) => s.id === selectedStore)?.location}
-                    </div>
-                  )}
+          {/* Header */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 flex items-center justify-center shadow-lg">
+                    <Package className="h-7 w-7 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 bg-clip-text text-transparent">
+                      Welcome back, {user?.attributes?.given_name || "User"}!
+                    </h1>
+                    <p className="text-gray-600 mt-1">
+                      {currentTime.toLocaleDateString("en-US", {
+                        weekday: "long",
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}{" "}
+                      •{" "}
+                      {currentTime.toLocaleTimeString("en-US", {
+                        timeStyle: "short",
+                      })}
+                    </p>
+                  </div>
                 </div>
 
-                {selectedStore === "all" ? (
-                  <Badge variant="default" className="mt-2">
-                    Viewing All Stores Combined
-                  </Badge>
-                ) : (
-                  <Badge variant="secondary" className="mt-2">
-                    {stores.find((s) => s.id === selectedStore)?.name}
-                  </Badge>
-                )}
-              </div>
-            </div>
+                {/* Store Selector */}
+                <div className="mt-4">
+                  <div className="flex items-center gap-3">
+                    <Building className="h-5 w-5 text-gray-500" />
+                    <select
+                      value={selectedStore}
+                      onChange={(e) => setSelectedStore(e.target.value)}
+                      className="h-10 rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium min-w-[200px] focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
+                    >
+                      {stores.map((store) => (
+                        <option key={store.id} value={store.id}>
+                          {store.name}
+                        </option>
+                      ))}
+                    </select>
+                    {selectedStore !== "all" && (
+                      <div className="flex items-center gap-1 text-sm text-gray-500">
+                        <MapPin className="h-4 w-4" />
+                        {stores.find((s) => s.id === selectedStore)?.location}
+                      </div>
+                    )}
+                  </div>
 
-            <div className="flex gap-2">
-              <Button onClick={() => navigate("/products")}>
-                <Eye className="h-4 w-4 mr-2" />
-                View Inventory
-              </Button>
-              <Button onClick={() => navigate("/products?action=add")}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Product
-              </Button>
+                  {selectedStore === "all" ? (
+                    <Badge variant="default" className="mt-2">
+                      Viewing All Stores Combined
+                    </Badge>
+                  ) : (
+                    <Badge variant="secondary" className="mt-2">
+                      {stores.find((s) => s.id === selectedStore)?.name}
+                    </Badge>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={() => navigate("/products")}
+                  variant="outline"
+                  className="border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Inventory
+                </Button>
+                <Button
+                  onClick={() => navigate("/products?action=add")}
+                  className="bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 hover:from-blue-600 hover:via-purple-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Product
+                </Button>
+              </div>
             </div>
           </div>
 

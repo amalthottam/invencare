@@ -341,128 +341,103 @@ export default function Forecasting() {
 
 
 
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* Demand Predictions - Takes 2 columns */}
-            <Card className="lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <TrendingUp className="h-5 w-5" />
-                  Demand Predictions
-                  <Badge variant="outline" className="ml-auto">
-                    {predictions.length} predictions
-                  </Badge>
-                </CardTitle>
-                <CardDescription>
-                  AI-generated demand forecasts for the next 30 days
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-3 max-h-96 overflow-y-auto">
-                  {predictions.length === 0 ? (
-                    <div className="text-center py-8 text-muted-foreground">
-                      <Brain className="h-12 w-12 mx-auto mb-3 opacity-50" />
-                      <p>No predictions available</p>
-                      <p className="text-sm">Click "Generate Forecast" to create new predictions</p>
-                    </div>
-                  ) : (
-                    predictions.map((prediction) => (
+          {/* Top Section: Category Performance (main) + Right Sidebar */}
+          <div className="grid gap-6 lg:grid-cols-4 mb-8">
+            {/* Category Performance - Main Highlight (3 columns) */}
+            {dashboardData && dashboardData.categoryPerformance && dashboardData.categoryPerformance.length > 0 && (
+              <Card className="lg:col-span-3">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2 justify-center">
+                    <Layers className="h-6 w-6" />
+                    Category Performance Overview
+                    <Badge variant="outline" className="ml-auto">
+                      {dashboardData.categoryPerformance.length} categories
+                    </Badge>
+                  </CardTitle>
+                  <CardDescription className="text-center">
+                    Prediction accuracy and performance metrics by product category
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                    {dashboardData.categoryPerformance.map((category, index) => (
                       <div
-                        key={`${prediction.product_id}-${prediction.store_id}-${prediction.prediction_date}`}
-                        className="flex items-center justify-between p-4 border rounded-lg hover:bg-slate-50/50 transition-colors"
+                        key={`${category.category}-${index}`}
+                        className="p-4 border rounded-lg bg-gradient-to-br from-white to-slate-50 hover:shadow-md transition-shadow"
                       >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="font-medium">{prediction.product_name}</span>
-                            <Badge className={getCategoryColor(prediction.category)} variant="outline">
-                              {prediction.category}
-                            </Badge>
+                        <div className="flex justify-between items-start mb-3">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-2 mb-2">
+                              <Badge className={getCategoryColor(category.category)} variant="secondary">
+                                {category.category}
+                              </Badge>
+                            </div>
+                            <div className="text-sm text-muted-foreground">
+                              {category.product_count} products • {category.prediction_count} predictions
+                            </div>
                           </div>
-                          <div className="text-sm text-muted-foreground space-y-1">
-                            <div className="flex items-center gap-2">
-                              <Store className="h-3 w-3" />
-                              {prediction.store_name}
+                          <div className="text-right">
+                            <div className={`font-bold text-xl ${getConfidenceColor(category.avg_accuracy)}`}>
+                              {category.avg_accuracy ?
+                                `${Math.round(category.avg_accuracy * 100)}%` :
+                                'N/A'}
                             </div>
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-3 w-3" />
-                              {formatDate(prediction.prediction_date)}
-                            </div>
+                            <div className="text-sm text-muted-foreground">Accuracy</div>
                           </div>
                         </div>
-                        <div className="text-right space-y-2">
-                          <div className="font-bold text-lg text-blue-600">
-                            {Math.round(prediction.predicted_demand)} units
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Avg Demand:</span>
+                            <span className="font-medium">
+                              {Math.round(category.avg_predicted_demand || 0)} units
+                            </span>
                           </div>
-                          <div className="text-xs text-muted-foreground">
-                            Range: {Math.round(prediction.confidence_interval_lower || 0)} - 
-                            {Math.round(prediction.confidence_interval_upper || 0)}
-                          </div>
-                          <div className="flex gap-2">
-                            {getConfidenceBadge(prediction.prediction_accuracy)}
-                            <Badge variant="outline" className="text-xs">
-                              {getUncertaintyLevel(prediction)} uncertainty
-                            </Badge>
+                          <div className="flex justify-between">
+                            <span className="text-muted-foreground">Uncertainty:</span>
+                            <span className="font-medium">
+                              ±{Math.round(category.avg_uncertainty || 0)}
+                            </span>
                           </div>
                         </div>
                       </div>
-                    ))
-                  )}
-                </div>
-              </CardContent>
-            </Card>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
-            {/* Model Performance & Recent Insights */}
+            {/* Right Sidebar */}
             <div className="space-y-6">
-              {/* Category & Product Performance */}
-              {dashboardData && dashboardData.categoryPerformance && dashboardData.categoryPerformance.length > 0 && (
+              {/* Recent Accuracy (Top of sidebar) */}
+              {dashboardData && dashboardData.accuracyTrends && dashboardData.accuracyTrends.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Layers className="h-5 w-5" />
-                      Category Performance
+                      <Clock className="h-5 w-5" />
+                      Recent Accuracy
                     </CardTitle>
                     <CardDescription>
-                      Prediction accuracy by product category
+                      Model accuracy over past week
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-3">
-                      {dashboardData.categoryPerformance.map((category, index) => (
+                    <div className="space-y-2">
+                      {dashboardData.accuracyTrends.map((trend, index) => (
                         <div
-                          key={`${category.category}-${index}`}
-                          className="p-4 border rounded-lg"
+                          key={`${trend.date}-${index}`}
+                          className="flex items-center justify-between py-2"
                         >
-                          <div className="flex justify-between items-start mb-3">
-                            <div className="flex-1">
-                              <div className="flex items-center gap-2 mb-1">
-                                <Badge className={getCategoryColor(category.category)}>
-                                  {category.category}
-                                </Badge>
-                              </div>
-                              <div className="text-sm text-muted-foreground">
-                                {category.product_count} products • {category.prediction_count} predictions
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className={`font-bold text-lg ${getConfidenceColor(category.avg_accuracy)}`}>
-                                {category.avg_accuracy ?
-                                  `${Math.round(category.avg_accuracy * 100)}%` :
-                                  'N/A'}
-                              </div>
-                              <div className="text-sm text-muted-foreground">Avg Accuracy</div>
-                            </div>
+                          <div className="text-sm text-muted-foreground">
+                            {formatDate(trend.date)}
                           </div>
-                          <div className="grid grid-cols-2 gap-4 text-sm">
-                            <div>
-                              <span className="text-muted-foreground">Avg Demand:</span>
-                              <span className="font-medium ml-2">
-                                {Math.round(category.avg_predicted_demand || 0)} units
-                              </span>
+                          <div className="flex items-center gap-2">
+                            <div className={`text-sm font-medium ${getConfidenceColor(trend.avg_accuracy)}`}>
+                              {trend.avg_accuracy ?
+                                `${Math.round(trend.avg_accuracy * 100)}%` :
+                                'N/A'}
                             </div>
-                            <div>
-                              <span className="text-muted-foreground">Uncertainty:</span>
-                              <span className="font-medium ml-2">
-                                ±{Math.round(category.avg_uncertainty || 0)}
-                              </span>
+                            <div className="text-xs text-muted-foreground">
+                              ({trend.prediction_count})
                             </div>
                           </div>
                         </div>
@@ -472,7 +447,7 @@ export default function Forecasting() {
                 </Card>
               )}
 
-              {/* Top Products This Week */}
+              {/* Top Predicted Demand (Below recent accuracy) */}
               {dashboardData && dashboardData.recentPredictions && dashboardData.recentPredictions.length > 0 && (
                 <Card>
                   <CardHeader>
@@ -509,47 +484,80 @@ export default function Forecasting() {
                   </CardContent>
                 </Card>
               )}
-
-              {/* Accuracy Trends */}
-              {dashboardData && dashboardData.accuracyTrends && dashboardData.accuracyTrends.length > 0 && (
-                <Card>
-                  <CardHeader>
-                    <CardTitle className="flex items-center gap-2">
-                      <Clock className="h-5 w-5" />
-                      Recent Accuracy
-                    </CardTitle>
-                    <CardDescription>
-                      Model accuracy over past week
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-2">
-                      {dashboardData.accuracyTrends.map((trend, index) => (
-                        <div
-                          key={`${trend.date}-${index}`}
-                          className="flex items-center justify-between py-2"
-                        >
-                          <div className="text-sm text-muted-foreground">
-                            {formatDate(trend.date)}
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <div className={`text-sm font-medium ${getConfidenceColor(trend.avg_accuracy)}`}>
-                              {trend.avg_accuracy ? 
-                                `${Math.round(trend.avg_accuracy * 100)}%` : 
-                                'N/A'}
-                            </div>
-                            <div className="text-xs text-muted-foreground">
-                              ({trend.prediction_count} predictions)
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
             </div>
           </div>
+
+          {/* Bottom Section: Demand Predictions (Full Width) */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Demand Predictions
+                <Badge variant="outline" className="ml-auto">
+                  {predictions.length} predictions
+                </Badge>
+              </CardTitle>
+              <CardDescription>
+                AI-generated demand forecasts for the next 30 days
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {predictions.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Brain className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <p>No predictions available</p>
+                    <p className="text-sm">Click "Generate Forecast" to create new predictions</p>
+                  </div>
+                ) : (
+                  <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+                    {predictions.slice(0, 12).map((prediction) => (
+                      <div
+                        key={`${prediction.product_id}-${prediction.store_id}-${prediction.prediction_date}`}
+                        className="p-4 border rounded-lg hover:bg-slate-50/50 transition-colors"
+                      >
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="font-medium">{prediction.product_name}</span>
+                          </div>
+                          <Badge className={getCategoryColor(prediction.category)} variant="outline" size="sm">
+                            {prediction.category}
+                          </Badge>
+                        </div>
+
+                        <div className="text-sm text-muted-foreground space-y-1 mb-3">
+                          <div className="flex items-center gap-2">
+                            <Store className="h-3 w-3" />
+                            {prediction.store_name}
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-3 w-3" />
+                            {formatDate(prediction.prediction_date)}
+                          </div>
+                        </div>
+
+                        <div className="space-y-2">
+                          <div className="font-bold text-lg text-blue-600">
+                            {Math.round(prediction.predicted_demand)} units
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Range: {Math.round(prediction.confidence_interval_lower || 0)} -
+                            {Math.round(prediction.confidence_interval_upper || 0)}
+                          </div>
+                          <div className="flex gap-2 flex-wrap">
+                            {getConfidenceBadge(prediction.prediction_accuracy)}
+                            <Badge variant="outline" className="text-xs">
+                              {getUncertaintyLevel(prediction)} uncertainty
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
         </main>
       </div>
     </div>

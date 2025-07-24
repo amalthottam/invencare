@@ -95,27 +95,23 @@ export default function Forecasting() {
       setGenerateSuccess(false);
       setError(null);
 
-      console.log("Starting forecast generation...");
+      console.log("Starting forecast generation via proxy...");
 
-      const response = await fetch(
-        "https://guo98gn0q0.execute-api.us-east-1.amazonaws.com/production/forecast/refresh-predictions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "x-api-key": "lPACRhgg5y8dqG6OMOUXFNWPpJdH7IP1cdNPRsW7",
-          },
-          body: JSON.stringify({
-            forecasting_days: 30,
-          }),
-        }
-      );
+      const response = await fetch("/api/aws/generate-forecast", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          forecasting_days: 30,
+        }),
+      });
 
-      console.log("AWS API Response:", response.status, response.statusText);
+      console.log("Proxy API Response:", response.status, response.statusText);
 
       if (response.ok) {
         const responseData = await response.json();
-        console.log("AWS API Success:", responseData);
+        console.log("Forecast generation success:", responseData);
         setGenerateSuccess(true);
         // Refresh the data after successful generation
         setTimeout(() => {
@@ -123,9 +119,9 @@ export default function Forecasting() {
           fetchForecastingData();
         }, 3000);
       } else {
-        const errorText = await response.text();
-        console.error("AWS API Error Response:", errorText);
-        throw new Error(`API call failed with status: ${response.status} - ${errorText}`);
+        const errorData = await response.json();
+        console.error("Proxy API Error Response:", errorData);
+        throw new Error(errorData.error || `API call failed with status: ${response.status}`);
       }
     } catch (err) {
       console.error("Failed to generate forecast:", err);

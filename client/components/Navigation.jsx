@@ -35,11 +35,6 @@ export default function Navigation({ onLogout }) {
       icon: Receipt,
     },
     {
-      name: "Product Analytics",
-      href: "/product-analytics",
-      icon: BarChart3,
-    },
-    {
       name: "Forecasting",
       href: "/forecasting",
       icon: TrendingUp,

@@ -28,12 +28,11 @@ export const getDemandPredictions = async (req, res) => {
         p.name as product_name,
         p.category,
         s.name as store_name,
-        dfm.model_name,
-        dfm.model_accuracy
+        'AI_Forecasting_Model' as model_name,
+        dp.prediction_accuracy as model_accuracy
       FROM demand_predictions dp
       JOIN products p ON dp.product_id = p.id
       JOIN stores s ON dp.store_id = s.id
-      JOIN demand_forecasting_models dfm ON dp.model_id = dfm.id
       WHERE dp.prediction_date >= ? AND dp.prediction_date <= ?
     `;
 

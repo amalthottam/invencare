@@ -179,3 +179,74 @@ export async function fetchRecentTransactions(storeId = "all") {
     return [];
   }
 }
+
+/**
+ * Fetch demand forecasts for products
+ * @param {string} storeId - The store ID to filter by (or 'all')
+ * @returns {Promise<any>} - Demand forecasts data
+ */
+export async function fetchDemandForecasts(storeId = "all") {
+  const storeParam = storeId !== "all" ? `?storeId=${storeId}` : "";
+  const endpoint = `/api/analytics/demand-forecast${storeParam}`;
+
+  try {
+    const result = await apiRequest(endpoint);
+    return result.data;
+  } catch (error) {
+    console.error("Failed to fetch demand forecasts:", error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch product analytics dashboard data
+ * @param {string} storeId - The store ID to filter by (or 'all')
+ * @returns {Promise<any>} - Product analytics dashboard data
+ */
+export async function fetchProductAnalyticsDashboard(storeId = "all") {
+  const endpoint = `/api/analytics/products/${storeId}/dashboard`;
+
+  try {
+    const result = await apiRequest(endpoint);
+    return result.data;
+  } catch (error) {
+    console.error("Failed to fetch product analytics dashboard:", error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch reorder recommendations
+ * @param {string} storeId - The store ID to filter by (or 'all')
+ * @returns {Promise<any>} - Reorder recommendations data
+ */
+export async function fetchReorderRecommendations(storeId = "all") {
+  const storeParam = storeId !== "all" ? `?storeId=${storeId}` : "";
+  const endpoint = `/api/analytics/reorder-recommendations${storeParam}`;
+
+  try {
+    const result = await apiRequest(endpoint);
+    return result.data;
+  } catch (error) {
+    console.error("Failed to fetch reorder recommendations:", error);
+    throw error;
+  }
+}
+
+/**
+ * Fetch sales trends data
+ * @param {string} storeId - The store ID to filter by (or 'all')
+ * @returns {Promise<any>} - Sales trends data
+ */
+export async function fetchSalesTrends(storeId = "all") {
+  const storeParam = storeId !== "all" ? `?storeId=${storeId}` : "";
+  const endpoint = `/api/analytics/sales-trends${storeParam}`;
+
+  try {
+    const result = await apiRequest(endpoint);
+    return result.data;
+  } catch (error) {
+    console.error("Failed to fetch sales trends:", error);
+    throw error;
+  }
+}

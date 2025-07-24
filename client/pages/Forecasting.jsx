@@ -308,67 +308,65 @@ export default function Forecasting() {
           )}
 
           {/* Summary Stats */}
-          {dashboardData && dashboardData.summary && (
-            <div className="grid gap-4 md:grid-cols-4 mb-8">
-              <Card className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-0">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3">
-                    <Cpu className="h-8 w-8" />
-                    <div>
-                      <div className="text-2xl font-bold">
-                        {dashboardData.summary.totalModels || 1}
-                      </div>
-                      <div className="text-blue-100">Active AI Model</div>
+          <div className="grid gap-4 md:grid-cols-4 mb-8">
+            <Card className="bg-gradient-to-r from-blue-500 to-cyan-600 text-white border-0">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3">
+                  <Cpu className="h-8 w-8" />
+                  <div>
+                    <div className="text-2xl font-bold">
+                      {dashboardData?.summary?.totalModels || 1}
                     </div>
+                    <div className="text-blue-100">Active AI Model</div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3">
-                    <Target className="h-8 w-8" />
-                    <div>
-                      <div className="text-2xl font-bold">
-                        {dashboardData.summary.avgAccuracy ? 
-                          (parseFloat(dashboardData.summary.avgAccuracy) * 100).toFixed(1) : 
-                          '65.0'}%
-                      </div>
-                      <div className="text-green-100">Model Accuracy</div>
+            <Card className="bg-gradient-to-r from-green-500 to-emerald-600 text-white border-0">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3">
+                  <Target className="h-8 w-8" />
+                  <div>
+                    <div className="text-2xl font-bold">
+                      {dashboardData?.summary?.avgAccuracy ?
+                        (parseFloat(dashboardData.summary.avgAccuracy) * 100).toFixed(1) :
+                        '65.0'}%
                     </div>
+                    <div className="text-green-100">Model Accuracy</div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card className="bg-gradient-to-r from-purple-500 to-violet-600 text-white border-0">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3">
-                    <BarChart3 className="h-8 w-8" />
-                    <div>
-                      <div className="text-2xl font-bold">
-                        {dashboardData.summary.totalPredictions || predictions.length}
-                      </div>
-                      <div className="text-purple-100">Total Predictions</div>
+            <Card className="bg-gradient-to-r from-purple-500 to-violet-600 text-white border-0">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3">
+                  <BarChart3 className="h-8 w-8" />
+                  <div>
+                    <div className="text-2xl font-bold">
+                      {dashboardData?.summary?.totalPredictions || predictions.length || 0}
                     </div>
+                    <div className="text-purple-100">Total Predictions</div>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </CardContent>
+            </Card>
 
-              <Card className="bg-gradient-to-r from-orange-500 to-red-600 text-white border-0">
-                <CardContent className="p-6">
-                  <div className="flex items-center gap-3">
-                    <AlertTriangle className="h-8 w-8" />
-                    <div>
-                      <div className="text-2xl font-bold">
-                        {dashboardData.summary.highPriorityRecommendations || 0}
-                      </div>
-                      <div className="text-orange-100">High Uncertainty</div>
+            <Card className="bg-gradient-to-r from-orange-500 to-red-600 text-white border-0">
+              <CardContent className="p-6">
+                <div className="flex items-center gap-3">
+                  <AlertTriangle className="h-8 w-8" />
+                  <div>
+                    <div className="text-2xl font-bold">
+                      {dashboardData?.summary?.highPriorityRecommendations || 0}
                     </div>
+                    <div className="text-orange-100">High Uncertainty</div>
                   </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
 
 

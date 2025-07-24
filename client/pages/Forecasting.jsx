@@ -412,48 +412,59 @@ export default function Forecasting() {
 
             {/* Model Performance & Recent Insights */}
             <div className="space-y-6">
-              {/* Model Performance */}
-              {dashboardData && dashboardData.modelPerformance && dashboardData.modelPerformance.length > 0 && (
+              {/* Category & Product Performance */}
+              {dashboardData && dashboardData.categoryPerformance && dashboardData.categoryPerformance.length > 0 && (
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center gap-2">
-                      <Cpu className="h-5 w-5" />
-                      Model Performance
+                      <Layers className="h-5 w-5" />
+                      Category Performance
                     </CardTitle>
                     <CardDescription>
-                      Current AI model metrics and status
+                      Prediction accuracy by product category
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
-                      {dashboardData.modelPerformance.map((model, index) => (
+                    <div className="space-y-3">
+                      {dashboardData.categoryPerformance.map((category, index) => (
                         <div
-                          key={`${model.model_name}-${index}`}
+                          key={`${category.category}-${index}`}
                           className="p-4 border rounded-lg"
                         >
-                          <div className="flex justify-between items-start mb-2">
-                            <div>
-                              <div className="font-medium">{model.model_name}</div>
+                          <div className="flex justify-between items-start mb-3">
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2 mb-1">
+                                <Badge className={getCategoryColor(category.category)}>
+                                  {category.category}
+                                </Badge>
+                              </div>
                               <div className="text-sm text-muted-foreground">
-                                {model.model_type?.toUpperCase()} • {model.predictions_count} predictions
+                                {category.product_count} products • {category.prediction_count} predictions
                               </div>
                             </div>
                             <div className="text-right">
-                              <div className={`font-bold text-lg ${getConfidenceColor(model.model_accuracy)}`}>
-                                {model.model_accuracy ? 
-                                  (model.model_accuracy * 100).toFixed(1) : 
-                                  '65.0'}%
+                              <div className={`font-bold text-lg ${getConfidenceColor(category.avg_accuracy)}`}>
+                                {category.avg_accuracy ?
+                                  `${Math.round(category.avg_accuracy * 100)}%` :
+                                  'N/A'}
                               </div>
-                              <div className="text-sm text-muted-foreground">Accuracy</div>
+                              <div className="text-sm text-muted-foreground">Avg Accuracy</div>
                             </div>
                           </div>
-                          <Badge 
-                            className={model.training_status === 'deployed' ? 
-                              'bg-green-100 text-green-800' : 
-                              'bg-yellow-100 text-yellow-800'}
-                          >
-                            {model.training_status || 'deployed'}
-                          </Badge>
+                          <div className="grid grid-cols-2 gap-4 text-sm">
+                            <div>
+                              <span className="text-muted-foreground">Avg Demand:</span>
+                              <span className="font-medium ml-2">
+                                {Math.round(category.avg_predicted_demand || 0)} units
+                              </span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Uncertainty:</span>
+                              <span className="font-medium ml-2">
+                                ±{Math.round(category.avg_uncertainty || 0)}
+                              </span>
+                            </div>
+                          </div>
                         </div>
                       ))}
                     </div>

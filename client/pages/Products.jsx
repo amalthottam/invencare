@@ -220,29 +220,41 @@ export default function Products() {
       <div className="lg:pl-64">
         <main className="p-6 lg:p-8">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                <div className="h-10 w-10 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                  <ShoppingCart className="h-6 w-6 text-white" />
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-3">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 flex items-center justify-center shadow-lg">
+                    <ShoppingCart className="h-7 w-7 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 bg-clip-text text-transparent">
+                      Products
+                    </h1>
+                    <p className="text-gray-600 mt-1">
+                      Manage your inventory and track stock levels
+                    </p>
+                  </div>
                 </div>
-                <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Grocery Products
-                </h1>
               </div>
-              <p className="text-muted-foreground">
-                Manage your supermarket inventory and track stock levels
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button onClick={() => navigate("/dashboard")}>
-                <Eye className="h-4 w-4 mr-2" />
-                View Dashboard
-              </Button>
-              <Button onClick={() => setIsAddModalOpen(true)}>
-                <Plus className="h-4 w-4 mr-2" />
-                Add Product
-              </Button>
+
+              <div className="flex items-center gap-3">
+                <Button
+                  onClick={() => navigate("/dashboard")}
+                  variant="outline"
+                  className="border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                >
+                  <Eye className="h-4 w-4 mr-2" />
+                  View Dashboard
+                </Button>
+                <Button
+                  onClick={() => setIsAddModalOpen(true)}
+                  className="bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 hover:from-blue-600 hover:via-purple-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                >
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Product
+                </Button>
+              </div>
             </div>
           </div>
 

@@ -25,7 +25,11 @@ import { testParams } from "./routes/test-params.js";
 import {
   getDemandPredictions,
   getForecastingDashboard,
+  getStores as getForecastingStores,
+  getProducts as getForecastingProducts,
+  getCategoryInsights,
 } from "./routes/forecasting.js";
+import { generateForecast as generateForecastProxy } from "./routes/aws-proxy.js";
 import {
   getProductPerformance,
   getDemandForecast,
@@ -776,6 +780,12 @@ export function createServer() {
   // Local database forecasting routes
   app.get("/api/analytics/demand-predictions", getDemandPredictions);
   app.get("/api/analytics/forecasting-dashboard", getForecastingDashboard);
+  app.get("/api/analytics/forecasting-stores", getForecastingStores);
+  app.get("/api/analytics/forecasting-products", getForecastingProducts);
+  app.get("/api/analytics/category-insights", getCategoryInsights);
+
+  // AWS proxy routes
+  app.post("/api/aws/generate-forecast", generateForecastProxy);
 
   // Product Analytics routes
   app.get("/api/analytics/products/:storeId/dashboard", getAnalyticsDashboard);

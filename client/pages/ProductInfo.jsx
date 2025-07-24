@@ -253,46 +253,61 @@ export default function ProductInfo() {
       <div className="lg:pl-64">
         <main className="p-6 lg:p-8">
           {/* Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-8">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" onClick={() => navigate("/products")}>
-                <ArrowLeft className="h-4 w-4 mr-2" />
-                Back to Products
-              </Button>
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="h-10 w-10 rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
-                    <Package className="h-6 w-6 text-white" />
-                  </div>
-                  <h1 className="text-3xl font-bold tracking-tight">
-                    {isEditMode ? "Edit Product" : product.productName}
-                  </h1>
-                </div>
-                <p className="text-muted-foreground">
-                  Product ID: {product.productId}
-                </p>
-              </div>
-            </div>
-            <div className="flex gap-2">
-              {isEditMode ? (
-                <>
-                  <Button
-                    variant="outline"
-                    onClick={handleCancel}
-                    disabled={saving}
-                  >
-                    Cancel
-                  </Button>
-                  <Button onClick={handleSave} disabled={saving}>
-                    {saving ? "Saving..." : "Save Changes"}
-                  </Button>
-                </>
-              ) : (
-                <Button onClick={handleEdit}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Edit Product
+          <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-8">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+              <div className="flex items-center gap-4">
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate("/products")}
+                  className="hover:bg-gray-100"
+                >
+                  <ArrowLeft className="h-4 w-4 mr-2" />
+                  Back to Products
                 </Button>
-              )}
+                <div className="flex items-center gap-4">
+                  <div className="h-12 w-12 rounded-xl bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 flex items-center justify-center shadow-lg">
+                    <Package className="h-7 w-7 text-white" />
+                  </div>
+                  <div>
+                    <h1 className="text-3xl font-bold tracking-tight bg-gradient-to-r from-blue-600 via-purple-600 to-blue-700 bg-clip-text text-transparent">
+                      {isEditMode ? "Edit Product" : product.productName}
+                    </h1>
+                    <p className="text-gray-600 mt-1">
+                      Product ID: {product.productId}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-3">
+                {isEditMode ? (
+                  <>
+                    <Button
+                      variant="outline"
+                      onClick={handleCancel}
+                      disabled={saving}
+                      className="border-gray-300 hover:border-gray-400 hover:bg-gray-50"
+                    >
+                      Cancel
+                    </Button>
+                    <Button
+                      onClick={handleSave}
+                      disabled={saving}
+                      className="bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 hover:from-blue-600 hover:via-purple-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                    >
+                      {saving ? "Saving..." : "Save Changes"}
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    onClick={handleEdit}
+                    className="bg-gradient-to-r from-blue-500 via-purple-500 to-blue-600 hover:from-blue-600 hover:via-purple-600 hover:to-blue-700 text-white shadow-lg hover:shadow-xl transition-all duration-300"
+                  >
+                    <Edit className="h-4 w-4 mr-2" />
+                    Edit Product
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
 

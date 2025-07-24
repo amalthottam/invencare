@@ -408,24 +408,14 @@ export default function Forecasting() {
                         key={`${category.category}-${index}`}
                         className="p-4 border rounded-lg bg-gradient-to-br from-white to-slate-50 hover:shadow-md transition-shadow"
                       >
-                        <div className="flex justify-between items-start mb-3">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-2 mb-2">
-                              <Badge className={getCategoryColor(category.category)} variant="secondary">
-                                {category.category}
-                              </Badge>
-                            </div>
-                            <div className="text-sm text-muted-foreground">
-                              {category.product_count} products • {category.prediction_count} predictions
-                            </div>
+                        <div className="mb-3">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge className={getCategoryColor(category.category)} variant="secondary">
+                              {category.category}
+                            </Badge>
                           </div>
-                          <div className="text-right">
-                            <div className={`font-bold text-xl ${getConfidenceColor(category.avg_accuracy)}`}>
-                              {category.avg_accuracy ?
-                                `${Math.round(category.avg_accuracy * 100)}%` :
-                                'N/A'}
-                            </div>
-                            <div className="text-sm text-muted-foreground">Accuracy</div>
+                          <div className="text-sm text-muted-foreground">
+                            {category.product_count} products • {category.prediction_count} predictions
                           </div>
                         </div>
                         <div className="space-y-2 text-sm">

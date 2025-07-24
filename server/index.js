@@ -29,6 +29,7 @@ import {
   getProducts as getForecastingProducts,
   getCategoryInsights,
 } from "./routes/forecasting.js";
+import { generateForecast as generateForecastProxy } from "./routes/aws-proxy.js";
 import {
   getProductPerformance,
   getDemandForecast,

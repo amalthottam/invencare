@@ -229,6 +229,7 @@ export default function Dashboard() {
       setAnalyticsLoading(true);
       setLowStockLoading(true);
       setTransactionsLoading(true);
+      setChartsLoading(true);
 
       // Fetch all dashboard data in parallel but handle each individually
       const fetchAnalytics = async () => {

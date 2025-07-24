@@ -784,6 +784,9 @@ app.get("/api/analytics/forecasting-stores", getForecastingStores);
 app.get("/api/analytics/forecasting-products", getForecastingProducts);
 app.get("/api/analytics/category-insights", getCategoryInsights);
 
+// AWS proxy routes
+app.post("/api/aws/generate-forecast", generateForecastProxy);
+
   // Product Analytics routes
   app.get("/api/analytics/products/:storeId/dashboard", getAnalyticsDashboard);
   app.get(

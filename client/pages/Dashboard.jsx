@@ -652,8 +652,96 @@ export default function Dashboard() {
               </CardContent>
             </Card>
 
-            {/* Top Categories */}
+            {/* Sales vs Forecast Trends Chart */}
             <Card className="lg:col-span-2">
+              <CardHeader>
+                <CardTitle className="text-xl">Sales vs Forecast Trends</CardTitle>
+                <CardDescription>
+                  Actual sales performance against predictions
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {chartsLoading ? (
+                  <div className="h-[300px] flex items-center justify-center">
+                    <div className="animate-pulse text-center">
+                      <div className="h-4 bg-muted rounded w-32 mx-auto mb-2"></div>
+                      <div className="h-3 bg-muted rounded w-24 mx-auto"></div>
+                    </div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <LineChart data={salesTrends}>
+                      <CartesianGrid strokeDasharray="3 3" />
+                      <XAxis dataKey="date" />
+                      <YAxis />
+                      <Tooltip />
+                      <Legend />
+                      <Line
+                        type="monotone"
+                        dataKey="sales"
+                        stroke="#8884d8"
+                        name="Actual Sales"
+                        strokeWidth={2}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey="forecast"
+                        stroke="#82ca9d"
+                        name="Forecasted"
+                        strokeDasharray="5 5"
+                        strokeWidth={2}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Category Performance and Top Categories Row */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+            {/* Category Performance Chart */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-xl">Category Performance</CardTitle>
+                <CardDescription>
+                  Revenue distribution by product category
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {chartsLoading ? (
+                  <div className="h-[300px] flex items-center justify-center">
+                    <div className="animate-pulse text-center">
+                      <div className="h-4 bg-muted rounded w-32 mx-auto mb-2"></div>
+                      <div className="h-3 bg-muted rounded w-24 mx-auto"></div>
+                    </div>
+                  </div>
+                ) : (
+                  <ResponsiveContainer width="100%" height={300}>
+                    <PieChart>
+                      <Pie
+                        data={categoryData}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                        outerRadius={80}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {categoryData.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip />
+                    </PieChart>
+                  </ResponsiveContainer>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Top Categories */}
+            <Card>
               <CardHeader>
                 <CardTitle className="text-xl">
                   Top Selling Categories
@@ -663,18 +751,20 @@ export default function Dashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="space-y-4">
                   {analyticsLoading ? (
                     // Loading skeleton for categories
-                    Array.from({ length: 3 }).map((_, index) => (
-                      <div
-                        key={index}
-                        className="p-4 bg-muted/50 rounded-lg text-center"
-                      >
-                        <div className="animate-pulse">
-                          <div className="h-5 bg-muted rounded w-3/4 mx-auto mb-3"></div>
-                          <div className="h-8 bg-muted rounded w-1/2 mx-auto mb-2"></div>
-                          <div className="h-3 bg-muted rounded w-2/3 mx-auto"></div>
+                    Array.from({ length: 5 }).map((_, index) => (
+                      <div key={index} className="p-3 bg-muted/50 rounded-lg">
+                        <div className="animate-pulse flex justify-between">
+                          <div className="flex-1">
+                            <div className="h-4 bg-muted rounded w-3/4 mb-2"></div>
+                            <div className="h-3 bg-muted rounded w-1/2"></div>
+                          </div>
+                          <div className="w-16">
+                            <div className="h-4 bg-muted rounded w-full mb-1"></div>
+                            <div className="h-3 bg-muted rounded w-full"></div>
+                          </div>
                         </div>
                       </div>
                     ))
@@ -688,23 +778,30 @@ export default function Dashboard() {
                               `/products?category=${encodeURIComponent(category.name)}`,
                             )
                           }
-                          className="p-4 bg-muted/50 rounded-lg text-center cursor-pointer transition-all duration-200 hover:bg-muted/70 hover:shadow-md hover:scale-[1.05] active:scale-[0.95]"
+                          className="flex items-center justify-between p-3 bg-muted/50 rounded-lg cursor-pointer transition-all duration-200 hover:bg-muted/70 hover:shadow-md hover:scale-[1.02] active:scale-[0.98]"
                           title={`Click to view ${category.name} products`}
                         >
-                          <p className="font-semibold text-lg hover:text-primary transition-colors">
-                            {category.name}
-                          </p>
-                          <p className="text-2xl font-bold text-primary">
-                            {category.sales}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            units sold
-                          </p>
+                          <div>
+                            <p className="font-medium hover:text-primary transition-colors">
+                              {category.name}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                              Category
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-lg font-bold text-primary">
+                              {category.sales}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              units sold
+                            </p>
+                          </div>
                         </div>
                       ),
                     )
                   ) : (
-                    <div className="col-span-3 text-center text-muted-foreground py-8">
+                    <div className="text-center text-muted-foreground py-8">
                       <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
                       <p>No category data available</p>
                     </div>

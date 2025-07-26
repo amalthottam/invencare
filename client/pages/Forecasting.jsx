@@ -149,7 +149,7 @@ export default function Forecasting() {
         stack: err.stack,
       });
       setError(
-        `Failed to generate forecast: ${err.message}. Please try again.`,
+        `Failed to generate forecast: ${err.message}. Please try again!`,
       );
     } finally {
       setGenerating(false);

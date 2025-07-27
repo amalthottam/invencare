@@ -2,11 +2,11 @@ import mysql from "mysql2/promise";
 
 // Database configuration
 const dbConfig = {
-  host: process.env.DB_HOST || "invencare-rds.cihe2wg8etco.us-east-1.rds.amazonaws.com",
-  port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER || "admin",
-  password: process.env.DB_PASSWORD || "InvenCare123!",
-  database: process.env.DB_NAME || "inventory",
+  host: "invencare-rds.cihe2wg8etco.us-east-1.rds.amazonaws.com",
+  port: 3306,
+  user: "admin",
+  password: "InvenCare123!",
+  database: "inventory",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,

@@ -20,6 +20,9 @@ CREATE TABLE IF NOT EXISTS `stores` (
   `id` VARCHAR(50) NOT NULL PRIMARY KEY,
   `name` VARCHAR(255) NOT NULL,
   `location` VARCHAR(255) DEFAULT NULL,
+  `city` VARCHAR(100) DEFAULT NULL,
+  `state` VARCHAR(50) DEFAULT NULL,
+  `status` ENUM('active', 'inactive', 'maintenance') DEFAULT 'active',
   `created_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   `updated_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
@@ -48,6 +51,11 @@ CREATE TABLE IF NOT EXISTS `suppliers` (
 CREATE TABLE IF NOT EXISTS `products` (
   `id` VARCHAR(50) NOT NULL PRIMARY KEY,
   `name` VARCHAR(255) NOT NULL,
+  `description` TEXT DEFAULT NULL,
+  `price` DECIMAL(10, 2) DEFAULT NULL,
+  `quantity` INT DEFAULT 0,
+  `barcode` VARCHAR(100) DEFAULT NULL,
+  `location_in_store` VARCHAR(100) DEFAULT NULL,
   `category` VARCHAR(100) DEFAULT NULL,
   `category_id` INT DEFAULT NULL,
   `unit_price` DECIMAL(10, 2) DEFAULT NULL,
@@ -64,7 +72,8 @@ CREATE TABLE IF NOT EXISTS `products` (
   FOREIGN KEY (`supplier_id`) REFERENCES `suppliers`(`id`) ON DELETE SET NULL,
   INDEX `idx_products_store` (`store_id`),
   INDEX `idx_products_category` (`category_id`),
-  INDEX `idx_products_status` (`status`)
+  INDEX `idx_products_status` (`status`),
+  INDEX `idx_products_barcode` (`barcode`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Create inventory_transactions table
@@ -442,11 +451,11 @@ CREATE TABLE IF NOT EXISTS `transaction_audit_log` (
 -- ============================================================================
 
 -- Insert sample stores
-INSERT IGNORE INTO `stores` (`id`, `name`, `location`) VALUES
-('store_001', 'Downtown Store', '123 Main St'),
-('store_002', 'Mall Location', '456 Shopping Center'),
-('store_003', 'Uptown Branch', '789 North Ave'),
-('store_004', 'Westside Market', '321 West Blvd');
+INSERT IGNORE INTO `stores` (`id`, `name`, `location`, `city`, `state`, `status`) VALUES
+('store_001', 'Downtown Store', '123 Main St', 'New York', 'NY', 'active'),
+('store_002', 'Mall Location', '456 Shopping Center', 'New York', 'NY', 'active'),
+('store_003', 'Uptown Branch', '789 North Ave', 'New York', 'NY', 'active'),
+('store_004', 'Westside Market', '321 West Blvd', 'New York', 'NY', 'active');
 
 -- Insert sample categories
 INSERT IGNORE INTO `categories` (`name`, `description`) VALUES
@@ -470,17 +479,17 @@ INSERT IGNORE INTO `suppliers` (`name`, `contact_email`, `contact_phone`, `addre
 ('Premium Meats Co', 'sales@premiummeats.com', '555-0105', '500 Butcher Block, Meat District');
 
 -- Insert sample products
-INSERT IGNORE INTO `products` (`id`, `name`, `category`, `category_id`, `unit_price`, `current_stock`, `minimum_stock`, `maximum_stock`, `store_id`, `supplier_id`) VALUES
-('FV-BAN-001', 'Organic Bananas', 'Fruits & Vegetables', 1, 1.99, 100, 20, 200, 'store_001', 1),
-('DA-MLK-003', 'Whole Milk', 'Dairy', 2, 3.79, 50, 10, 100, 'store_001', 2),
-('MP-CHI-008', 'Chicken Breast', 'Meat & Poultry', 3, 12.99, 25, 5, 50, 'store_002', 5),
-('BV-ENE-015', 'Energy Drinks', 'Beverages', 4, 2.99, 75, 15, 150, 'store_004', 4),
-('SN-CHI-012', 'Potato Chips', 'Snacks', 5, 3.99, 60, 12, 120, 'store_003', NULL),
-('BV-COF-009', 'Ground Coffee', 'Beverages', 4, 8.99, 30, 8, 60, 'store_002', 4),
-('DA-CHE-004', 'Cheddar Cheese', 'Dairy', 2, 5.99, 40, 10, 80, 'store_002', 2),
-('SF-SAL-010', 'Fresh Salmon', 'Seafood', 6, 18.99, 15, 3, 30, 'store_003', 3),
-('BK-CRO-013', 'Croissants', 'Bakery', 7, 1.99, 35, 8, 70, 'store_003', NULL),
-('SN-NUT-017', 'Mixed Nuts', 'Snacks', 5, 7.99, 45, 10, 90, 'store_004', NULL);
+INSERT IGNORE INTO `products` (`id`, `name`, `description`, `price`, `quantity`, `barcode`, `location_in_store`, `category`, `category_id`, `unit_price`, `current_stock`, `minimum_stock`, `maximum_stock`, `store_id`, `supplier_id`) VALUES
+('FV-BAN-001', 'Organic Bananas', 'Fresh organic bananas from local farms', 1.99, 100, '123456789012', 'Aisle 1-A', 'Fruits & Vegetables', 1, 1.99, 100, 20, 200, 'store_001', 1),
+('DA-MLK-003', 'Whole Milk', 'Fresh whole milk, 3.25% fat content', 3.79, 50, '123456789014', 'Aisle 3-B', 'Dairy', 2, 3.79, 50, 10, 100, 'store_001', 2),
+('MP-CHI-008', 'Chicken Breast', 'Fresh boneless chicken breast', 12.99, 25, '123456789019', 'Aisle 4-D', 'Meat & Poultry', 3, 12.99, 25, 5, 50, 'store_002', 5),
+('BV-ENE-015', 'Energy Drinks', 'High caffeine energy drinks', 2.99, 75, '123456789026', 'Aisle 5-E', 'Beverages', 4, 2.99, 75, 15, 150, 'store_004', 4),
+('SN-CHI-012', 'Potato Chips', 'Crispy potato chips, salt flavor', 3.99, 60, '123456789023', 'Aisle 6-G', 'Snacks', 5, 3.99, 60, 12, 120, 'store_003', NULL),
+('BV-COF-009', 'Ground Coffee', 'Premium ground coffee, medium roast', 8.99, 30, '123456789020', 'Aisle 5-E', 'Beverages', 4, 8.99, 30, 8, 60, 'store_002', 4),
+('DA-CHE-004', 'Cheddar Cheese', 'Aged cheddar cheese, sharp flavor', 5.99, 40, '123456789015', 'Aisle 3-B', 'Dairy', 2, 5.99, 40, 10, 80, 'store_002', 2),
+('SF-SAL-010', 'Fresh Salmon', 'Atlantic salmon, fresh caught', 18.99, 15, '123456789021', 'Aisle 4-F', 'Seafood', 6, 18.99, 15, 3, 30, 'store_003', 3),
+('BK-CRO-013', 'Croissants', 'Fresh French croissants', 1.99, 35, '123456789024', 'Aisle 2-C', 'Bakery', 7, 1.99, 35, 8, 70, 'store_003', NULL),
+('SN-NUT-017', 'Mixed Nuts', 'Deluxe mixed nuts, roasted', 7.99, 45, '123456789028', 'Aisle 6-G', 'Snacks', 5, 7.99, 45, 10, 90, 'store_004', NULL);
 
 -- Insert sample inventory transactions
 INSERT IGNORE INTO `inventory_transactions` 

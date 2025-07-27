@@ -2,11 +2,11 @@ import mysql from "mysql2/promise";
 
 // Database configuration
 const dbConfig = {
-  host: process.env.DB_HOST || "localhost",
+  host: process.env.DB_HOST || "invencare-rds.cihe2wg8etco.us-east-1.rds.amazonaws.com",
   port: process.env.DB_PORT || 3306,
-  user: process.env.DB_USER || "root",
-  password: process.env.DB_PASSWORD || "password",
-  database: process.env.DB_NAME || "inventory_management",
+  user: process.env.DB_USER || "admin",
+  password: process.env.DB_PASSWORD || "InvenCare123!",
+  database: process.env.DB_NAME || "inventory",
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
@@ -37,7 +37,7 @@ export const initializeDatabase = async () => {
 
     // Create database if it doesn't exist
     await connection.execute(
-      `CREATE DATABASE IF NOT EXISTS ${dbConfig.database}`,
+      `use invencare;`,
     );
     await connection.execute(`USE ${dbConfig.database}`);
 

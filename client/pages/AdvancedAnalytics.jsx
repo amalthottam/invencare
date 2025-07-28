@@ -102,11 +102,21 @@ export default function AdvancedAnalytics() {
         metricsResponse,
       ] = await Promise.all([
         apiRequest(`/api/analytics/ml-models?storeId=${selectedStore}`),
-        apiRequest(`/api/analytics/predictions?storeId=${selectedStore}&model=${selectedModel}&days=${timeRange}`),
-        apiRequest(`/api/analytics/model-performance?storeId=${selectedStore}&days=${timeRange}`),
-        apiRequest(`/api/analytics/anomalies?storeId=${selectedStore}&days=${timeRange}`),
-        apiRequest(`/api/analytics/advanced-forecasts?storeId=${selectedStore}&model=${selectedModel}&days=${timeRange}`),
-        apiRequest(`/api/analytics/ai-insights?storeId=${selectedStore}&days=${timeRange}`),
+        apiRequest(
+          `/api/analytics/predictions?storeId=${selectedStore}&model=${selectedModel}&days=${timeRange}`,
+        ),
+        apiRequest(
+          `/api/analytics/model-performance?storeId=${selectedStore}&days=${timeRange}`,
+        ),
+        apiRequest(
+          `/api/analytics/anomalies?storeId=${selectedStore}&days=${timeRange}`,
+        ),
+        apiRequest(
+          `/api/analytics/advanced-forecasts?storeId=${selectedStore}&model=${selectedModel}&days=${timeRange}`,
+        ),
+        apiRequest(
+          `/api/analytics/ai-insights?storeId=${selectedStore}&days=${timeRange}`,
+        ),
         apiRequest(`/api/analytics/realtime-metrics?storeId=${selectedStore}`),
       ]);
 
@@ -163,7 +173,11 @@ export default function AdvancedAnalytics() {
       accuracy: 0.924,
       status: "active",
       lastTrained: "2024-01-15T10:30:00Z",
-      parameters: { epochs: 100, learning_rate: 0.001, hidden_layers: [64, 32] },
+      parameters: {
+        epochs: 100,
+        learning_rate: 0.001,
+        hidden_layers: [64, 32],
+      },
     },
     {
       id: "arima_seasonal",
@@ -181,7 +195,10 @@ export default function AdvancedAnalytics() {
       accuracy: 0.951,
       status: "active",
       lastTrained: "2024-01-15T14:20:00Z",
-      parameters: { weights: [0.4, 0.35, 0.25], models: ["lstm", "arima", "prophet"] },
+      parameters: {
+        weights: [0.4, 0.35, 0.25],
+        models: ["lstm", "arima", "prophet"],
+      },
     },
     {
       id: "prophet_trend",
@@ -352,27 +369,38 @@ export default function AdvancedAnalytics() {
 
   const getModelStatusColor = (status) => {
     switch (status) {
-      case "active": return "bg-green-100 text-green-800";
-      case "training": return "bg-blue-100 text-blue-800";
-      case "error": return "bg-red-100 text-red-800";
-      default: return "bg-gray-100 text-gray-800";
+      case "active":
+        return "bg-green-100 text-green-800";
+      case "training":
+        return "bg-blue-100 text-blue-800";
+      case "error":
+        return "bg-red-100 text-red-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
   const getAnomalySeverityColor = (severity) => {
     switch (severity) {
-      case "high": return "bg-red-100 text-red-800 border-red-200";
-      case "medium": return "bg-yellow-100 text-yellow-800 border-yellow-200";
-      case "low": return "bg-blue-100 text-blue-800 border-blue-200";
-      default: return "bg-gray-100 text-gray-800 border-gray-200";
+      case "high":
+        return "bg-red-100 text-red-800 border-red-200";
+      case "medium":
+        return "bg-yellow-100 text-yellow-800 border-yellow-200";
+      case "low":
+        return "bg-blue-100 text-blue-800 border-blue-200";
+      default:
+        return "bg-gray-100 text-gray-800 border-gray-200";
     }
   };
 
   const getTrendIcon = (trend) => {
     switch (trend) {
-      case "increasing": return <TrendingUp className="h-4 w-4 text-green-600" />;
-      case "decreasing": return <TrendingDown className="h-4 w-4 text-red-600" />;
-      default: return <Activity className="h-4 w-4 text-blue-600" />;
+      case "increasing":
+        return <TrendingUp className="h-4 w-4 text-green-600" />;
+      case "decreasing":
+        return <TrendingDown className="h-4 w-4 text-red-600" />;
+      default:
+        return <Activity className="h-4 w-4 text-blue-600" />;
     }
   };
 
@@ -385,8 +413,12 @@ export default function AdvancedAnalytics() {
             <div className="flex items-center justify-center py-12">
               <div className="text-center">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                <p className="text-muted-foreground text-lg">Loading Advanced Analytics...</p>
-                <p className="text-sm text-muted-foreground mt-2">Initializing ML models and data pipelines</p>
+                <p className="text-muted-foreground text-lg">
+                  Loading Advanced Analytics...
+                </p>
+                <p className="text-sm text-muted-foreground mt-2">
+                  Initializing ML models and data pipelines
+                </p>
               </div>
             </div>
           </main>
@@ -398,7 +430,7 @@ export default function AdvancedAnalytics() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <Navigation onLogout={handleLogout} />
-      
+
       <div className="lg:pl-64">
         <main className="container mx-auto px-4 py-8">
           {/* Header */}
@@ -413,11 +445,12 @@ export default function AdvancedAnalytics() {
                     Advanced AI Analytics
                   </h1>
                   <p className="text-gray-600 mt-1">
-                    Neural Networks • Time Series • Ensemble Learning • Real-time Predictions
+                    Neural Networks • Time Series • Ensemble Learning •
+                    Real-time Predictions
                   </p>
                 </div>
               </div>
-              
+
               <div className="flex items-center gap-4 flex-wrap">
                 <div className="flex items-center gap-2">
                   <Store className="h-5 w-5 text-gray-500" />
@@ -433,7 +466,7 @@ export default function AdvancedAnalytics() {
                     ))}
                   </select>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <Bot className="h-5 w-5 text-gray-500" />
                   <select
@@ -465,9 +498,9 @@ export default function AdvancedAnalytics() {
                   <RefreshCw className="h-4 w-4 mr-2" />
                   Refresh
                 </Button>
-                
-                <Button 
-                  onClick={generateMLForecast} 
+
+                <Button
+                  onClick={generateMLForecast}
                   disabled={isGenerating}
                   className="bg-gradient-to-r from-purple-500 via-blue-500 to-indigo-600 hover:from-purple-600 hover:via-blue-600 hover:to-indigo-700"
                 >
@@ -494,7 +527,12 @@ export default function AdvancedAnalytics() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-green-100 text-sm">Model Confidence</p>
-                    <p className="text-2xl font-bold">{(analytics.realTimeMetrics.model_confidence * 100).toFixed(1)}%</p>
+                    <p className="text-2xl font-bold">
+                      {(
+                        analytics.realTimeMetrics.model_confidence * 100
+                      ).toFixed(1)}
+                      %
+                    </p>
                   </div>
                   <Target className="h-8 w-8 text-green-100" />
                 </div>
@@ -506,7 +544,9 @@ export default function AdvancedAnalytics() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-blue-100 text-sm">Prediction Latency</p>
-                    <p className="text-2xl font-bold">{analytics.realTimeMetrics.prediction_latency}ms</p>
+                    <p className="text-2xl font-bold">
+                      {analytics.realTimeMetrics.prediction_latency}ms
+                    </p>
                   </div>
                   <Zap className="h-8 w-8 text-blue-100" />
                 </div>
@@ -517,8 +557,12 @@ export default function AdvancedAnalytics() {
               <CardContent className="p-4">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-purple-100 text-sm">Active Predictions</p>
-                    <p className="text-2xl font-bold">{analytics.realTimeMetrics.active_predictions?.toLocaleString()}</p>
+                    <p className="text-purple-100 text-sm">
+                      Active Predictions
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {analytics.realTimeMetrics.active_predictions?.toLocaleString()}
+                    </p>
                   </div>
                   <Activity className="h-8 w-8 text-purple-100" />
                 </div>
@@ -530,7 +574,10 @@ export default function AdvancedAnalytics() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-orange-100 text-sm">System Load</p>
-                    <p className="text-2xl font-bold">{(analytics.realTimeMetrics.system_load * 100).toFixed(0)}%</p>
+                    <p className="text-2xl font-bold">
+                      {(analytics.realTimeMetrics.system_load * 100).toFixed(0)}
+                      %
+                    </p>
                   </div>
                   <Cpu className="h-8 w-8 text-orange-100" />
                 </div>
@@ -542,7 +589,12 @@ export default function AdvancedAnalytics() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-teal-100 text-sm">Data Freshness</p>
-                    <p className="text-2xl font-bold">{(analytics.realTimeMetrics.data_freshness * 100).toFixed(1)}%</p>
+                    <p className="text-2xl font-bold">
+                      {(analytics.realTimeMetrics.data_freshness * 100).toFixed(
+                        1,
+                      )}
+                      %
+                    </p>
                   </div>
                   <Clock className="h-8 w-8 text-teal-100" />
                 </div>
@@ -554,7 +606,9 @@ export default function AdvancedAnalytics() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-indigo-100 text-sm">Accuracy Trend</p>
-                    <p className="text-2xl font-bold capitalize">{analytics.realTimeMetrics.accuracy_trend}</p>
+                    <p className="text-2xl font-bold capitalize">
+                      {analytics.realTimeMetrics.accuracy_trend}
+                    </p>
                   </div>
                   <TrendingUp className="h-8 w-8 text-indigo-100" />
                 </div>
@@ -571,16 +625,50 @@ export default function AdvancedAnalytics() {
                   <BarChart3 className="h-5 w-5" />
                   Model Performance Comparison
                 </CardTitle>
-                <CardDescription>Real-time accuracy metrics across all AI models</CardDescription>
+                <CardDescription>
+                  Real-time accuracy metrics across all AI models
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={300}>
-                  <BarChart data={[
-                    { model: "LSTM", accuracy: analytics.modelPerformance.metrics?.mae?.lstm || 92.4, mae: analytics.modelPerformance.metrics?.mae?.lstm || 12.3 },
-                    { model: "ARIMA", accuracy: analytics.modelPerformance.metrics?.mae?.arima || 88.7, mae: analytics.modelPerformance.metrics?.mae?.arima || 18.7 },
-                    { model: "Ensemble", accuracy: analytics.modelPerformance.metrics?.mae?.ensemble || 95.1, mae: analytics.modelPerformance.metrics?.mae?.ensemble || 9.8 },
-                    { model: "Prophet", accuracy: analytics.modelPerformance.metrics?.mae?.prophet || 86.3, mae: analytics.modelPerformance.metrics?.mae?.prophet || 21.2 },
-                  ]}>
+                  <BarChart
+                    data={[
+                      {
+                        model: "LSTM",
+                        accuracy:
+                          analytics.modelPerformance.metrics?.mae?.lstm || 92.4,
+                        mae:
+                          analytics.modelPerformance.metrics?.mae?.lstm || 12.3,
+                      },
+                      {
+                        model: "ARIMA",
+                        accuracy:
+                          analytics.modelPerformance.metrics?.mae?.arima ||
+                          88.7,
+                        mae:
+                          analytics.modelPerformance.metrics?.mae?.arima ||
+                          18.7,
+                      },
+                      {
+                        model: "Ensemble",
+                        accuracy:
+                          analytics.modelPerformance.metrics?.mae?.ensemble ||
+                          95.1,
+                        mae:
+                          analytics.modelPerformance.metrics?.mae?.ensemble ||
+                          9.8,
+                      },
+                      {
+                        model: "Prophet",
+                        accuracy:
+                          analytics.modelPerformance.metrics?.mae?.prophet ||
+                          86.3,
+                        mae:
+                          analytics.modelPerformance.metrics?.mae?.prophet ||
+                          21.2,
+                      },
+                    ]}
+                  >
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="model" />
                     <YAxis />
@@ -599,12 +687,17 @@ export default function AdvancedAnalytics() {
                   <Network className="h-5 w-5" />
                   Active ML Models
                 </CardTitle>
-                <CardDescription>Current model status and configurations</CardDescription>
+                <CardDescription>
+                  Current model status and configurations
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {analytics.mlModels.map((model, index) => (
-                    <div key={index} className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-4 bg-muted/50 rounded-lg border"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="h-10 w-10 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 flex items-center justify-center">
                           <Bot className="h-5 w-5 text-white" />
@@ -612,7 +705,8 @@ export default function AdvancedAnalytics() {
                         <div>
                           <p className="font-medium">{model.name}</p>
                           <p className="text-sm text-muted-foreground">
-                            Trained: {new Date(model.lastTrained).toLocaleDateString()}
+                            Trained:{" "}
+                            {new Date(model.lastTrained).toLocaleDateString()}
                           </p>
                         </div>
                       </div>
@@ -640,7 +734,9 @@ export default function AdvancedAnalytics() {
                   <TrendingUp className="h-5 w-5" />
                   Multi-Model Forecast Comparison
                 </CardTitle>
-                <CardDescription>LSTM vs ARIMA vs Ensemble predictions with actual results</CardDescription>
+                <CardDescription>
+                  LSTM vs ARIMA vs Ensemble predictions with actual results
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={350}>
@@ -650,10 +746,35 @@ export default function AdvancedAnalytics() {
                     <YAxis />
                     <Tooltip />
                     <Legend />
-                    <Line type="monotone" dataKey="lstm" stroke="#8b5cf6" name="LSTM Neural Net" strokeWidth={2} />
-                    <Line type="monotone" dataKey="arima" stroke="#06b6d4" name="ARIMA Model" strokeWidth={2} />
-                    <Line type="monotone" dataKey="ensemble" stroke="#10b981" name="Ensemble" strokeWidth={3} />
-                    <Line type="monotone" dataKey="actual" stroke="#ef4444" name="Actual" strokeWidth={2} strokeDasharray="5 5" />
+                    <Line
+                      type="monotone"
+                      dataKey="lstm"
+                      stroke="#8b5cf6"
+                      name="LSTM Neural Net"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="arima"
+                      stroke="#06b6d4"
+                      name="ARIMA Model"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="ensemble"
+                      stroke="#10b981"
+                      name="Ensemble"
+                      strokeWidth={3}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="actual"
+                      stroke="#ef4444"
+                      name="Actual"
+                      strokeWidth={2}
+                      strokeDasharray="5 5"
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </CardContent>
@@ -666,24 +787,39 @@ export default function AdvancedAnalytics() {
                   <Target className="h-5 w-5" />
                   Current Predictions
                 </CardTitle>
-                <CardDescription>Today's AI-generated demand forecasts</CardDescription>
+                <CardDescription>
+                  Today's AI-generated demand forecasts
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4 max-h-80 overflow-y-auto">
                   {analytics.predictions.map((prediction, index) => (
-                    <div key={index} className="p-3 bg-muted/50 rounded-lg border">
+                    <div
+                      key={index}
+                      className="p-3 bg-muted/50 rounded-lg border"
+                    >
                       <div className="flex items-center justify-between mb-2">
-                        <p className="font-medium text-sm">{prediction.product}</p>
+                        <p className="font-medium text-sm">
+                          {prediction.product}
+                        </p>
                         {getTrendIcon(prediction.trend)}
                       </div>
                       <div className="space-y-1">
                         <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Predicted:</span>
-                          <span className="font-medium">{prediction.predicted} units</span>
+                          <span className="text-muted-foreground">
+                            Predicted:
+                          </span>
+                          <span className="font-medium">
+                            {prediction.predicted} units
+                          </span>
                         </div>
                         <div className="flex justify-between text-xs">
-                          <span className="text-muted-foreground">Confidence:</span>
-                          <span className="font-medium">{(prediction.confidence * 100).toFixed(1)}%</span>
+                          <span className="text-muted-foreground">
+                            Confidence:
+                          </span>
+                          <span className="font-medium">
+                            {(prediction.confidence * 100).toFixed(1)}%
+                          </span>
                         </div>
                         <div className="flex justify-between text-xs">
                           <span className="text-muted-foreground">Model:</span>
@@ -708,32 +844,51 @@ export default function AdvancedAnalytics() {
                   <AlertTriangle className="h-5 w-5" />
                   Anomaly Detection
                 </CardTitle>
-                <CardDescription>AI-detected patterns and outliers in demand data</CardDescription>
+                <CardDescription>
+                  AI-detected patterns and outliers in demand data
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {analytics.anomalies.map((anomaly, index) => (
-                    <div key={index} className={`p-4 rounded-lg border ${getAnomalySeverityColor(anomaly.severity)}`}>
+                    <div
+                      key={index}
+                      className={`p-4 rounded-lg border ${getAnomalySeverityColor(anomaly.severity)}`}
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <p className="font-medium">{anomaly.product}</p>
                         <Badge variant="outline" className="text-xs">
                           {anomaly.severity}
                         </Badge>
                       </div>
-                      <p className="text-sm mb-2 capitalize">{anomaly.anomaly_type.replace('_', ' ')}</p>
+                      <p className="text-sm mb-2 capitalize">
+                        {anomaly.anomaly_type.replace("_", " ")}
+                      </p>
                       <div className="grid grid-cols-2 gap-4 text-xs">
                         <div>
-                          <span className="text-muted-foreground">Observed:</span>
-                          <span className="font-medium ml-1">{anomaly.value}</span>
+                          <span className="text-muted-foreground">
+                            Observed:
+                          </span>
+                          <span className="font-medium ml-1">
+                            {anomaly.value}
+                          </span>
                         </div>
                         <div>
-                          <span className="text-muted-foreground">Expected:</span>
-                          <span className="font-medium ml-1">{anomaly.expected}</span>
+                          <span className="text-muted-foreground">
+                            Expected:
+                          </span>
+                          <span className="font-medium ml-1">
+                            {anomaly.expected}
+                          </span>
                         </div>
                       </div>
                       <div className="mt-2 text-xs">
-                        <span className="text-muted-foreground">Confidence:</span>
-                        <span className="font-medium ml-1">{(anomaly.confidence * 100).toFixed(1)}%</span>
+                        <span className="text-muted-foreground">
+                          Confidence:
+                        </span>
+                        <span className="font-medium ml-1">
+                          {(anomaly.confidence * 100).toFixed(1)}%
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -748,21 +903,35 @@ export default function AdvancedAnalytics() {
                   <Eye className="h-5 w-5" />
                   AI-Generated Insights
                 </CardTitle>
-                <CardDescription>Automated analysis and recommendations</CardDescription>
+                <CardDescription>
+                  Automated analysis and recommendations
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {analytics.insights.map((insight, index) => (
-                    <div key={index} className="p-4 bg-muted/50 rounded-lg border">
+                    <div
+                      key={index}
+                      className="p-4 bg-muted/50 rounded-lg border"
+                    >
                       <div className="flex items-center gap-2 mb-2">
-                        <div className={`h-2 w-2 rounded-full ${
-                          insight.impact === 'high' ? 'bg-red-500' :
-                          insight.impact === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                        }`} />
+                        <div
+                          className={`h-2 w-2 rounded-full ${
+                            insight.impact === "high"
+                              ? "bg-red-500"
+                              : insight.impact === "medium"
+                                ? "bg-yellow-500"
+                                : "bg-green-500"
+                          }`}
+                        />
                         <p className="font-medium text-sm">{insight.title}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground mb-2">{insight.description}</p>
-                      <p className="text-xs font-medium text-blue-600">{insight.recommendation}</p>
+                      <p className="text-sm text-muted-foreground mb-2">
+                        {insight.description}
+                      </p>
+                      <p className="text-xs font-medium text-blue-600">
+                        {insight.recommendation}
+                      </p>
                       <div className="flex items-center gap-2 mt-2">
                         <Badge variant="outline" className="text-xs">
                           {(insight.confidence * 100).toFixed(0)}% confidence
@@ -785,44 +954,74 @@ export default function AdvancedAnalytics() {
                 <Gauge className="h-5 w-5" />
                 Detailed Model Metrics
               </CardTitle>
-              <CardDescription>Comprehensive performance analysis across all models</CardDescription>
+              <CardDescription>
+                Comprehensive performance analysis across all models
+              </CardDescription>
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                 <div className="space-y-4">
-                  <h4 className="font-medium text-sm text-muted-foreground">Mean Absolute Error (MAE)</h4>
-                  {Object.entries(analytics.modelPerformance.metrics?.mae || {}).map(([model, value]) => (
-                    <div key={model} className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm text-muted-foreground">
+                    Mean Absolute Error (MAE)
+                  </h4>
+                  {Object.entries(
+                    analytics.modelPerformance.metrics?.mae || {},
+                  ).map(([model, value]) => (
+                    <div
+                      key={model}
+                      className="flex items-center justify-between"
+                    >
                       <span className="text-sm capitalize">{model}</span>
                       <span className="font-medium">{value}</span>
                     </div>
                   ))}
                 </div>
-                
+
                 <div className="space-y-4">
-                  <h4 className="font-medium text-sm text-muted-foreground">Root Mean Square Error (RMSE)</h4>
-                  {Object.entries(analytics.modelPerformance.metrics?.rmse || {}).map(([model, value]) => (
-                    <div key={model} className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm text-muted-foreground">
+                    Root Mean Square Error (RMSE)
+                  </h4>
+                  {Object.entries(
+                    analytics.modelPerformance.metrics?.rmse || {},
+                  ).map(([model, value]) => (
+                    <div
+                      key={model}
+                      className="flex items-center justify-between"
+                    >
                       <span className="text-sm capitalize">{model}</span>
                       <span className="font-medium">{value}</span>
                     </div>
                   ))}
                 </div>
-                
+
                 <div className="space-y-4">
-                  <h4 className="font-medium text-sm text-muted-foreground">Training Time (mins)</h4>
-                  {Object.entries(analytics.modelPerformance.training_time || {}).map(([model, value]) => (
-                    <div key={model} className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm text-muted-foreground">
+                    Training Time (mins)
+                  </h4>
+                  {Object.entries(
+                    analytics.modelPerformance.training_time || {},
+                  ).map(([model, value]) => (
+                    <div
+                      key={model}
+                      className="flex items-center justify-between"
+                    >
                       <span className="text-sm capitalize">{model}</span>
                       <span className="font-medium">{value}</span>
                     </div>
                   ))}
                 </div>
-                
+
                 <div className="space-y-4">
-                  <h4 className="font-medium text-sm text-muted-foreground">Prediction Latency (ms)</h4>
-                  {Object.entries(analytics.modelPerformance.prediction_latency || {}).map(([model, value]) => (
-                    <div key={model} className="flex items-center justify-between">
+                  <h4 className="font-medium text-sm text-muted-foreground">
+                    Prediction Latency (ms)
+                  </h4>
+                  {Object.entries(
+                    analytics.modelPerformance.prediction_latency || {},
+                  ).map(([model, value]) => (
+                    <div
+                      key={model}
+                      className="flex items-center justify-between"
+                    >
                       <span className="text-sm capitalize">{model}</span>
                       <span className="font-medium">{value}</span>
                     </div>

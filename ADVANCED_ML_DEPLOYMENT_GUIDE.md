@@ -63,9 +63,9 @@ def main():
                        choices=['lstm', 'arima', 'ensemble'])
     parser.add_argument('--model-dir', type=str, default=os.environ.get('SM_MODEL_DIR'))
     parser.add_argument('--train', type=str, default=os.environ.get('SM_CHANNEL_TRAINING'))
-    
+
     args = parser.parse_args()
-    
+
     if args.model_type == 'lstm':
         from lstm_demand_forecast import LSTMDemandForecaster
         model = LSTMDemandForecaster()
@@ -75,12 +75,12 @@ def main():
     else:
         from ensemble_demand_forecast import EnsembleDemandForecaster
         model = EnsembleDemandForecaster()
-    
+
     # Load and train
     import pandas as pd
     train_data = pd.read_csv(os.path.join(args.train, 'train.csv'))
     metrics = model.fit(train_data, args.model_dir)
-    
+
     print(f"Training completed: {metrics}")
 
 if __name__ == '__main__':
@@ -160,7 +160,7 @@ train_data = 's3://your-bucket/training-data/train.csv'
 
 def train_model(model_type):
     """Train a specific model type"""
-    
+
     estimator = Estimator(
         image_uri=image_uri,
         role=role,
@@ -175,10 +175,10 @@ def train_model(model_type):
             {'Key': 'ModelType', 'Value': model_type}
         ]
     )
-    
+
     # Start training
     estimator.fit({'training': train_data})
-    
+
     return estimator
 
 # Train all models
@@ -200,18 +200,18 @@ from sagemaker.predictor import Predictor
 
 def deploy_model(estimator, model_name, endpoint_name):
     """Deploy trained model to SageMaker endpoint"""
-    
+
     model = estimator.create_model(
         name=model_name,
         role=role
     )
-    
+
     predictor = model.deploy(
         initial_instance_count=1,
         instance_type='ml.t2.medium',  # Cost-effective for development
         endpoint_name=endpoint_name
     )
-    
+
     return predictor
 
 # Deploy all models
@@ -504,29 +504,28 @@ Create `test_frontend_integration.js`:
 // Test the ML forecasting integration
 const testMLForecasting = async () => {
   try {
-    const response = await fetch('/api/analytics/generate-ml-forecast', {
-      method: 'POST',
+    const response = await fetch("/api/analytics/generate-ml-forecast", {
+      method: "POST",
       headers: {
-        'Content-Type': 'application/json',
+        "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        storeId: 'store_001',
-        modelType: 'ensemble',
-        forecastDays: 7
-      })
+        storeId: "store_001",
+        modelType: "ensemble",
+        forecastDays: 7,
+      }),
     });
 
     const result = await response.json();
-    console.log('ML Forecasting Result:', result);
-    
+    console.log("ML Forecasting Result:", result);
+
     if (result.success) {
-      console.log('✅ ML forecasting is working!');
+      console.log("✅ ML forecasting is working!");
     } else {
-      console.log('❌ ML forecasting failed:', result.error);
+      console.log("❌ ML forecasting failed:", result.error);
     }
-    
   } catch (error) {
-    console.error('❌ Integration test failed:', error);
+    console.error("❌ Integration test failed:", error);
   }
 };
 
@@ -561,21 +560,21 @@ from datetime import datetime, timedelta
 def retrain_models():
     """Scheduled model retraining"""
     print(f"Starting model retraining at {datetime.now()}")
-    
+
     # Check model performance metrics
     # If accuracy drops below threshold, trigger retraining
-    
+
     # Example: Retrain if accuracy < 85%
     current_accuracy = get_model_accuracy()  # Implement this function
-    
+
     if current_accuracy < 0.85:
         print("Model accuracy below threshold, triggering retraining...")
-        
+
         # Trigger SageMaker training job
         sagemaker = boto3.client('sagemaker')
-        
+
         training_job_name = f"demand-forecast-retrain-{int(time.time())}"
-        
+
         response = sagemaker.create_training_job(
             TrainingJobName=training_job_name,
             RoleArn='arn:aws:iam::<account-id>:role/SageMakerRole',
@@ -603,7 +602,7 @@ def retrain_models():
                 'MaxRuntimeInSeconds': 3600
             }
         )
-        
+
         print(f"Retraining job started: {training_job_name}")
 
 def get_model_accuracy():
@@ -666,12 +665,12 @@ def manage_endpoints():
     """Start/stop endpoints based on schedule"""
     sagemaker = boto3.client('sagemaker')
     current_hour = datetime.now().hour
-    
+
     # Stop endpoints from 11 PM to 6 AM (low traffic)
     if 23 <= current_hour or current_hour <= 6:
         # Update endpoints to zero instances
         endpoints = ['lstm-demand-forecast-endpoint', 'arima-demand-forecast-endpoint']
-        
+
         for endpoint in endpoints:
             sagemaker.update_endpoint(
                 EndpointName=endpoint,
@@ -738,6 +737,7 @@ model = Model(
 ### 9.1 Common Issues
 
 **SageMaker Endpoint Issues:**
+
 ```bash
 # Check endpoint status
 aws sagemaker describe-endpoint --endpoint-name lstm-demand-forecast-endpoint
@@ -749,6 +749,7 @@ aws logs filter-log-events \
 ```
 
 **Lambda Function Issues:**
+
 ```bash
 # Check Lambda logs
 aws logs filter-log-events \
@@ -765,11 +766,13 @@ aws lambda invoke \
 ### 9.2 Performance Optimization
 
 **Model Optimization:**
+
 - Use SageMaker Model Monitor for data drift detection
 - Implement A/B testing for model comparison
 - Use SageMaker Batch Transform for large-scale inference
 
 **Cost Optimization:**
+
 - Use Spot instances for training jobs
 - Implement endpoint auto-scaling
 - Schedule endpoint shutdown during low-traffic hours

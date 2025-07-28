@@ -12,6 +12,7 @@ import ProductInfo from "./pages/ProductInfo";
 import Forecasting from "./pages/Forecasting";
 import Settings from "./pages/Settings";
 import Transactions from "./pages/Transactions";
+import AdvancedAnalytics from "./pages/AdvancedAnalytics";
 import NotFound from "./pages/NotFound";
 import { Toaster } from "@/components/ui/toaster";
 import { AuthProvider } from "@/lib/auth-context";
@@ -118,6 +119,14 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <Forecasting />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/advanced-analytics"
+              element={
+                <ProtectedRoute>
+                  <AdvancedAnalytics />
                 </ProtectedRoute>
               }
             />

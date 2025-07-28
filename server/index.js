@@ -39,6 +39,13 @@ import {
   initializeAnalytics,
   generateStoreAnalytics,
 } from "./routes/productAnalytics.js";
+import {
+  getMLDemandForecast,
+  getMLModelPerformance,
+  getAnomalyDetection,
+  getPrescriptiveInsights,
+  getMLSalesTrends,
+} from "./routes/ml-analytics.js";
 import { ProductAnalyticsService } from "./services/productAnalytics.js";
 import {
   getTopSellingCategories,

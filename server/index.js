@@ -862,6 +862,13 @@ export function createServer() {
 
   // Lambda-powered API routes
   app.get("/api/analytics/inventory", handleInventoryAnalytics);
+
+  // ML Analytics API routes
+  app.post("/api/ml/demand-forecast/:productId/:storeId", getMLDemandForecast);
+  app.get("/api/ml/model-performance", getMLModelPerformance);
+  app.post("/api/ml/anomaly-detection/:storeId", getAnomalyDetection);
+  app.post("/api/ml/prescriptive-insights/:storeId", getPrescriptiveInsights);
+  app.get("/api/ml/sales-trends/:storeId", getMLSalesTrends);
   app.get("/api/analytics/transactions", handleTransactionAnalytics);
   app.post("/api/reorder/auto", handleAutoReorder);
   app.post("/api/transactions/process", handleTransactionProcessor);

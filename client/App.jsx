@@ -123,6 +123,14 @@ const App = () => {
               }
             />
             <Route
+              path="/advanced-analytics"
+              element={
+                <ProtectedRoute>
+                  <AdvancedAnalytics />
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/settings"
               element={
                 <ProtectedRoute>

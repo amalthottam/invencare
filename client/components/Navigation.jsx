@@ -40,6 +40,11 @@ export default function Navigation({ onLogout }) {
       icon: TrendingUp,
     },
     {
+      name: "Advanced Analytics",
+      href: "/advanced-analytics",
+      icon: Brain,
+    },
+    {
       name: "Settings",
       href: "/settings",
       icon: Settings,

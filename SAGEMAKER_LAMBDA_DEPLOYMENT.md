@@ -21,7 +21,7 @@ This guide will walk you through deploying the LSTM and ARIMA demand forecasting
 
 ```sql
 -- Export sales data for model training
-SELECT 
+SELECT
     trend_date as date,
     units_sold,
     revenue,
@@ -29,8 +29,8 @@ SELECT
     ending_inventory,
     unique_customers,
     transaction_count
-FROM product_sales_trends 
-WHERE product_id = 'your_product_id' 
+FROM product_sales_trends
+WHERE product_id = 'your_product_id'
     AND store_id = 'your_store_id'
     AND trend_date >= DATE_SUB(CURRENT_DATE, INTERVAL 365 DAY)
 ORDER BY trend_date ASC;
@@ -53,6 +53,7 @@ aws s3 cp train.csv s3://your-ml-bucket-name/training-data/train.csv
 ### 2.1 Create Requirements File
 
 Create `ml-models/requirements.txt`:
+
 ```
 tensorflow==2.13.0
 pandas==1.5.3
@@ -115,6 +116,7 @@ python lstm_training_job.py
 ### 3.1 Create ARIMA Requirements
 
 Add to `ml-models/requirements.txt`:
+
 ```
 statsmodels==0.14.0
 ```
@@ -170,46 +172,42 @@ python arima_training_job.py
 
 ```json
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": "arn:aws:logs:*:*:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "sagemaker:InvokeEndpoint"
-            ],
-            "Resource": [
-                "arn:aws:sagemaker:*:*:endpoint/lstm-demand-forecast",
-                "arn:aws:sagemaker:*:*:endpoint/arima-demand-forecast"
-            ]
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "rds-data:ExecuteStatement",
-                "rds-data:BatchExecuteStatement",
-                "rds-data:BeginTransaction",
-                "rds-data:CommitTransaction",
-                "rds-data:RollbackTransaction"
-            ],
-            "Resource": "arn:aws:rds:*:*:cluster:your-rds-cluster"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "secretsmanager:GetSecretValue"
-            ],
-            "Resource": "arn:aws:secretsmanager:*:*:secret:your-rds-secret*"
-        }
-    ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "logs:CreateLogGroup",
+        "logs:CreateLogStream",
+        "logs:PutLogEvents"
+      ],
+      "Resource": "arn:aws:logs:*:*:*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["sagemaker:InvokeEndpoint"],
+      "Resource": [
+        "arn:aws:sagemaker:*:*:endpoint/lstm-demand-forecast",
+        "arn:aws:sagemaker:*:*:endpoint/arima-demand-forecast"
+      ]
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "rds-data:ExecuteStatement",
+        "rds-data:BatchExecuteStatement",
+        "rds-data:BeginTransaction",
+        "rds-data:CommitTransaction",
+        "rds-data:RollbackTransaction"
+      ],
+      "Resource": "arn:aws:rds:*:*:cluster:your-rds-cluster"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["secretsmanager:GetSecretValue"],
+      "Resource": "arn:aws:secretsmanager:*:*:secret:your-rds-secret*"
+    }
+  ]
 }
 ```
 
@@ -553,9 +551,12 @@ Update your React app's API calls to use the new endpoints:
 
 ```javascript
 // In your AdvancedAnalytics component
-const response = await fetch('/api/ml/demand-forecast/prod_001/store_001?model=ensemble&steps_ahead=14', {
-  method: 'POST'
-});
+const response = await fetch(
+  "/api/ml/demand-forecast/prod_001/store_001?model=ensemble&steps_ahead=14",
+  {
+    method: "POST",
+  },
+);
 const data = await response.json();
 ```
 
@@ -648,16 +649,19 @@ aws events put-rule \
 ### Common Issues and Solutions
 
 1. **SageMaker Training Job Fails**
+
    - Check CloudWatch logs: `/aws/sagemaker/TrainingJobs`
    - Verify training data format and S3 permissions
    - Ensure sufficient instance limits
 
 2. **Lambda Function Timeout**
+
    - Increase timeout to 5 minutes
    - Optimize model inference code
    - Consider using asynchronous processing
 
 3. **API Gateway 502 Errors**
+
    - Check Lambda function logs
    - Verify Lambda permissions
    - Ensure proper response format

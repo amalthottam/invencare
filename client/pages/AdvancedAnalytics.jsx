@@ -93,10 +93,13 @@ export default function AdvancedAnalytics() {
           activeModels: 4,
           anomaliesDetected: 3,
         },
-        demandForecast: forecastResponse.data.forecast || generateMockForecastData(),
-        modelPerformance: performanceResponse.data.performance || generateMockPerformanceData(),
+        demandForecast:
+          forecastResponse.data.forecast || generateMockForecastData(),
+        modelPerformance:
+          performanceResponse.data.performance || generateMockPerformanceData(),
         seasonalPatterns: generateMockSeasonalData(),
-        anomalies: anomaliesResponse.data.anomalies || generateMockAnomaliesData(),
+        anomalies:
+          anomaliesResponse.data.anomalies || generateMockAnomaliesData(),
         insights: insightsResponse.data.insights || generateMockInsightsData(),
         featureImportance: generateMockFeatureImportance(),
         correlations: generateMockCorrelations(),
@@ -125,19 +128,110 @@ export default function AdvancedAnalytics() {
   };
 
   const generateMockForecastData = () => [
-    { date: "2025-07-29", ensemble: 58, lstm: 55, arima: 62, confidence_lower: 45, confidence_upper: 70 },
-    { date: "2025-07-30", ensemble: 62, lstm: 59, arima: 65, confidence_lower: 50, confidence_upper: 75 },
-    { date: "2025-07-31", ensemble: 65, lstm: 63, arima: 67, confidence_lower: 52, confidence_upper: 78 },
-    { date: "2025-08-01", ensemble: 63, lstm: 61, arima: 65, confidence_lower: 50, confidence_upper: 76 },
-    { date: "2025-08-02", ensemble: 67, lstm: 64, arima: 70, confidence_lower: 54, confidence_upper: 80 },
-    { date: "2025-08-03", ensemble: 64, lstm: 62, arima: 66, confidence_lower: 51, confidence_upper: 77 },
-    { date: "2025-08-04", ensemble: 61, lstm: 59, arima: 63, confidence_lower: 48, confidence_upper: 74 },
-    { date: "2025-08-05", ensemble: 59, lstm: 57, arima: 61, confidence_lower: 46, confidence_upper: 72 },
-    { date: "2025-08-06", ensemble: 55, lstm: 53, arima: 57, confidence_lower: 42, confidence_upper: 68 },
-    { date: "2025-08-07", ensemble: 52, lstm: 50, arima: 54, confidence_lower: 39, confidence_upper: 65 },
-    { date: "2025-08-08", ensemble: 48, lstm: 46, arima: 50, confidence_lower: 35, confidence_upper: 61 },
-    { date: "2025-08-09", ensemble: 45, lstm: 43, arima: 47, confidence_lower: 32, confidence_upper: 58 },
-    { date: "2025-08-10", ensemble: 42, lstm: 40, arima: 44, confidence_lower: 29, confidence_upper: 55 },
+    {
+      date: "2025-07-29",
+      ensemble: 58,
+      lstm: 55,
+      arima: 62,
+      confidence_lower: 45,
+      confidence_upper: 70,
+    },
+    {
+      date: "2025-07-30",
+      ensemble: 62,
+      lstm: 59,
+      arima: 65,
+      confidence_lower: 50,
+      confidence_upper: 75,
+    },
+    {
+      date: "2025-07-31",
+      ensemble: 65,
+      lstm: 63,
+      arima: 67,
+      confidence_lower: 52,
+      confidence_upper: 78,
+    },
+    {
+      date: "2025-08-01",
+      ensemble: 63,
+      lstm: 61,
+      arima: 65,
+      confidence_lower: 50,
+      confidence_upper: 76,
+    },
+    {
+      date: "2025-08-02",
+      ensemble: 67,
+      lstm: 64,
+      arima: 70,
+      confidence_lower: 54,
+      confidence_upper: 80,
+    },
+    {
+      date: "2025-08-03",
+      ensemble: 64,
+      lstm: 62,
+      arima: 66,
+      confidence_lower: 51,
+      confidence_upper: 77,
+    },
+    {
+      date: "2025-08-04",
+      ensemble: 61,
+      lstm: 59,
+      arima: 63,
+      confidence_lower: 48,
+      confidence_upper: 74,
+    },
+    {
+      date: "2025-08-05",
+      ensemble: 59,
+      lstm: 57,
+      arima: 61,
+      confidence_lower: 46,
+      confidence_upper: 72,
+    },
+    {
+      date: "2025-08-06",
+      ensemble: 55,
+      lstm: 53,
+      arima: 57,
+      confidence_lower: 42,
+      confidence_upper: 68,
+    },
+    {
+      date: "2025-08-07",
+      ensemble: 52,
+      lstm: 50,
+      arima: 54,
+      confidence_lower: 39,
+      confidence_upper: 65,
+    },
+    {
+      date: "2025-08-08",
+      ensemble: 48,
+      lstm: 46,
+      arima: 50,
+      confidence_lower: 35,
+      confidence_upper: 61,
+    },
+    {
+      date: "2025-08-09",
+      ensemble: 45,
+      lstm: 43,
+      arima: 47,
+      confidence_lower: 32,
+      confidence_upper: 58,
+    },
+    {
+      date: "2025-08-10",
+      ensemble: 42,
+      lstm: 40,
+      arima: 44,
+      confidence_lower: 29,
+      confidence_upper: 55,
+    },
   ];
 
   const generateMockPerformanceData = () => [
@@ -191,7 +285,8 @@ export default function AdvancedAnalytics() {
       title: "Inventory Rebalancing Opportunity",
       type: "optimization",
       severity: "high",
-      description: "Transfer 25 units of Ground Coffee from Store 002 to Store 001 to optimize inventory distribution",
+      description:
+        "Transfer 25 units of Ground Coffee from Store 002 to Store 001 to optimize inventory distribution",
       impact: "$450 revenue increase",
       confidence: 84.0,
     },
@@ -199,7 +294,8 @@ export default function AdvancedAnalytics() {
       title: "Dynamic Pricing Opportunity",
       type: "pricing",
       severity: "medium",
-      description: "Increase Organic Bananas price by 8% during peak demand hours (Friday-Sunday)",
+      description:
+        "Increase Organic Bananas price by 8% during peak demand hours (Friday-Sunday)",
       impact: "$230 weekly profit increase",
       confidence: 76.0,
     },
@@ -207,7 +303,8 @@ export default function AdvancedAnalytics() {
       title: "Seasonal Demand Preparation",
       type: "demand",
       severity: "high",
-      description: "Increase Whole Milk orders by 40% for next week based on weather and event patterns",
+      description:
+        "Increase Whole Milk orders by 40% for next week based on weather and event patterns",
       impact: "Prevent stockouts worth $680",
       confidence: 91.0,
     },
@@ -221,10 +318,26 @@ export default function AdvancedAnalytics() {
   ];
 
   const generateMockCorrelations = () => [
-    { products: "Organic Bananas ↔ Whole Milk", correlation: 0.73, strength: "strong" },
-    { products: "Ground Coffee ↔ Chicken Breast", correlation: 0.45, strength: "moderate" },
-    { products: "Whole Milk ↔ Chicken Breast", correlation: 0.62, strength: "moderate" },
-    { products: "Organic Bananas ↔ Ground Coffee", correlation: 0.28, strength: "weak" },
+    {
+      products: "Organic Bananas ↔ Whole Milk",
+      correlation: 0.73,
+      strength: "strong",
+    },
+    {
+      products: "Ground Coffee ↔ Chicken Breast",
+      correlation: 0.45,
+      strength: "moderate",
+    },
+    {
+      products: "Whole Milk ↔ Chicken Breast",
+      correlation: 0.62,
+      strength: "moderate",
+    },
+    {
+      products: "Organic Bananas ↔ Ground Coffee",
+      correlation: 0.28,
+      strength: "weak",
+    },
   ];
 
   const handleLogout = async () => {
@@ -240,19 +353,27 @@ export default function AdvancedAnalytics() {
 
   const getSeverityColor = (severity) => {
     switch (severity) {
-      case "high": return "destructive";
-      case "medium": return "default";
-      case "low": return "secondary";
-      default: return "outline";
+      case "high":
+        return "destructive";
+      case "medium":
+        return "default";
+      case "low":
+        return "secondary";
+      default:
+        return "outline";
     }
   };
 
   const getCorrelationColor = (strength) => {
     switch (strength) {
-      case "strong": return "#10b981";
-      case "moderate": return "#f59e0b";
-      case "weak": return "#ef4444";
-      default: return "#6b7280";
+      case "strong":
+        return "#10b981";
+      case "moderate":
+        return "#f59e0b";
+      case "weak":
+        return "#ef4444";
+      default:
+        return "#6b7280";
     }
   };
 
@@ -277,7 +398,7 @@ export default function AdvancedAnalytics() {
   return (
     <div className="min-h-screen bg-background">
       <Navigation onLogout={handleLogout} />
-      
+
       <div className="lg:pl-64">
         <main className="container mx-auto px-4 py-8">
           {/* Header */}
@@ -293,10 +414,11 @@ export default function AdvancedAnalytics() {
                   </h1>
                 </div>
                 <p className="text-gray-600">
-                  AI-powered forecasting, anomaly detection, and prescriptive insights
+                  AI-powered forecasting, anomaly detection, and prescriptive
+                  insights
                 </p>
               </div>
-              
+
               <div className="flex items-center gap-4">
                 <select
                   value={selectedEnsemble}
@@ -334,8 +456,12 @@ export default function AdvancedAnalytics() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-blue-100 text-sm font-medium">Current Velocity</p>
-                    <p className="text-2xl font-bold">{analytics.metrics.currentVelocity}</p>
+                    <p className="text-blue-100 text-sm font-medium">
+                      Current Velocity
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {analytics.metrics.currentVelocity}
+                    </p>
                   </div>
                   <Activity className="h-8 w-8 text-blue-200" />
                 </div>
@@ -346,8 +472,12 @@ export default function AdvancedAnalytics() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-green-100 text-sm font-medium">Forecast Accuracy</p>
-                    <p className="text-2xl font-bold">{analytics.metrics.forecastAccuracy}</p>
+                    <p className="text-green-100 text-sm font-medium">
+                      Forecast Accuracy
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {analytics.metrics.forecastAccuracy}
+                    </p>
                   </div>
                   <Target className="h-8 w-8 text-green-200" />
                 </div>
@@ -358,8 +488,12 @@ export default function AdvancedAnalytics() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-purple-100 text-sm font-medium">Active Models</p>
-                    <p className="text-2xl font-bold">{analytics.metrics.activeModels}</p>
+                    <p className="text-purple-100 text-sm font-medium">
+                      Active Models
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {analytics.metrics.activeModels}
+                    </p>
                   </div>
                   <Zap className="h-8 w-8 text-purple-200" />
                 </div>
@@ -370,8 +504,12 @@ export default function AdvancedAnalytics() {
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-orange-100 text-sm font-medium">Anomalies Detected</p>
-                    <p className="text-2xl font-bold">{analytics.metrics.anomaliesDetected}</p>
+                    <p className="text-orange-100 text-sm font-medium">
+                      Anomalies Detected
+                    </p>
+                    <p className="text-2xl font-bold">
+                      {analytics.metrics.anomaliesDetected}
+                    </p>
                   </div>
                   <AlertTriangle className="h-8 w-8 text-orange-200" />
                 </div>
@@ -387,7 +525,8 @@ export default function AdvancedAnalytics() {
                 Multi-Model Demand Forecast with Confidence Intervals
               </CardTitle>
               <CardDescription>
-                Comparison of LSTM, ARIMA, and ensemble forecasting models with uncertainty bands
+                Comparison of LSTM, ARIMA, and ensemble forecasting models with
+                uncertainty bands
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -412,9 +551,29 @@ export default function AdvancedAnalytics() {
                     fill="#ffffff"
                     fillOpacity={1}
                   />
-                  <Line type="monotone" dataKey="lstm" stroke="#8b5cf6" strokeWidth={2} name="LSTM" dot={false} />
-                  <Line type="monotone" dataKey="arima" stroke="#06b6d4" strokeWidth={2} name="ARIMA" dot={false} />
-                  <Line type="monotone" dataKey="ensemble" stroke="#3b82f6" strokeWidth={3} name="Ensemble Forecast" />
+                  <Line
+                    type="monotone"
+                    dataKey="lstm"
+                    stroke="#8b5cf6"
+                    strokeWidth={2}
+                    name="LSTM"
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="arima"
+                    stroke="#06b6d4"
+                    strokeWidth={2}
+                    name="ARIMA"
+                    dot={false}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="ensemble"
+                    stroke="#3b82f6"
+                    strokeWidth={3}
+                    name="Ensemble Forecast"
+                  />
                 </AreaChart>
               </ResponsiveContainer>
             </CardContent>
@@ -429,7 +588,9 @@ export default function AdvancedAnalytics() {
                   <BarChart3 className="h-5 w-5" />
                   Model Performance Metrics
                 </CardTitle>
-                <CardDescription>Accuracy comparison across different ML models</CardDescription>
+                <CardDescription>
+                  Accuracy comparison across different ML models
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-6">
@@ -437,7 +598,11 @@ export default function AdvancedAnalytics() {
                     <div key={index} className="space-y-3">
                       <div className="flex items-center justify-between">
                         <h4 className="font-semibold">{model.model}</h4>
-                        <Badge variant={model.model === "Ensemble" ? "default" : "secondary"}>
+                        <Badge
+                          variant={
+                            model.model === "Ensemble" ? "default" : "secondary"
+                          }
+                        >
                           {model.accuracy}% Accuracy
                         </Badge>
                       </div>
@@ -452,7 +617,9 @@ export default function AdvancedAnalytics() {
                         </div>
                         <div>
                           <span className="text-muted-foreground">MAPE:</span>
-                          <span className="font-medium ml-1">{model.mape}%</span>
+                          <span className="font-medium ml-1">
+                            {model.mape}%
+                          </span>
                         </div>
                       </div>
                     </div>
@@ -468,7 +635,9 @@ export default function AdvancedAnalytics() {
                   <Gauge className="h-5 w-5" />
                   Seasonal Demand Patterns
                 </CardTitle>
-                <CardDescription>Weekly demand index with confidence scores</CardDescription>
+                <CardDescription>
+                  Weekly demand index with confidence scores
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <ResponsiveContainer width="100%" height={250}>
@@ -477,7 +646,11 @@ export default function AdvancedAnalytics() {
                     <XAxis dataKey="day" />
                     <YAxis />
                     <Tooltip />
-                    <ReferenceLine y={1} stroke="#94a3b8" strokeDasharray="2 2" />
+                    <ReferenceLine
+                      y={1}
+                      stroke="#94a3b8"
+                      strokeDasharray="2 2"
+                    />
                     <Bar dataKey="index" fill="#8b5cf6" />
                   </BarChart>
                 </ResponsiveContainer>
@@ -494,12 +667,17 @@ export default function AdvancedAnalytics() {
                   <AlertTriangle className="h-5 w-5" />
                   Anomaly Detection
                 </CardTitle>
-                <CardDescription>AI-detected unusual patterns and outliers</CardDescription>
+                <CardDescription>
+                  AI-detected unusual patterns and outliers
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {analytics.anomalies.map((anomaly, index) => (
-                    <div key={index} className="border-l-4 border-orange-500 pl-4 py-2">
+                    <div
+                      key={index}
+                      className="border-l-4 border-orange-500 pl-4 py-2"
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-semibold">{anomaly.product}</h4>
                         <Badge variant={getSeverityColor(anomaly.severity)}>
@@ -510,8 +688,13 @@ export default function AdvancedAnalytics() {
                         {anomaly.description}
                       </p>
                       <div className="flex justify-between text-xs">
-                        <span>Value: <strong>{anomaly.value}</strong> (Expected: {anomaly.expected})</span>
-                        <span>Confidence: <strong>{anomaly.confidence}%</strong></span>
+                        <span>
+                          Value: <strong>{anomaly.value}</strong> (Expected:{" "}
+                          {anomaly.expected})
+                        </span>
+                        <span>
+                          Confidence: <strong>{anomaly.confidence}%</strong>
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -526,12 +709,17 @@ export default function AdvancedAnalytics() {
                   <Zap className="h-5 w-5" />
                   Prescriptive Insights
                 </CardTitle>
-                <CardDescription>AI-generated actionable recommendations</CardDescription>
+                <CardDescription>
+                  AI-generated actionable recommendations
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {analytics.insights.map((insight, index) => (
-                    <div key={index} className="border-l-4 border-blue-500 pl-4 py-2">
+                    <div
+                      key={index}
+                      className="border-l-4 border-blue-500 pl-4 py-2"
+                    >
                       <div className="flex items-center justify-between mb-2">
                         <h4 className="font-semibold">{insight.title}</h4>
                         <Badge variant={getSeverityColor(insight.severity)}>
@@ -542,8 +730,12 @@ export default function AdvancedAnalytics() {
                         {insight.description}
                       </p>
                       <div className="flex justify-between text-xs">
-                        <span className="text-green-600 font-medium">{insight.impact}</span>
-                        <span>Confidence: <strong>{insight.confidence}%</strong></span>
+                        <span className="text-green-600 font-medium">
+                          {insight.impact}
+                        </span>
+                        <span>
+                          Confidence: <strong>{insight.confidence}%</strong>
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -561,20 +753,26 @@ export default function AdvancedAnalytics() {
                   <Settings className="h-5 w-5" />
                   Feature Importance Analysis
                 </CardTitle>
-                <CardDescription>Key factors driving demand predictions</CardDescription>
+                <CardDescription>
+                  Key factors driving demand predictions
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {analytics.featureImportance.map((feature, index) => (
                     <div key={index} className="flex items-center gap-4">
-                      <span className="text-sm font-medium w-32">{feature.feature}</span>
+                      <span className="text-sm font-medium w-32">
+                        {feature.feature}
+                      </span>
                       <div className="flex-1 bg-gray-200 rounded-full h-2">
                         <div
                           className="bg-blue-600 h-2 rounded-full"
                           style={{ width: `${feature.importance}%` }}
                         ></div>
                       </div>
-                      <span className="text-sm font-medium w-12">{feature.importance}%</span>
+                      <span className="text-sm font-medium w-12">
+                        {feature.importance}%
+                      </span>
                     </div>
                   ))}
                 </div>
@@ -588,22 +786,35 @@ export default function AdvancedAnalytics() {
                   <TrendingUp className="h-5 w-5" />
                   Product Demand Correlations
                 </CardTitle>
-                <CardDescription>Statistical relationships between product demands</CardDescription>
+                <CardDescription>
+                  Statistical relationships between product demands
+                </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   {analytics.correlations.map((correlation, index) => (
-                    <div key={index} className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+                    <div
+                      key={index}
+                      className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
+                    >
                       <div>
                         <p className="font-medium">{correlation.products}</p>
-                        <p className="text-sm text-muted-foreground capitalize">{correlation.strength} correlation</p>
+                        <p className="text-sm text-muted-foreground capitalize">
+                          {correlation.strength} correlation
+                        </p>
                       </div>
                       <div className="flex items-center gap-2">
                         <div
                           className="w-4 h-4 rounded-full"
-                          style={{ backgroundColor: getCorrelationColor(correlation.strength) }}
+                          style={{
+                            backgroundColor: getCorrelationColor(
+                              correlation.strength,
+                            ),
+                          }}
                         ></div>
-                        <span className="font-medium">{correlation.correlation}</span>
+                        <span className="font-medium">
+                          {correlation.correlation}
+                        </span>
                       </div>
                     </div>
                   ))}

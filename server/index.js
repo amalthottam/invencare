@@ -823,6 +823,19 @@ export function createServer() {
   app.get("/api/dashboard/low-stock", getLowStockItems);
   app.get("/api/dashboard/transactions", getRecentTransactions);
 
+  // Advanced Analytics routes (ML/AI)
+  app.get("/api/analytics/ml-models", getMLModels);
+  app.get("/api/analytics/predictions", getPredictions);
+  app.get("/api/analytics/model-performance", getModelPerformance);
+  app.get("/api/analytics/anomalies", getAnomalies);
+  app.get("/api/analytics/advanced-forecasts", getAdvancedForecasts);
+  app.get("/api/analytics/ai-insights", getAIInsights);
+  app.get("/api/analytics/realtime-metrics", getRealTimeMetrics);
+  app.post("/api/analytics/generate-ml-forecast", generateMLForecast);
+  app.get("/api/analytics/model-comparison", getModelComparison);
+  app.get("/api/analytics/feature-importance", getFeatureImportance);
+  app.get("/api/analytics/data-quality", getDataQuality);
+
   // Database cleanup endpoint
   app.post("/api/database/cleanup", async (req, res) => {
     try {

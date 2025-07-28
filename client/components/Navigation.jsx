@@ -10,6 +10,7 @@ import {
   X,
   TrendingUp,
   Receipt,
+  Brain,
 } from "lucide-react";
 import { useState } from "react";
 

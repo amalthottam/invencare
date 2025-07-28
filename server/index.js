@@ -47,6 +47,19 @@ import {
   getLowStockItems,
   getRecentTransactions,
 } from "./routes/dashboard.js";
+import {
+  getMLModels,
+  getPredictions,
+  getModelPerformance,
+  getAnomalies,
+  getAdvancedForecasts,
+  getAIInsights,
+  getRealTimeMetrics,
+  generateMLForecast,
+  getModelComparison,
+  getFeatureImportance,
+  getDataQuality,
+} from "./routes/advancedAnalytics.js";
 import { initializeDatabase, seedSampleData, query } from "./db/sqlite.js";
 import { cleanupDatabase } from "./db/cleanup.js";
 

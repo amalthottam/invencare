@@ -47,6 +47,19 @@ import {
   getLowStockItems,
   getRecentTransactions,
 } from "./routes/dashboard.js";
+import {
+  getMLModels,
+  getPredictions,
+  getModelPerformance,
+  getAnomalies,
+  getAdvancedForecasts,
+  getAIInsights,
+  getRealTimeMetrics,
+  generateMLForecast,
+  getModelComparison,
+  getFeatureImportance,
+  getDataQuality,
+} from "./routes/advancedAnalytics.js";
 import { initializeDatabase, seedSampleData, query } from "./db/sqlite.js";
 import { cleanupDatabase } from "./db/cleanup.js";
 
@@ -58,7 +71,9 @@ import mysql from "mysql2/promise";
 
 // RDS Connection Configuration
 const dbConfig = {
-  host: process.env.RDS_HOSTNAME || "rds-invencare.cihe2wg8etco.us-east-1.rds.amazonaws.com",
+  host:
+    process.env.RDS_HOSTNAME ||
+    "rds-invencare.cihe2wg8etco.us-east-1.rds.amazonaws.com",
   user: process.env.RDS_USERNAME || "admin",
   password: process.env.RDS_PASSWORD || "InvenCare123!",
   database: process.env.RDS_DB_NAME || "invencare",
@@ -809,6 +824,19 @@ export function createServer() {
   app.get("/api/dashboard/stores", getStores);
   app.get("/api/dashboard/low-stock", getLowStockItems);
   app.get("/api/dashboard/transactions", getRecentTransactions);
+
+  // Advanced Analytics routes (ML/AI)
+  app.get("/api/analytics/ml-models", getMLModels);
+  app.get("/api/analytics/predictions", getPredictions);
+  app.get("/api/analytics/model-performance", getModelPerformance);
+  app.get("/api/analytics/anomalies", getAnomalies);
+  app.get("/api/analytics/advanced-forecasts", getAdvancedForecasts);
+  app.get("/api/analytics/ai-insights", getAIInsights);
+  app.get("/api/analytics/realtime-metrics", getRealTimeMetrics);
+  app.post("/api/analytics/generate-ml-forecast", generateMLForecast);
+  app.get("/api/analytics/model-comparison", getModelComparison);
+  app.get("/api/analytics/feature-importance", getFeatureImportance);
+  app.get("/api/analytics/data-quality", getDataQuality);
 
   // Database cleanup endpoint
   app.post("/api/database/cleanup", async (req, res) => {

@@ -10,6 +10,7 @@ import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
 import ProductInfo from "./pages/ProductInfo";
 import Forecasting from "./pages/Forecasting";
+import AdvancedAnalytics from "./pages/AdvancedAnalytics";
 import Settings from "./pages/Settings";
 import Transactions from "./pages/Transactions";
 import NotFound from "./pages/NotFound";
@@ -118,6 +119,14 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <Forecasting />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/advanced-analytics"
+              element={
+                <ProtectedRoute>
+                  <AdvancedAnalytics />
                 </ProtectedRoute>
               }
             />

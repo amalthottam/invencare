@@ -10,6 +10,7 @@ import {
   X,
   TrendingUp,
   Receipt,
+  Brain,
 } from "lucide-react";
 import { useState } from "react";
 
@@ -37,6 +38,11 @@ export default function Navigation({ onLogout }) {
       name: "Forecasting",
       href: "/forecasting",
       icon: TrendingUp,
+    },
+    {
+      name: "Advanced Analytics",
+      href: "/advanced-analytics",
+      icon: Brain,
     },
     {
       name: "Settings",

@@ -39,6 +39,13 @@ import {
   initializeAnalytics,
   generateStoreAnalytics,
 } from "./routes/productAnalytics.js";
+import {
+  getMLDemandForecast,
+  getMLModelPerformance,
+  getAnomalyDetection,
+  getPrescriptiveInsights,
+  getMLSalesTrends,
+} from "./routes/ml-analytics.js";
 import { ProductAnalyticsService } from "./services/productAnalytics.js";
 import {
   getTopSellingCategories,
@@ -58,7 +65,9 @@ import mysql from "mysql2/promise";
 
 // RDS Connection Configuration
 const dbConfig = {
-  host: process.env.RDS_HOSTNAME || "rds-invencare.cihe2wg8etco.us-east-1.rds.amazonaws.com",
+  host:
+    process.env.RDS_HOSTNAME ||
+    "rds-invencare.cihe2wg8etco.us-east-1.rds.amazonaws.com",
   user: process.env.RDS_USERNAME || "admin",
   password: process.env.RDS_PASSWORD || "InvenCare123!",
   database: process.env.RDS_DB_NAME || "invencare",
@@ -855,6 +864,13 @@ export function createServer() {
 
   // Lambda-powered API routes
   app.get("/api/analytics/inventory", handleInventoryAnalytics);
+
+  // ML Analytics API routes
+  app.post("/api/ml/demand-forecast/:productId/:storeId", getMLDemandForecast);
+  app.get("/api/ml/model-performance", getMLModelPerformance);
+  app.post("/api/ml/anomaly-detection/:storeId", getAnomalyDetection);
+  app.post("/api/ml/prescriptive-insights/:storeId", getPrescriptiveInsights);
+  app.get("/api/ml/sales-trends/:storeId", getMLSalesTrends);
   app.get("/api/analytics/transactions", handleTransactionAnalytics);
   app.post("/api/reorder/auto", handleAutoReorder);
   app.post("/api/transactions/process", handleTransactionProcessor);

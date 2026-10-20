@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
+import { isOfflineDemoMode } from "@/lib/offline-demo-data";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -28,6 +29,7 @@ import {
 export default function Settings() {
   const navigate = useNavigate();
   const { user, userAttributes, logout } = useAuth();
+  const isDemo = isOfflineDemoMode();
   const [profileData, setProfileData] = useState({
     name: "Loading...",
     email: "Loading...",
@@ -84,7 +86,9 @@ export default function Settings() {
     e.preventDefault();
     setIsEditingProfile(false);
     alert(
-      "Profile saved successfully! Note: Some fields are managed by AWS Cognito and cannot be changed here.",
+      isDemo
+        ? "This sample profile is for display only and is not saved."
+        : "Profile saved successfully! Note: Some fields are managed by AWS Cognito and cannot be changed here.",
     );
   };
 
@@ -142,23 +146,28 @@ export default function Settings() {
           </div>
 
           <div className="grid gap-6 lg:grid-cols-2">
-            {/* AWS Cognito Account Information */}
+            {/* Account Information */}
             <Card className="lg:col-span-2">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Shield className="h-5 w-5" />
-                  AWS Cognito Account Information
+                  {isDemo
+                    ? "Demo Account Information"
+                    : "AWS Cognito Account Information"}
                 </CardTitle>
                 <CardDescription>
-                  Your authentication and authorization details managed by AWS
-                  Cognito
+                  {isDemo
+                    ? "Sample profile used for this browser-based demo"
+                    : "Your authentication and authorization details managed by AWS Cognito"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
                     <div className="flex items-center justify-between p-3 bg-slate-50 rounded-lg">
-                      <span className="font-medium">User ID (Sub)</span>
+                      <span className="font-medium">
+                        {isDemo ? "Demo User ID" : "User ID (Sub)"}
+                      </span>
                       <span className="text-sm text-muted-foreground font-mono">
                         {profileData.userId || "Loading..."}
                       </span>
@@ -205,7 +214,7 @@ export default function Settings() {
                         Authentication Provider
                       </span>
                       <span className="text-sm text-muted-foreground">
-                        AWS Cognito
+                        {isDemo ? "Local Demo" : "AWS Cognito"}
                       </span>
                     </div>
 
@@ -226,30 +235,36 @@ export default function Settings() {
                   User Management
                 </CardTitle>
                 <CardDescription>
-                  Manage user accounts and permissions
+                  {isDemo
+                    ? "Illustrative sample counts; user administration is unavailable in this demo"
+                    : "Manage user accounts and permissions"}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span>Total Users</span>
+                    <span>{isDemo ? "Sample Total Users" : "Total Users"}</span>
                     <Badge variant="secondary">15</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Active Users</span>
+                    <span>
+                      {isDemo ? "Sample Active Users" : "Active Users"}
+                    </span>
                     <Badge variant="default">12</Badge>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>Pending Users</span>
+                    <span>
+                      {isDemo ? "Sample Pending Users" : "Pending Users"}
+                    </span>
                     <Badge variant="outline">3</Badge>
                   </div>
                   <Button
                     className="w-full"
                     size="sm"
                     onClick={handleManageUsers}
-                    disabled={profileData.role !== "admin"}
+                    disabled={isDemo || profileData.role !== "admin"}
                   >
-                    Manage Users
+                    {isDemo ? "Unavailable in Demo" : "Manage Users"}
                   </Button>
                   {profileData.role !== "admin" && (
                     <p className="text-xs text-muted-foreground">
@@ -274,23 +289,23 @@ export default function Settings() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <span>Database Status</span>
-                    <StatusBadge status="Online" />
+                    <StatusBadge status={isDemo ? "Offline" : "Online"} />
                   </div>
                   <div className="flex items-center justify-between">
-                    <span>AWS Cognito</span>
-                    <StatusBadge status="Connected" />
+                    <span>{isDemo ? "Authentication" : "AWS Cognito"}</span>
+                    <StatusBadge status={isDemo ? "Offline" : "Online"} />
                   </div>
                   <div className="flex items-center justify-between">
                     <span>API Status</span>
-                    <StatusBadge status="Online" />
+                    <StatusBadge status={isDemo ? "Offline" : "Online"} />
                   </div>
                   <Button
                     className="w-full"
                     size="sm"
                     onClick={handleSystemSettings}
-                    disabled={profileData.role !== "admin"}
+                    disabled={isDemo || profileData.role !== "admin"}
                   >
-                    System Settings
+                    {isDemo ? "Unavailable in Demo" : "System Settings"}
                   </Button>
                   {profileData.role !== "admin" && (
                     <p className="text-xs text-muted-foreground">
@@ -307,8 +322,9 @@ export default function Settings() {
             <CardHeader>
               <CardTitle>Profile Information</CardTitle>
               <CardDescription>
-                Your profile information from AWS Cognito. Some fields are
-                managed by your administrator.
+                {isDemo
+                  ? "This sample profile is stored in your browser for the demo."
+                  : "Your profile information from AWS Cognito. Some fields are managed by your administrator."}
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -343,7 +359,9 @@ export default function Settings() {
                       className="bg-gray-50"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Managed by AWS Cognito - contact admin to change
+                      {isDemo
+                        ? "Sample email address for this demo"
+                        : "Managed by AWS Cognito - contact admin to change"}
                     </p>
                   </div>
                 </div>
@@ -357,7 +375,9 @@ export default function Settings() {
                           profileData.role?.slice(1)}
                       </Badge>
                       <span className="text-sm text-muted-foreground">
-                        Assigned by administrator
+                        {isDemo
+                          ? "Sample demo role"
+                          : "Assigned by administrator"}
                       </span>
                     </div>
                   </div>
@@ -373,7 +393,7 @@ export default function Settings() {
                         {formatStoreAccess(profileData.storeAccess)}
                       </Badge>
                       <span className="text-sm text-muted-foreground">
-                        Managed by admin
+                        {isDemo ? "Sample demo access" : "Managed by admin"}
                       </span>
                     </div>
                   </div>
@@ -381,14 +401,18 @@ export default function Settings() {
 
                 <div className="border-t pt-4">
                   <div className="space-y-2">
-                    <Label>User ID (AWS Cognito Sub)</Label>
+                    <Label>
+                      {isDemo ? "Demo User ID" : "User ID (AWS Cognito Sub)"}
+                    </Label>
                     <Input
                       value={profileData.userId}
                       disabled={true}
                       className="bg-gray-50 font-mono text-sm"
                     />
                     <p className="text-xs text-muted-foreground">
-                      Unique identifier assigned by AWS Cognito
+                      {isDemo
+                        ? "Sample identifier used only in this browser"
+                        : "Unique identifier assigned by AWS Cognito"}
                     </p>
                   </div>
                 </div>

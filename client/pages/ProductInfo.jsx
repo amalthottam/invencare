@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
+import {
+  getOfflineProduct,
+  getOfflineProducts,
+  isOfflineDemoMode,
+  updateOfflineProduct,
+} from "@/lib/offline-demo-data";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +67,15 @@ export default function ProductInfo() {
   }, [id, isEditMode]);
 
   const fetchCategories = async () => {
+    if (isOfflineDemoMode()) {
+      setCategories(
+        [...new Set(getOfflineProducts().map((item) => item.category))].map(
+          (name) => ({ id: name, name }),
+        ),
+      );
+      return;
+    }
+
     try {
       const response = await fetch("/api/categories");
       if (response.ok) {
@@ -75,27 +90,37 @@ export default function ProductInfo() {
   const fetchProduct = async () => {
     try {
       setLoading(true);
-      const response = await fetch(`/api/products/${id}`);
-      if (!response.ok) {
-        if (response.status === 404) {
+      let product;
+
+      if (isOfflineDemoMode()) {
+        product = getOfflineProduct(id);
+        if (!product) {
           throw new Error("Product not found");
         }
-        throw new Error(`HTTP error! status: ${response.status}`);
+      } else {
+        const response = await fetch(`/api/products/${id}`);
+        if (!response.ok) {
+          if (response.status === 404) {
+            throw new Error("Product not found");
+          }
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        product = data.product;
       }
-      const data = await response.json();
-      setProduct(data.product);
+      setProduct(product);
 
       // Populate form data in edit mode
       if (isEditMode) {
         setFormData({
-          productName: data.product.productName,
-          productId: data.product.productId,
-          category_id: data.product.category_id || "",
-          stock: data.product.stock.toString(),
-          price: data.product.price.toString(),
-          description: data.product.description || "",
-          minimumStock: data.product.minimumStock?.toString() || "",
-          maximumStock: data.product.maximumStock?.toString() || "",
+          productName: product.productName,
+          productId: product.productId,
+          category_id: product.category_id || "",
+          stock: product.stock.toString(),
+          price: product.price.toString(),
+          description: product.description || "",
+          minimumStock: product.minimumStock?.toString() || "",
+          maximumStock: product.maximumStock?.toString() || "",
         });
       }
 
@@ -121,6 +146,13 @@ export default function ProductInfo() {
   const handleSave = async () => {
     try {
       setSaving(true);
+      if (isOfflineDemoMode()) {
+        updateOfflineProduct(id, formData);
+        await fetchProduct();
+        navigate(`/products/${id}`);
+        return;
+      }
+
       const response = await fetch(`/api/products/${id}`, {
         method: "PUT",
         headers: {
@@ -156,6 +188,16 @@ export default function ProductInfo() {
   const handlePriceSave = async () => {
     try {
       setSaving(true);
+      if (isOfflineDemoMode()) {
+        const updatedProduct = updateOfflineProduct(id, {
+          ...formData,
+          price: tempPrice,
+        });
+        setProduct(updatedProduct);
+        setIsEditingPrice(false);
+        return;
+      }
+
       const response = await fetch(`/api/products/${id}`, {
         method: "PUT",
         headers: {

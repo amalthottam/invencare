@@ -42,6 +42,13 @@ import {
   fetchRecentTransactions,
 } from "@/lib/api";
 import { logHealthCheck, testDashboardConnectivity } from "@/lib/health-check";
+import { useAuth } from "@/lib/auth-context";
+import {
+  getOfflineDashboardData,
+  getOfflineProducts,
+  getOfflineStores,
+  isOfflineDemoMode,
+} from "@/lib/offline-demo-data";
 
 // AWS Cognito and Lambda Integration
 // import { getCurrentUser, signOut } from 'aws-amplify/auth';
@@ -49,6 +56,7 @@ import { logHealthCheck, testDashboardConnectivity } from "@/lib/health-check";
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const { user: authenticatedUser, userAttributes, logout } = useAuth();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [analyticsData, setAnalyticsData] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -93,6 +101,18 @@ export default function Dashboard() {
 
   // Helper function to find and navigate to specific product
   const navigateToProduct = async (productName) => {
+    if (isOfflineDemoMode()) {
+      const product = getOfflineProducts().find(
+        (item) => item.productName.toLowerCase() === productName.toLowerCase(),
+      );
+      navigate(
+        product
+          ? `/products/${product.id}`
+          : `/products?search=${encodeURIComponent(productName)}`,
+      );
+      return;
+    }
+
     try {
       // First try to find the product by searching
       const response = await fetch("/api/products");
@@ -123,6 +143,14 @@ export default function Dashboard() {
   };
 
   const loadStores = async () => {
+    if (isOfflineDemoMode()) {
+      setStores([
+        { id: "all", name: "All Stores", location: "Combined View" },
+        ...getOfflineStores(),
+      ]);
+      return;
+    }
+
     try {
       const storesData = await fetchStores();
       setStores(storesData);
@@ -144,77 +172,66 @@ export default function Dashboard() {
   };
 
   const checkAuthentication = async () => {
-    try {
-      // AWS Cognito Authentication Check with Store-Based Access Control
-      const { getCurrentUser, fetchUserAttributes } = await import(
-        "aws-amplify/auth"
-      );
-      const currentUser = await getCurrentUser();
-      const userAttributes = await fetchUserAttributes();
-
-      console.log("Dashboard - Current user:", currentUser);
-      console.log("Dashboard - User attributes:", userAttributes);
-
-      // Check user's store access permissions
-      const userStoreAccess = userAttributes["custom:store_access"]; // e.g., "all" or "store_001,store_002"
-      const userRole = userAttributes["custom:role"]; // e.g., "admin", "manager", "employee"
-      const userStatus = userAttributes["custom:status"]; // Check if account is active
-
-      // Validate user status
-      if (userStatus === "pending") {
-        const { signOut } = await import("aws-amplify/auth");
-        await signOut();
-        navigate("/login");
-        return;
-      }
-
-      if (userStatus === "inactive" || userStatus === "suspended") {
-        const { signOut } = await import("aws-amplify/auth");
-        await signOut();
-        navigate("/login");
-        return;
-      }
-
-      // Set default store based on user permissions
-      let defaultStore = "all";
-      if (
-        userRole === "employee" &&
-        userStoreAccess &&
-        userStoreAccess !== "all"
-      ) {
-        // Employees typically see only their assigned store(s)
-        const accessibleStores = userStoreAccess.split(",");
-        defaultStore =
-          accessibleStores.length === 1 ? accessibleStores[0] : "all";
-      } else if (userRole === "manager" && userStoreAccess !== "all") {
-        // Managers might have access to specific stores
-        const accessibleStores = userStoreAccess.split(",");
-        defaultStore =
-          accessibleStores.length === 1 ? accessibleStores[0] : "all";
-      }
-      // Admins get "all" by default
-
-      setSelectedStore(defaultStore);
-      setUser({
-        username: currentUser.username,
-        attributes: {
-          given_name:
-            userAttributes.given_name || userAttributes.name || "User",
-          family_name: userAttributes.family_name || "",
-          "custom:role": userRole,
-          "custom:store_access": userStoreAccess,
-        },
-      });
-    } catch (error) {
-      console.log("Authentication check failed:", error);
-      // Remove demo authentication fallback
-      localStorage.removeItem("isAuthenticated");
+    if (!authenticatedUser || !userAttributes) {
       navigate("/login");
+      return;
     }
+
+    const userStoreAccess = userAttributes["custom:store_access"];
+    const userRole = userAttributes["custom:role"];
+    const accessibleStores = userStoreAccess?.split(",") || [];
+    const defaultStore =
+      userStoreAccess !== "all" &&
+      ["employee", "manager"].includes(userRole) &&
+      accessibleStores.length === 1
+        ? accessibleStores[0]
+        : "all";
+
+    setSelectedStore(defaultStore);
+    setUser({
+      username: authenticatedUser.username,
+      attributes: {
+        given_name: userAttributes.given_name || userAttributes.name || "User",
+        family_name: userAttributes.family_name || "",
+        "custom:role": userRole,
+        "custom:store_access": userStoreAccess,
+      },
+    });
   };
 
   const fetchDashboardData = async () => {
     try {
+      if (isOfflineDemoMode()) {
+        const demoData = getOfflineDashboardData(selectedStore);
+        setAnalyticsData(demoData.analytics);
+        setLowStockItems(demoData.lowStockItems);
+        setRecentTransactions(demoData.recentTransactions);
+        setSalesTrends([
+          { date: "Mon", sales: 18, forecast: 20, revenue: 224 },
+          { date: "Tue", sales: 22, forecast: 21, revenue: 286 },
+          { date: "Wed", sales: 17, forecast: 19, revenue: 194 },
+          { date: "Thu", sales: 26, forecast: 24, revenue: 352 },
+          { date: "Fri", sales: 29, forecast: 27, revenue: 418 },
+          { date: "Sat", sales: 34, forecast: 31, revenue: 486 },
+          { date: "Sun", sales: 24, forecast: 26, revenue: 328 },
+        ]);
+        setCategoryData(
+          demoData.analytics.topSellingCategories.map((category, index) => ({
+            name: category.name,
+            value: category.value,
+            color: ["#8884d8", "#82ca9d", "#ffc658", "#ff7300", "#00c49f"][
+              index % 5
+            ],
+          })),
+        );
+        setAnalyticsLoading(false);
+        setLowStockLoading(false);
+        setTransactionsLoading(false);
+        setChartsLoading(false);
+        setIsLoading(false);
+        return;
+      }
+
       console.log(`Fetching dashboard data for store: ${selectedStore}`);
 
       // Quick connectivity test in development mode
@@ -332,19 +349,8 @@ export default function Dashboard() {
   };
 
   const handleLogout = async () => {
-    try {
-      // AWS Cognito Sign Out
-      const { signOut } = await import("aws-amplify/auth");
-      await signOut();
-
-      console.log("User signed out successfully");
-      navigate("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-      // Force logout on error - clear any remaining auth state
-      localStorage.removeItem("isAuthenticated");
-      navigate("/login");
-    }
+    await logout();
+    navigate("/login");
   };
 
   // Show loading state

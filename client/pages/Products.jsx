@@ -1,6 +1,12 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
+import {
+  createOfflineProduct,
+  deleteOfflineProduct,
+  getOfflineProducts,
+  isOfflineDemoMode,
+} from "@/lib/offline-demo-data";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -80,6 +86,15 @@ export default function Products() {
   }, [searchParams]);
 
   const fetchCategories = async () => {
+    if (isOfflineDemoMode()) {
+      setCategories(
+        [
+          ...new Set(getOfflineProducts().map((product) => product.category)),
+        ].map((name) => ({ id: name, name })),
+      );
+      return;
+    }
+
     try {
       const response = await fetch("/api/categories");
       if (response.ok) {
@@ -92,6 +107,20 @@ export default function Products() {
   };
 
   const fetchStores = async () => {
+    if (isOfflineDemoMode()) {
+      setStores([
+        { id: "store_001", name: "Downtown Store", location: "123 Main St" },
+        {
+          id: "store_002",
+          name: "Mall Location",
+          location: "456 Shopping Center",
+        },
+        { id: "store_003", name: "Uptown Branch", location: "789 North Ave" },
+        { id: "store_004", name: "Westside Market", location: "321 West Blvd" },
+      ]);
+      return;
+    }
+
     try {
       const response = await fetch("/api/stores");
       if (response.ok) {
@@ -104,6 +133,14 @@ export default function Products() {
   };
 
   const fetchProducts = async () => {
+    if (isOfflineDemoMode()) {
+      setLoading(true);
+      setAllProducts(getOfflineProducts());
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       const response = await fetch("/api/products");
@@ -150,6 +187,22 @@ export default function Products() {
   const handleAddProduct = async (e) => {
     e.preventDefault();
     try {
+      if (isOfflineDemoMode()) {
+        createOfflineProduct(formData);
+        await fetchProducts();
+        setFormData({
+          productName: "",
+          productId: "",
+          category_id: "",
+          storeName: "",
+          stock: "",
+          unit: "",
+          description: "",
+        });
+        setIsAddModalOpen(false);
+        return;
+      }
+
       const response = await fetch("/api/products", {
         method: "POST",
         headers: {
@@ -190,6 +243,14 @@ export default function Products() {
     if (!productToDelete) return;
 
     try {
+      if (isOfflineDemoMode()) {
+        deleteOfflineProduct(productToDelete.id);
+        await fetchProducts();
+        setDeleteConfirmOpen(false);
+        setProductToDelete(null);
+        return;
+      }
+
       const response = await fetch(`/api/products/${productToDelete.id}`, {
         method: "DELETE",
       });

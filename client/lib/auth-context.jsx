@@ -1,7 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from "react";
 import { getCurrentUser, fetchUserAttributes, signOut } from "aws-amplify/auth";
+import { initializeOfflineDemoData, isDemoBuild } from "./offline-demo-data";
 
 const AuthContext = createContext();
+const OFFLINE_SESSION_KEY = "invencare-offline-demo-session";
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -24,6 +26,23 @@ export const AuthProvider = ({ children }) => {
   const checkAuthState = async () => {
     try {
       setIsLoading(true);
+
+      if (isDemoBuild) {
+        const offlineSession = localStorage.getItem(OFFLINE_SESSION_KEY);
+        if (offlineSession) {
+          const demoUser = JSON.parse(offlineSession);
+          initializeOfflineDemoData();
+          setUser(demoUser.user);
+          setUserAttributes(demoUser.userAttributes);
+          setIsAuthenticated(true);
+          return;
+        }
+        setUser(null);
+        setUserAttributes(null);
+        setIsAuthenticated(false);
+        return;
+      }
+
       const currentUser = await getCurrentUser();
 
       if (currentUser) {
@@ -72,6 +91,14 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    if (isDemoBuild && localStorage.getItem(OFFLINE_SESSION_KEY)) {
+      localStorage.removeItem(OFFLINE_SESSION_KEY);
+      setUser(null);
+      setUserAttributes(null);
+      setIsAuthenticated(false);
+      return;
+    }
+
     try {
       await signOut();
       setUser(null);
@@ -85,6 +112,35 @@ export const AuthProvider = ({ children }) => {
       setUserAttributes(null);
       setIsAuthenticated(false);
     }
+  };
+
+  const signInOffline = () => {
+    if (!isDemoBuild) {
+      throw new Error("Offline demo sign-in is only available in development.");
+    }
+
+    const demoUser = {
+      username: "offline-demo",
+    };
+    const demoUserAttributes = {
+      sub: "offline-demo",
+      email: "demo@invencare.local",
+      email_verified: "true",
+      name: "Offline Demo",
+      given_name: "Offline Demo",
+      "custom:role": "admin",
+      "custom:store_access": "all",
+      "custom:status": "active",
+    };
+
+    initializeOfflineDemoData();
+    localStorage.setItem(
+      OFFLINE_SESSION_KEY,
+      JSON.stringify({ user: demoUser, userAttributes: demoUserAttributes }),
+    );
+    setUser(demoUser);
+    setUserAttributes(demoUserAttributes);
+    setIsAuthenticated(true);
   };
 
   const getUserRole = () => {
@@ -127,6 +183,7 @@ export const AuthProvider = ({ children }) => {
     isAuthenticated,
     checkAuthState,
     logout,
+    signInOffline,
     getUserRole,
     getStoreAccess,
     getUserDisplayName,

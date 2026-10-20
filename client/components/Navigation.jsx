@@ -12,6 +12,10 @@ import {
   Receipt,
 } from "lucide-react";
 import { useState } from "react";
+import {
+  isOfflineDemoMode,
+  resetOfflineDemoData,
+} from "@/lib/offline-demo-data";
 
 export default function Navigation({ onLogout }) {
   const location = useLocation();
@@ -110,6 +114,27 @@ export default function Navigation({ onLogout }) {
 
           {/* Logout */}
           <div className="border-t p-3">
+            {isOfflineDemoMode() && (
+              <div className="mb-3 rounded-lg border border-blue-200 bg-blue-50 p-3">
+                <p className="text-xs font-semibold text-blue-900">
+                  Buyer demo
+                </p>
+                <p className="mt-1 text-xs text-blue-800">
+                  Sample data is saved in this browser.
+                </p>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-2 w-full"
+                  onClick={() => {
+                    resetOfflineDemoData();
+                    window.location.reload();
+                  }}
+                >
+                  Reset demo data
+                </Button>
+              </div>
+            )}
             <Button
               variant="ghost"
               className="w-full justify-start text-muted-foreground hover:text-foreground"

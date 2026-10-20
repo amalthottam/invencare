@@ -1,6 +1,5 @@
 import "./global.css";
 
-import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
@@ -19,7 +18,6 @@ import ProtectedRoute from "./components/ProtectedRoute";
 
 // AWS Cognito Integration
 import { Amplify } from "aws-amplify";
-import { getCurrentUser } from "aws-amplify/auth";
 
 Amplify.configure({
   Auth: {
@@ -53,27 +51,6 @@ Amplify.configure({
 const queryClient = new QueryClient();
 
 const App = () => {
-  // AWS Cognito Authentication State Management
-  const [user, setUser] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-
-  useEffect(() => {
-    checkAuthState();
-  }, []);
-
-  const checkAuthState = async () => {
-    try {
-      const currentUser = await getCurrentUser();
-      setUser(currentUser);
-      console.log("Current user found:", currentUser);
-    } catch (error) {
-      console.log("No authenticated user found");
-      setUser(null);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   return (
     <QueryClientProvider client={queryClient}>
       <AuthProvider>

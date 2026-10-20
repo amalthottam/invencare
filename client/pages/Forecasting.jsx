@@ -29,6 +29,10 @@ import {
   Sparkles,
   Loader2,
 } from "lucide-react";
+import {
+  getOfflineForecastingData,
+  isOfflineDemoMode,
+} from "@/lib/offline-demo-data";
 
 export default function Forecasting() {
   const navigate = useNavigate();
@@ -47,6 +51,15 @@ export default function Forecasting() {
   const fetchForecastingData = async () => {
     try {
       setLoading(true);
+      if (isOfflineDemoMode()) {
+        const demoData = getOfflineForecastingData();
+        setDashboardData(demoData.dashboard);
+        setPredictions(demoData.predictions);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
       console.log("Fetching forecasting data...");
 
       // Fetch dashboard summary
@@ -110,6 +123,11 @@ export default function Forecasting() {
       setGenerating(true);
       setGenerateSuccess(false);
       setError(null);
+
+      if (isOfflineDemoMode()) {
+        setGenerateSuccess(true);
+        return;
+      }
 
       console.log("Starting forecast generation via proxy...");
 
@@ -268,8 +286,9 @@ export default function Forecasting() {
                       AI Demand Forecasting
                     </h1>
                     <p className="text-gray-600 mt-1">
-                      Unified model predictions powered by AWS Lambda &
-                      SageMaker
+                      {isOfflineDemoMode()
+                        ? "Illustrative forecasts generated from sample inventory"
+                        : "Unified model predictions powered by AWS Lambda & SageMaker"}
                     </p>
                   </div>
                 </div>
@@ -304,7 +323,9 @@ export default function Forecasting() {
                   ) : (
                     <>
                       <Sparkles className="h-5 w-5 mr-2" />
-                      Generate Forecast
+                      {isOfflineDemoMode()
+                        ? "Refresh Demo Forecast"
+                        : "Generate Forecast"}
                     </>
                   )}
                 </Button>
@@ -318,7 +339,9 @@ export default function Forecasting() {
               <div className="flex items-center gap-2">
                 <Sparkles className="h-5 w-5 text-green-600" />
                 <p className="text-green-700 font-medium">
-                  Forecast generation completed successfully!
+                  {isOfflineDemoMode()
+                    ? "Sample forecast refreshed."
+                    : "Forecast generation completed successfully!"}
                 </p>
               </div>
               <p className="text-green-600 text-sm mt-1">

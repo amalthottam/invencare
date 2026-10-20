@@ -1,6 +1,14 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/lib/auth-context";
+import {
+  createOfflineTransaction,
+  getOfflineProducts,
+  getOfflineStores,
+  getOfflineTransactionSummary,
+  getOfflineTransactions,
+  isOfflineDemoMode,
+} from "@/lib/offline-demo-data";
 import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -152,6 +160,23 @@ const makeApiRequest = async (url, options = {}) => {
 
 const api = {
   async getTransactions(params = {}) {
+    if (isOfflineDemoMode()) {
+      const transactions = getOfflineTransactions(params);
+      const limit = Number(params.limit || 100);
+      const offset = Number(params.offset || 0);
+      return {
+        data: {
+          transactions: transactions.slice(offset, offset + limit),
+          pagination: {
+            total: transactions.length,
+            limit,
+            offset,
+            hasMore: offset + limit < transactions.length,
+          },
+        },
+      };
+    }
+
     const queryParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
@@ -164,6 +189,13 @@ const api = {
   },
 
   async getTransactionSummary(params = {}) {
+    if (isOfflineDemoMode()) {
+      const transactions = getOfflineTransactions({
+        storeId: params.storeId,
+      });
+      return { data: getOfflineTransactionSummary(transactions) };
+    }
+
     const queryParams = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null && value !== "") {
@@ -176,6 +208,10 @@ const api = {
   },
 
   async createTransaction(transactionData) {
+    if (isOfflineDemoMode()) {
+      return { data: createOfflineTransaction(transactionData) };
+    }
+
     return makeApiRequest("/api/transactions", {
       method: "POST",
       body: JSON.stringify(transactionData),
@@ -183,10 +219,18 @@ const api = {
   },
 
   async getStores() {
+    if (isOfflineDemoMode()) {
+      return { data: getOfflineStores() };
+    }
+
     return makeApiRequest("/api/stores");
   },
 
   async getProducts(storeId) {
+    if (isOfflineDemoMode()) {
+      return { products: getOfflineProducts(storeId) };
+    }
+
     const queryParams = storeId ? `?storeId=${storeId}` : "";
     const url = `/api/products${queryParams}`;
     return makeApiRequest(url);
@@ -749,7 +793,7 @@ export default function Transactions() {
               <CardTitle>Transaction History</CardTitle>
               <CardDescription>
                 Showing {filteredTransactions?.length || 0} transactions
-                {transactions === mockTransactions && (
+                {(isOfflineDemoMode() || transactions === mockTransactions) && (
                   <Badge variant="secondary" className="ml-2">
                     Demo Data
                   </Badge>

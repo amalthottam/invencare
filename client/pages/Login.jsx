@@ -27,11 +27,12 @@ import {
   validateCognitoSetup,
 } from "@/lib/cognito-test";
 import { useAuth } from "@/lib/auth-context";
+import { isDemoBuild } from "@/lib/offline-demo-data";
 
 export default function Login() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const { checkAuthState } = useAuth();
+  const { checkAuthState, signInOffline, isAuthenticated } = useAuth();
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [isSignUp, setIsSignUp] = useState(false);
@@ -47,6 +48,12 @@ export default function Login() {
 
   // Check if user is already authenticated when component mounts
   useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/dashboard", { replace: true });
+      return;
+    }
+    if (isDemoBuild) return;
+
     const checkExistingAuth = async () => {
       try {
         const { getCurrentUser } = await import("aws-amplify/auth");
@@ -67,7 +74,7 @@ export default function Login() {
     };
 
     checkExistingAuth();
-  }, [navigate]);
+  }, [isAuthenticated, navigate]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -381,11 +388,13 @@ export default function Login() {
           </div>
           <h2 className="text-3xl font-bold tracking-tight">InvenCare</h2>
           <p className="mt-2 text-sm text-muted-foreground">
-            {confirmationStep
-              ? "Confirm your account"
-              : isSignUp
-                ? "Create your supermarket inventory account"
-                : "Sign in to your supermarket inventory system"}
+            {isDemoBuild
+              ? "Explore InvenCare with sample inventory data"
+              : confirmationStep
+                ? "Confirm your account"
+                : isSignUp
+                  ? "Create your supermarket inventory account"
+                  : "Sign in to your supermarket inventory system"}
           </p>
         </div>
 
@@ -393,22 +402,29 @@ export default function Login() {
         <Card className="shadow-lg">
           <CardHeader>
             <CardTitle>
-              {confirmationStep
-                ? "Confirm Account"
-                : isSignUp
-                  ? "Sign up"
-                  : "Sign in"}
+              {isDemoBuild
+                ? "Buyer Demo"
+                : confirmationStep
+                  ? "Confirm Account"
+                  : isSignUp
+                    ? "Sign up"
+                    : "Sign in"}
             </CardTitle>
             <CardDescription>
-              {confirmationStep
-                ? "Enter the confirmation code sent to your email"
-                : isSignUp
-                  ? "Create an account to get started"
-                  : "Enter your credentials to access your account"}
+              {isDemoBuild
+                ? "No account or password required"
+                : confirmationStep
+                  ? "Enter the confirmation code sent to your email"
+                  : isSignUp
+                    ? "Create an account to get started"
+                    : "Enter your credentials to access your account"}
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form
+              onSubmit={handleSubmit}
+              className={isDemoBuild ? "hidden" : "space-y-4"}
+            >
               {!confirmationStep && (
                 <>
                   {isSignUp && (
@@ -535,7 +551,7 @@ export default function Login() {
               </Button>
             </form>
 
-            {confirmationStep && (
+            {!isDemoBuild && confirmationStep && (
               <div className="mt-4 text-center">
                 <Button
                   variant="ghost"
@@ -548,7 +564,7 @@ export default function Login() {
             )}
 
             <div className="mt-6 text-center">
-              {!confirmationStep && (
+              {!isDemoBuild && !confirmationStep && (
                 <Button
                   variant="ghost"
                   onClick={() => setIsSignUp(!isSignUp)}
@@ -560,61 +576,84 @@ export default function Login() {
                 </Button>
               )}
 
-              <p className="text-xs text-muted-foreground mt-2">
-                Use your AWS Cognito credentials
-              </p>
+              {!isDemoBuild && (
+                <p className="text-xs text-muted-foreground mt-2">
+                  Use your AWS Cognito credentials
+                </p>
+              )}
 
-              <div className="flex gap-2 mt-2">
-                {process.env.NODE_ENV === "development" && (
+              {isDemoBuild && (
+                <div className="mt-4 border-t pt-4">
+                  <p className="mb-2 text-xs text-muted-foreground">
+                    Demo mode uses sample data stored only in this browser.
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => {
+                      signInOffline();
+                      navigate("/dashboard", { replace: true });
+                    }}
+                  >
+                    Continue in offline demo mode
+                  </Button>
+                </div>
+              )}
+
+              {!isDemoBuild && (
+                <div className="flex gap-2 mt-2">
+                  {process.env.NODE_ENV === "development" && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={async () => {
+                        const test = await testCognitoConnection();
+                        console.log("Connection test result:", test);
+                        toast({
+                          title: test.success
+                            ? "Connection Test Passed"
+                            : "Connection Test Failed",
+                          description: test.message || test.error,
+                          variant: test.success ? "success" : "destructive",
+                        });
+                      }}
+                    >
+                      Test Connection
+                    </Button>
+                  )}
+
                   <Button
                     type="button"
                     variant="outline"
                     size="sm"
                     onClick={async () => {
-                      const test = await testCognitoConnection();
-                      console.log("Connection test result:", test);
-                      toast({
-                        title: test.success
-                          ? "Connection Test Passed"
-                          : "Connection Test Failed",
-                        description: test.message || test.error,
-                        variant: test.success ? "success" : "destructive",
-                      });
+                      try {
+                        const { signOut } = await import("aws-amplify/auth");
+                        await signOut();
+                        toast({
+                          title: "Signed Out",
+                          description:
+                            "Previous session cleared. You can now sign in with different credentials.",
+                          variant: "success",
+                        });
+                        window.location.reload();
+                      } catch (error) {
+                        console.warn("Sign out error:", error);
+                        toast({
+                          title: "Session Cleared",
+                          description: "Previous session cleared.",
+                          variant: "success",
+                        });
+                        window.location.reload();
+                      }
                     }}
                   >
-                    Test Connection
+                    Clear Session
                   </Button>
-                )}
-
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={async () => {
-                    try {
-                      const { signOut } = await import("aws-amplify/auth");
-                      await signOut();
-                      toast({
-                        title: "Signed Out",
-                        description:
-                          "Previous session cleared. You can now sign in with different credentials.",
-                        variant: "success",
-                      });
-                      window.location.reload();
-                    } catch (error) {
-                      console.warn("Sign out error:", error);
-                      toast({
-                        title: "Session Cleared",
-                        description: "Previous session cleared.",
-                        variant: "success",
-                      });
-                      window.location.reload();
-                    }
-                  }}
-                >
-                  Clear Session
-                </Button>
-              </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
